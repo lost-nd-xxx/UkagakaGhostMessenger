@@ -1,0 +1,538 @@
+// 条件を照合して表示
+
+//----------------------------------------------------------------
+// 表示用の情報を返しつつ、受信枠の情報を更新する
+// 引数：　辞書型のメッセージ単体情報
+// ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }
+// 返値：　スクリプトの文字列
+//----------------------------------------------------------------
+string ShowMessage(dict ref)
+{
+	string sender = ref["sender"];
+	string SenderId = ref["SenderId"];
+	string MessageId = ref["MessageId"];
+	dict reserved = SaveData_Reserved[sender][SenderId][MessageId];
+	dict received_msg;
+
+	// 無だったら空を入れておく
+	if ( _gettype(SaveData_Received[sender]) == "nil" ) {
+		SaveData_Received += $( sender , $() );
+	}
+	if ( _gettype(SaveData_Received[sender][SenderId]) == "nil" ) {
+		SaveData_Received[sender] += $( SenderId , $() );
+	}
+	if ( _gettype(SaveData_Received[sender][SenderId][MessageId]) == "nil" ) {
+		SaveData_Received[sender][SenderId] += $( MessageId , {} );
+	}
+
+	SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
+	SaveData_Received[sender][SenderId] += $( "SenderIcon" , reserved["SenderIcon"] );
+
+	SaveData_Received[sender][SenderId]["SenderName"] = nil;
+	SaveData_Received[sender][SenderId] += $( "SenderName" , reserved["SenderName"] );
+
+	SaveData_Received[sender][SenderId]["SenderProfile"] = nil;
+	SaveData_Received[sender][SenderId] += $( "SenderProfile" , reserved["SenderProfile"] );
+
+	string Text = reserved["Text"];
+	// ---- ここにテキスト加工を入れる ---- //
+	received_msg += $( "Text" , Text );
+
+	int time_count = GetEpoch();
+	received_msg += $( "time_count" , time_count );
+
+	dict now = _gettime();
+	string time_ymd = _sprintf("%04d/%02d/%02d",now["年"],now["月"],now["日"]);
+	string time_hm = _sprintf("%02d:%02d",now["時"],now["分"]);
+	received_msg += $( "time_ymd" , time_ymd );
+	received_msg += $( "time_hm" , time_hm );
+
+
+	int RunCount = reserved["RunCount"];
+	int ExecutedCount = SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"];
+	ExecutedCount++;
+	SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
+
+
+	array EventReference = reserved["EventReference"];
+
+
+
+	return script;
+}
+
+//----------------------------------------------------------------
+// 待機枠がLate加味の時刻を達成しているか確認　あったら表示につなげる
+// 引数：　なし
+// 返値：　スクリプトの文字列（あれば）
+//----------------------------------------------------------------
+script CheckWaitingList()
+{
+	if ( _aryvn(SaveData_Waiting) == 0 ) {
+		// 待ちが無い
+		return;
+	}
+
+	int now = GetEpoch();
+	for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
+		dict curt = SaveData_Waiting[i];
+		int epoch = curt["epoch"];
+		if ( epoch <= now ) {
+			// 達成済みを発見
+			string script = ShowMessage(curt);
+			return script;
+		}
+	}
+
+	// 達成済みが無い
+	return;
+}
+
+//----------------------------------------------------------------
+// 条件達成したメッセージにLateを加味したEpochを追加して待機枠へ保存
+// 引数：　全てのメッセージを配列で　以下に例
+// { ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+// 返値：　なし
+//----------------------------------------------------------------
+AddMessageWaitingList(array msg)
+{
+	for ( int i=0; i<_aryvn(msg); i++ ) {
+		dict curt = msg[i];
+		string ghost = curt["sender"];
+		string chara = curt["SenderId"];
+		string msg_id = curt["MessageId"];
+
+		// Lateを計算
+		int Late;
+		if ( _aryvn(SaveData_Reserved[ghost][chara][msg_id]["Late"]) == 1 ) {
+			// 値が1つなのでそのまま代入
+			Late = SaveData_Reserved[ghost][chara][msg_id]["Late"];
+		}
+		else if ( _aryvn(SaveData_Reserved[ghost][chara][msg_id]["Late"]) == 2 ) {
+			// 値が2つなのでその間のランダム値
+			int late0 = SaveData_Reserved[ghost][chara][msg_id]["Late"][0];
+			int late1 = SaveData_Reserved[ghost][chara][msg_id]["Late"][1];
+			// ここに来た時点で小→大と並べ替えられている
+			Late = _saorirequest( "yaya", "RAND", late1 - late0 );
+			Late += late0;
+			// 手違いがあったらとりあえず0を入れる
+			if ( !(Late>=0) ) { Late = 0; }
+		}
+		int epoch = GetEpoch() + Late;
+		curt += $("epoch",epoch);
+
+		// 待機配列に追加
+		SaveData_Waiting += curt;
+	}
+}
+
+//----------------------------------------------------------------
+// 全てのメッセージを配列で返す
+// 引数：　なし
+// 返値：　全てのメッセージを配列で　以下に例
+// { ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+//----------------------------------------------------------------
+array ListUpAllMessageArray()
+{
+	// 格納用の変数
+	array result;
+
+	for ( int i0=0; i0<_dicvn(SaveData_Reserved); i0++ ) {
+		string ghost = _dickeyget(SaveData_Reserved)[i0];
+		
+		for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
+			string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
+			
+			for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
+				string msg = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
+
+				result += ${
+					$( "sender", ghost ),
+					$( "SenderId", chara ),
+					$( "MessageId", msg )
+				};
+			}
+		}
+	}
+
+	return result;
+}
+
+//----------------------------------------------------------------
+// 能動条件名のリスト
+// 引数：　なし
+// 返値：　カンマ区切りの文字列
+//----------------------------------------------------------------
+string ActiveConditionKeyList()
+{
+	string output;
+	output += "Ghost_Booted,";
+	output += "Ghost_Closed,";
+	output += "Ghost_Triggered,";
+	output += "Message_Run,";
+	output += "Message_Read,";
+
+	return output;
+}
+
+//----------------------------------------------------------------
+// 受動条件名のリスト
+// 引数：　なし
+// 返値：　カンマ区切りの文字列
+//----------------------------------------------------------------
+string PassiveConditionKeyList()
+{
+	string output;
+	output += "Time_After,";
+	output += "Time_Seconds,";
+	output += "Time_During,";
+	output += "Ghost_IsBooting,";
+	output += "Ghost_IsNotBooting,";
+	output += "Ghost_Exists,";
+	output += "Ghost_NotExists,";
+	output += "Ghost_IsInAddressBook,";
+	output += "Message_IsRun,";
+	output += "Message_IsNotRun,";
+	output += "Message_IsRead,";
+	output += "Message_IsNotRead,";
+
+	return output;
+}
+
+//----------------------------------------------------------------
+// 指定されたメッセージ（複数可）で条件照合を行う
+// 引数：　除外する条件名の文字列, { ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+// 除外は能動条件を想定しているので単体のみ
+// 返値：　引数から条件達成していない組を排除した配列
+//----------------------------------------------------------------
+array CheckMessageCondition( string exclude, array ref )
+{
+	// 結果用の変数
+	array result;
+
+	// 受動条件の確認
+	result = CheckMessagePassiveCondition(ref);
+
+	// キー名のリストを取得
+	array conds = ListUpMessageConditionKey(passive);
+
+	// 末尾から処理しないと、配列の番号が消したぶんだけずれる
+	for ( int i0=_aryvn(result); i0>=0; i0-- ) {
+		array keys = conds[i0];
+
+		for ( int i1=0; i1<_aryvn(keys); i1++ ) {
+
+			if ( keys[i1] == exclude ) {
+				// 除外指定と一致したら無視
+				continue;
+			}
+
+			if ( _strstr( ActiveConditionKeyList(), keys[i1], 0 ) >= 0 ) {
+				// 能動条件を持っているので結果から排除
+				result[i0] = nil;
+				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+//----------------------------------------------------------------
+// 指定されたメッセージ（複数可）の持っている条件名の2次元配列を返す
+// 引数：　{ ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+// 返値：　1次元目の順番は引数通り　2次元目は条件名のリスト
+//----------------------------------------------------------------
+array ListUpMessageConditionKey(array ref)
+{
+	// 返却用の配列
+	array output;
+	
+	for ( int i=0; i<_aryvn(ref); i++ ) {
+		// 引数を分解
+		string sender = ref[i]["sender"];
+		string SenderId = ref[i]["SenderId"];
+		string MessageId = ref[i]["MessageId"];
+
+		dict conds = SaveData_Reserved[sender][SenderId][MessageId]["Condition"];
+
+		if ( _dicvn( conds ) <= 0 ) {
+			// 指定されたメッセージが適切な状態ではない
+			output += -1;
+		}
+		else {
+			// 適切だった
+			output += _dickeyget(SaveData_Reserved[sender][SenderId][MessageId]["Condition"]);
+		}
+	}
+
+	return output;
+}
+
+//----------------------------------------------------------------
+// 指定されたメッセージ（複数可）が受動的な条件をすべて満たしているかどうか照合する
+// 受動的はユーザにとって　時間など
+// 引数：　{ ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+// 返値：　引数から条件達成していない組を排除した配列
+//----------------------------------------------------------------
+array CheckMessagePassiveCondition(array ref)
+{
+	// FMO情報を更新確認
+	RefreshFmo();
+
+	// 現在の時間
+	dict time = _gettime();
+	int etime = _etime();
+
+	// 返却用の配列
+	array result;
+
+	for ( int i0=0; i0<_aryvn(ref); i0++ ) {
+		// 引数
+		string sender = ref[i0]["sender"];
+		string SenderId = ref[i0]["SenderId"];
+		string MessageId = ref[i0]["MessageId"];
+
+		// 指定されたメッセージの中身を格納したい
+		dict message;
+
+		if ( _gettype( SaveData_Reserved[sender][SenderId][MessageId] ) != "dict" ) {
+			// 指定されたメッセージが適切な状態ではない
+			result += -1;
+			continue;
+		}
+		else {
+			// 適切だった
+			message = SaveData_Reserved[sender][SenderId][MessageId];
+		}
+
+		// Time_Seconds
+		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) == "string" ) {
+			int cond_time = message["Condition"]["Time_Seconds"][0];
+			if ( message["SentTime"] + cond_time > etime ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Time_During
+		if ( _gettype( message["Condition"]["Time_During"][0] ) == "string" ) {
+			array a = message["Condition"]["Time_During"];
+			int match = 0;
+			
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
+				array cond_time = _strsplit( a[i1], "_" );
+				int start = cond_time[0];
+				int end = cond_time[1];
+				int now = _substr( time["時"], 0, 2 ) + _substr( time["分"], 0, 2 );
+				if ( start < end ) {
+					// 0時をまたいでいない
+					if ( start <= now && now <= end ) {
+						// 条件達成
+						match++;
+					}
+				}
+				else if ( start > end ) {
+					// 0時をまたいでいる
+					if ( start <= now || now <= end ) {
+						// 条件達成
+						match++;
+					}
+				}
+				else {
+					// 始まりと終わりが一緒ならスルー
+				}
+			}
+			if ( match == 0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Time_After
+		if ( _gettype( message["Condition"]["Time_After"][0] ) == "string" ) {
+			array tmp_time = message["Condition"]["Time_After"];
+			dict cond;
+			array key = { "分", "時", "日", "月", "年" };
+			
+			int countup = 0;
+			int countdown = _aryvn(tmp_time) - 1;
+			while ( countup < 5 ) {
+				int current;
+				string tmp_key = key[countup];
+				if ( countdown < 0 ) {
+					// 省略されていたので現在の値を入れる
+					current = time[tmp_key];
+				}
+				else {
+					// 入力されていたのでそのまま入れる
+					current = tmp_time[countdown];
+				}
+				cond += $(key[countup],current);
+				countup++;
+				countdown--;
+			}
+			int cond_e = _etime( cond["年"], cond["月"], cond["日"], cond["時"], cond["分"], cond["秒"] );
+			if ( etime < cond_e ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Ghost_IsBooting
+		if ( _gettype( message["Condition"]["Ghost_IsBooting"][0] ) == "string" ) {
+			array a = message["Condition"]["Ghost_IsBooting"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				string curt_ghost = a[i1];
+				if ( GetFmoInfo({curt_ghost,{"fullname"}}) == curt_ghost ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match != _aryvn[a] ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Ghost_IsNotBooting
+		if ( _gettype( message["Condition"]["Ghost_IsNotBooting"][0] ) == "string" ) {
+			array a = message["Condition"]["Ghost_IsNotBooting"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				string curt_ghost = a[i1];
+				if ( GetFmoInfo({curt_ghost,{"fullname"}}) == curt_ghost ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match>0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Ghost_Exists
+		if ( _gettype( message["Condition"]["Ghost_Exists"][0] ) == "string" ) {
+			if ( _aryvn(InstalledGhostNameList)==0 ) {
+				// インストール済みゴーストのリストが未構築or構築失敗
+				result += -1;
+				continue;
+			}
+			array a = message["Condition"]["Ghost_Exists"];
+			string result = _arystr( IsGhostNameInstalled(a) );
+			if ( _regex_match( result, "1*" ) == 0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Ghost_NotExists
+		if ( _gettype( message["Condition"]["Ghost_NotExists"][0] ) == "string" ) {
+			if ( _aryvn(InstalledGhostNameList)==0 ) {
+				// インストール済みゴーストのリストが未構築or構築失敗
+				result += -1;
+				continue;
+			}
+			array a = message["Condition"]["Ghost_NotExists"];
+			string result = _arystr( IsGhostNameInstalled(a) );
+			if ( _regex_match( result, "0*" ) == 0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// 以下、受信部の仕様を固めたらまた続きを書く
+
+		// Ghost_IsInAddressBook
+		// if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) == "string" ) {
+		// 	array a = message["Condition"]["Ghost_IsInAddressBook"];
+		// 	int match = 0;
+		// 	for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+		// 		array split = _strsplit(a[i1],"/");
+		// 		string s0 = split[0];
+		// 		string s1 = split[1];
+		// 		if ( _gettype(SaveData_Received[s0][s1]) != "nil" ) {
+		// 			match++;
+		// 			continue;
+		// 		}
+		// 	}
+		// 	if ( match!=_aryvn[a] ) {
+		// 		// 条件不達成
+		// 		result += 0;
+		// 		continue;
+		// 	}
+		// }
+
+		// どれにも不達成がなければ達成とする
+		result += 1;
+	}
+
+	array output = ref;
+	
+	// 条件を満たしていないメッセージを結果から排除
+	// 末尾から処理しないと、配列の番号が消したぶんだけずれる
+	for ( int i=_aryvn(ref)-1; i>=0; i-- ) {
+		if ( result[i] != 1 ) {
+			output[i] = nil;
+		}
+	}
+
+	return output;
+}
+
+//----------------------------------------------------------------
+// 指定された条件に合うメッセージを予約済み全ての中から取り出す
+// 引数：　PickUpMessageByCondition( 条件の種類名の文字列, 条件の値の配列 );
+// 返値：　条件の種類の中に一致する配列を持つものがあれば抽出して配列で返却、無ければ無　以下に例
+// { ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
+//----------------------------------------------------------------
+array PickUpMessageByCondition(string cond, array vals)
+{
+	// 格納用の変数
+	array result;
+
+	for ( int i0=0; i0<_dicvn(SaveData_Reserved); i0++ ) {
+		// 個別のゴースト
+		string ghost = _dickeyget(SaveData_Reserved)[i0];
+		
+		for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
+			// ゴースト内の送信者
+			string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
+			
+			for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
+				// 送信者のメッセージ
+				string msg = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
+				array conds = _dickeyget(SaveData_Reserved[ghost][chara][msg]["Condition"][cond]);
+
+				// 指定された条件の種類がある
+				if ( _aryvn(conds)>0 && conds == vals ) {
+					// 合致したら変数に入れる
+					result += ${
+						$( "sender", ghost ),
+						$( "SenderId", chara ),
+						$( "MessageId", msg )
+					};
+				}
+			}
+		}
+	}
+
+	// 一通り調べ終わった
+	if ( _aryvn(result) > 0 ) {
+		// 結果が一個以上あった
+		return result;
+	}
+	else {
+		// 結果が一個もなかったので無を返す
+		return;
+	}
+}

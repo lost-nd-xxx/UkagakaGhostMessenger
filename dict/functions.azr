@@ -1,0 +1,351 @@
+//================================================================
+// 内蔵ではない関数
+//================================================================
+
+//----------------------------------------------------------------
+// プラグイン情報
+// 引数：　なし
+// 返値：　文字列
+//----------------------------------------------------------------
+string pluginname()
+{
+	return "UkagakaGhostMessenger";
+}
+
+string version()
+{
+	return "UGM/0.00";
+}
+
+//----------------------------------------------------------------
+// セーブデータを分配
+// 引数・返値：　なし
+//----------------------------------------------------------------
+// 予約中
+dict SaveData_Reserved;
+// 条件を満たして受信待機中
+array SaveData_Waiting;
+// 受信済み
+dict SaveData_Received;
+// アドレス帳
+dict SaveData_AddressBook;
+
+SaveVar()
+{
+	dictSaveData = ${
+		$("SaveData_Reserved",SaveData_Reserved),
+		$("SaveData_Waiting",SaveData_Waiting),
+		$("SaveData_Received",SaveData_Received),
+		$("SaveData_AddressBook",SaveData_AddressBook)
+	};
+	_vsave("savedata", dictSaveData);
+
+	// テスト用に出力しておく
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+}
+
+RestoreVar()
+{
+	dictSaveData = _vload("savedata");
+	SaveData_Reserved = dictSaveData["SaveData_Reserved"];
+	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
+	SaveData_Received = dictSaveData["SaveData_Received"];
+	SaveData_AddressBook = dictSaveData["SaveData_AddressBook"];
+
+	// テスト用に出力しておく
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+}
+
+//----------------------------------------------------------------
+// OnMenuExec
+// 動作テストに使っているが、最終的にはミュブロの操作周りを置く
+//----------------------------------------------------------------
+string OnMenuExec(dict ref)
+{
+	// array a = ListUpAllMessagesArray();
+	// array result = CheckMessagePassiveConditions( a );
+
+	// _writetext("test.json",_azv2json(_eventdict),"utf8");
+
+	return 1;
+}
+
+//----------------------------------------------------------------
+// EPOCH秒を取得する
+// 引数：　年,月,日,時,分,秒をキー、値が整数の辞書型
+// 返値：　EPOCH秒の整数
+//----------------------------------------------------------------
+int GetEpoch(dict ref)
+{
+	// 結果用
+	int result;
+
+	// 現在の時間
+	dict t = _gettime();
+
+	if ( _dicvn(ref) <= 0 ) {
+		// 現在の日時を使う
+		result = _etime(t["年"], t["月"], t["日"], t["時"], t["分"], t["秒"] );
+	}
+	else {
+		// 省略されていたら現在の値を入れる
+		array arg;
+		if (_gettype(ref["年"]) == "long") {arg += ref["年"];}; else {arg += t["年"];};
+		if (_gettype(ref["月"]) == "long") {arg += ref["月"];}; else {arg += t["月"];};
+		if (_gettype(ref["日"]) == "long") {arg += ref["日"];}; else {arg += t["日"];};
+		if (_gettype(ref["時"]) == "long") {arg += ref["時"];}; else {arg += t["時"];};
+		if (_gettype(ref["分"]) == "long") {arg += ref["分"];}; else {arg += t["分"];};
+		if (_gettype(ref["秒"]) == "long") {arg += ref["秒"];}; else {arg += t["秒"];};
+		result = _etime( arg[0], arg[1], arg[2], arg[3], arg[4], arg[5] );
+	}
+
+	// akariのetimeとEPOCHの差分
+	result -= 2678400;
+
+	return result;
+}
+
+//----------------------------------------------------------------
+// EPOCH秒を日時へyayaで換算する
+// > EPOCH（万国標準時で1970/1/1 00:00:00）からの経過秒数を整数で指定します。
+//----------------------------------------------------------------
+dict GetTimeByEpoch(int ref)
+{
+	dict result;
+	if (ref==0) {ref=GetEpoch();}
+	dict req = _saorirequest( "yaya", "GETTIME", ref );
+
+	int v0 = req["Value0"];
+	int v1 = req["Value1"];
+	int v2 = req["Value2"];
+	int v4 = req["Value4"];
+	int v5 = req["Value5"];
+	int v6 = req["Value6"];
+	
+	string v3;
+	if (req["Value3"]==0) {v3="日";}
+	else if (req["Value3"]==1) {v3="月";}
+	else if (req["Value3"]==2) {v3="火";}
+	else if (req["Value3"]==3) {v3="水";}
+	else if (req["Value3"]==4) {v3="木";}
+	else if (req["Value3"]==5) {v3="金";}
+	else if (req["Value3"]==6) {v3="土";}
+	else {v3="？";}
+
+	dict result = ${
+		$("年",v0),
+		$("月",v1),
+		$("日",v2),
+		$("週",v3),
+		$("時",v4),
+		$("分",v5),
+		$("秒",v6),
+		$("ミリ秒",0)
+	};
+
+	return result;
+}
+
+//----------------------------------------------------------------
+// ゴースト名がインストール済み（＆読み込まれている）か確認する
+// 引数：　ゴースト名の文字列の配列
+// 　　　　例：{"Ｒポストと狛犬","Emily_Phase4.5",...}
+// 返値：　認識されていたら1、そうでなければ0、の数値の配列　引数と順序は一緒
+// 失敗したら-1の数値単独
+//----------------------------------------------------------------
+array IsGhostNameInstalled(array ref)
+{
+	// 結果用
+	array result;
+
+	if ( _aryvn(InstalledGhostNameList)==0 ) {
+		// 未構築
+		return -1;
+	}
+	
+	for ( int i0=0; i0<_aryvn(ref); i0++ ) {
+		int match=0;
+		string ghostname = ref[i0];
+		for ( int i1=0; i1<_aryvn(InstalledGhostNameList); i1++ ) {
+			if ( TranslateSystemChar(InstalledGhostNameList[i1]) == TranslateSystemChar(ghostname) ) {
+				match=1;
+				break;
+			}
+		}
+		result += match;
+	}
+
+	return result;
+}
+
+//----------------------------------------------------------------
+// 使ってほしくない文字を半角アンダーバーへ変換する
+// 引数：　変換前の文字列
+// 返値：　変換後の文字列
+//----------------------------------------------------------------
+string TranslateSystemChar(string ref)
+{
+	string after = "_";
+	string before = "[\\\/:\*\?\"\<\>\|\=]";
+	string result = _regex_replace( ref, before, after );
+	
+	return result;
+}
+
+//----------------------------------------------------------------
+// FMOを変数に入れなおす
+// 引数・返値：　なし
+//----------------------------------------------------------------
+// スコープを一番外側にする
+dict FmoTable;
+array FmoChache;
+
+RefreshFmo()
+{
+	// 現在のfmoを取得
+	array raw_fmo = _getfmo();
+
+	if ( _arystr(FmoChache) == _arystr(raw_fmo) ) {
+		// 前回と変化が無かったので関数を終了
+		return;
+	}
+	else {
+		// 変化があるか確認する用のキャッシュを更新
+		FmoChache = raw_fmo;
+	}
+
+	// 結果用の変数を空の辞書型に戻す
+	FmoTable = $();
+
+	// fmoの中身を切り出していく
+	for ( int i=0; i < _aryvn( raw_fmo ); i++ ) {
+		// バイト値1で分割
+		array split = _strsplit( raw_fmo[i], _bytechar(1) );
+		
+		// 固定長32byteがid
+		string id = _substr( split[0], 0, 32 );
+		
+		// 固定長32byte＋1ドットの次からがkey
+		string key = _substr( split[0], 33, 20 );
+
+		// 変数が無かったら空を入れておく
+		if ( _gettype( FmoTable[id] ) == "nil" ) {
+			FmoTable += $( id, $() );
+		}
+
+		// 値を格納
+		FmoTable[id] += $( key, split[1] );
+	}
+}
+
+//----------------------------------------------------------------
+// 指定されたゴースト名の情報をFMOから取得する　ここには起動中のものしかいない
+// 同じゴースト名・違うパスなどの組み合わせで複数体が同時起動されていた場合、
+// 先に認識された方のみが検出される
+// 引数：　GetFmoInfo( { ゴースト名, { FMOのキー名の文字列1, FMOのキー名の文字列2, } } );
+// 返値：　指定されたキー名と対する値の入った辞書型
+//----------------------------------------------------------------
+dict GetFmoInfo(array argv)
+{
+	// 引数を格納
+	string fullname = argv[0];
+	array ref = argv[1];
+	
+	// 格納用の変数を定義
+	dict result;
+
+	// FMOの更新確認
+	RefreshFmo();
+	
+	// 探す
+	array ids = _dickeyget( FmoTable );
+	for ( int i0=0; i0<_aryvn(ids); i0++ ) {
+		string curt_id = ids[i0];
+		if ( TranslateSystemChar(FmoTable[curt_id]["fullname"]) == TranslateSystemChar(fullname) ) {
+			// 起動中ゴーストの情報が合致した
+			for ( int i1=0; i1<_aryvn(ref); i1++ ) {
+				// 指定されたキーの情報を格納
+				string curt_key = ref[i1];
+				result += $( curt_key, FmoTable[curt_id][curt_key] );
+			}
+			// 格納が終わったらループを脱出する
+			break;
+		}
+	}
+
+	if ( _dicvn(result) > 0 ) {
+		// 情報を返す
+		return result;
+	}
+	else {
+		// 起動中にはいなかったので無を返す
+		return;
+	}
+}
+
+//----------------------------------------------------------------
+// ゴーストから画像をコピーする
+// 指定されたディレクトリが無ければ作る
+// 引数：　CopyImage( コピー元のパスの文字列※絶対パス推奨, ゴースト名の文字列 );
+// 返値：　成功時はファイル名の文字列　失敗時は無
+//----------------------------------------------------------------
+string CopyImage( string original, string sender )
+{
+	// 画像保存用ディレクトリ　末尾の\\を入れない
+	string dir = "localweb\\html\\res\\image";
+
+	if ( _isfile( dir ) == 0 ) {
+		// 画像保存用ディレクトリが無い
+		return;
+	}
+	
+	// 元ファイルのサイズを調べる
+	int fsize = _saorirequest( "yaya", "FSIZE", original )["Result"];
+
+	if ( fsize >= 5000000 ) {
+		// 元ファイルが適切なサイズではない
+		return;
+	}
+	else if ( fsize <= 0 ) {
+		// 元ファイルが見つからないor虚無
+		return;
+	}
+	
+	// 元ファイルが適切なサイズであるので続行
+
+	// ファイル名を切り出す
+	array split = _strsplit( original, "\\" );
+	string filename = split[_aryvn(split)-1];
+
+	// プラグイン側の相対パスを作る
+	string copy_dir = dir + "\\" + sender;
+
+	if ( _isfile( copy_dir ) == 0 ) {
+		// コピー先ディレクトリが無いので作る
+		int result = _dcreate( copy_dir );
+		if ( result != 1 ) {
+			// ディレクトリを作れなかった
+			return;
+		} 
+	}
+	
+	// コピー先の相対パス
+	string img_path = copy_dir + "\\" + filename;
+
+	if ( _isfile( img_path ) == 1 ) {
+		// 既にあるので消しちゃう
+		int result = _fdelete( img_path );
+	}
+
+	// コピーする
+	int result = _fcopy( original, img_path );
+
+	if ( result == 1 ) {
+		// コピー成功 ファイル名を返す
+		return filename;
+	}
+	else {
+		// コピー失敗
+		return;
+	}
+}

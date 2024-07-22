@@ -1,0 +1,283 @@
+//送信
+
+//----------------------------------------------------------------
+// 送信イベントをゴーストから受け取った
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_Send(dict req)
+{
+	// リファレンスを辞書型にしたい
+	dict ref;
+	
+	// EventReferenceとConditionは複数来るかもなので空をセットしておく
+	ref = ${
+		$("EventReference",{}),
+		$("Condition",$())
+	};
+	
+	// 辞書に格納していく Reference99でループ打ち止め
+	for ( int i=0; i<100; i++ ) {
+		//Referenceが無くなったらループ脱出
+		if ( _gettype(req["Reference"+i])=="nil" ) {
+			break;
+		}
+		string text = req["Reference"+i];
+
+		if ( _strstr( text, "--EventReference=", 0 )==0 ) {
+			ref["EventReference"] += _regex_replace( text, "^\-\-EventReference\=", "" );
+		}
+		else if ( _strstr( text, "--Condition=", 0 )==0 ) {
+			string t = _regex_replace( text, "^\-\-Condition\=", "" );
+			array a = _strsplit(t,":");
+			string key = a[0];
+			a[0] = nil;
+			if ( _gettype(ref["Condition"][key]) == "nil" ) {
+				ref["Condition"] += $(key,{});
+			}
+			ref["Condition"][key] += a;
+		}
+		else {
+			array split = _strsplit(text,"=");
+			ref += $(_regex_replace(split[0],"^\-\-",""),split[1]);
+		}
+	}
+//----------------------------------------------------------------
+	// イベントを起こしたゴーストのゴースト名
+	string sender = TranslateSystemChar(req["Sender"]);
+//----------------------------------------------------------------
+	// ゴーストのフルパス
+	string ghostpath = GetFmoInfo({sender,{"ghostpath"}})["ghostpath"];
+
+	if ( _strlen(ghostpath) <= 0 ) {
+		// パスがわからない
+		ErrorResponse_Send({sender,"ゴーストのフォルダを認識できませんでした","",""});
+		return;
+	}
+//----------------------------------------------------------------
+	// 省略時の値や初期値を入れる
+	string MessageId;
+	int Enable = 1;
+	string SenderId = sender;
+	string SenderName = sender;
+	string SenderIcon = "default";
+	string SenderProfile = "";
+	string Text = "";
+	array EventReference;
+	int RunCount = 1;
+	array Late = { 0 };
+	dict Condition;
+//----------------------------------------------------------------
+	// ここから実際の値を確かめていく
+//----------------------------------------------------------------
+	if ( _strlen(ref["MessageId"]) > 0 ) {
+		MessageId = ref["MessageId"];
+	}
+	else {
+		//省略不可なのでエラーを出す
+		ErrorResponse_Send({sender,"MessageIdを認識できませんでした","",SenderId});
+		return;
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["SenderId"]) > 0 ) {
+		SenderId = ref["SenderId"];
+	}
+//----------------------------------------------------------------
+	// 有効にするかどうか
+	if ( ref["Enable"] != "1" ) {
+		// 無効にして保存する
+		SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		
+		// 完了イベントを実行
+		CompleteResponse_Send({sender,"cancel",MessageId,SenderId});
+		return;
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["SenderName"]) > 0 ) {
+		SenderName = ref["SenderName"];
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["SenderIcon"]) > 0 ) {
+		SenderIcon = ref["SenderIcon"];
+		if ( SenderIcon != "default" ) {
+			
+			if ( _strlen(ghostpath) <= 0 ) {
+				// パスがわからない
+				ErrorResponse_Send({sender,"ゴーストのフォルダを認識できませんでした","",""});
+				return;
+			}
+			
+			// ゴースト側の画像の絶対パス
+			string original_path = ghostpath + "ghost\\master\\" + SenderIcon;
+			string result = CopyImage(original_path,sender);
+			if ( _strlen(result) == 0 ) {
+				ErrorResponse_Send({sender,"SenderIconをコピーできませんでした",MessageId,SenderId});
+				return;
+			}
+			else {
+				SenderIcon = result;
+			}
+		}
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["SenderProfile"]) > 0 ) {
+		SenderProfile = ref["SenderProfile"];
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["Text"]) > 0 ) {
+		Text = ref["Text"];
+		// 画像添付を探す
+		dict search = _saorirequest( "yaya", "RE_GREP", str, ":image:([^:]*):" );
+		int count = search["Result"];
+		array images;
+		for (int i=0; count > i ; i++) {
+			string text = result["Value"+i];
+			text = _regex_replace( text, "^:image:", "" );
+			text = _regex_replace( text, ":$", "" );
+			images += text;
+		}
+		// 画像添付があったらコピーするか判断していく
+		if ( _aryvn(images) > 0 ) {
+			for (int i=0; _aryvn(images)>i; i++) {
+				// ゴースト側の画像の絶対パス
+				string original_path = ghostpath + "ghost\\master\\" + images[i];
+				string result = CopyImage(original_path,sender);
+				if (  _strlen(result) == 0 ) {
+					ErrorResponse_Send({sender,"Textに添付された画像をコピーできませんでした",MessageId,SenderId});
+					return;
+				}
+			}
+		}
+	}
+//----------------------------------------------------------------
+	if ( _aryvn(ref["EventReference"]) > 0 ) {
+		EventReference = ref["EventReference"];
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["RunCount"]) > 0 ) {
+		RunCount = ref["RunCount"];
+		if ( RunCount<0 ) {
+			// 数値がおかしいので1回に直す
+			RunCount = 1;
+		}
+	}
+//----------------------------------------------------------------
+	if ( _strlen(ref["Late"]) > 0 ) {
+		if ( _regex_match( ref["Late"], "\d+" ) == 1 ) {
+			// 1個の数値だった
+			int i = ref["Late"];
+			Late = { i };
+		}
+		else if ( _regex_match( ref["Late"], "\d+\-\d+" ) == 1 ) {
+			// 1つのハイフンで繋がれた2個の数値だった
+			array split = _strsplit( ref["Late"], "-" );
+			int i0 = split[0];
+			int i1 = split[1];
+			if ( i0 < i1 ) {
+				// i0の方が小さい
+				Late = { i0, i1 };
+			}
+			else if ( i0 > i1 ) {
+				// i1の方が小さい
+				Late = { i1, i0 };
+			}
+			else {
+				// i0==i1ならどちらか1つでよい
+				Late = { i0 };
+			}
+		}
+	}
+//----------------------------------------------------------------
+	if ( _dicvn(ref["Condition"]) > 0 ) {
+		Condition = ref["Condition"];
+	}
+//----------------------------------------------------------------
+	// 予約をセーブデータに記録する
+	if ( _gettype(SaveData_Reserved[sender])=="nil" ) {
+		// 同じsenderがセーブデータに存在しないので空の辞書をセット
+		SaveData_Reserved += $(sender,$());
+	}
+	if ( _gettype(SaveData_Reserved[sender][SenderId])=="nil" ) {
+		// 同じSenderIdがセーブデータに存在しないので空の辞書をセット
+		SaveData_Reserved[sender] += $(SenderId,$());
+	}
+	if ( _gettype(SaveData_Reserved[sender][SenderId][MessageId])=="nil" ) {
+		// 同じMessageIdがセーブデータに存在しないので空の辞書をセット
+		SaveData_Reserved[sender][SenderId] += $(MessageId,$());
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["SenderName"] != SenderName ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["SenderName"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("SenderName",SenderName);
+	}
+
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["SenderIcon"] != SenderIcon ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["SenderIcon"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("SenderIcon",SenderIcon);
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["SenderProfile"] != SenderProfile ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["SenderProfile"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("SenderProfile",SenderProfile);
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["Text"] != Text ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["Text"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("Text",Text);
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["EventReference"] != EventReference ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["EventReference"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("EventReference",EventReference);
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["RunCount"] != RunCount ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["RunCount"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("RunCount",RunCount);
+	}
+	
+	SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = nil;
+	SaveData_Reserved[sender][SenderId][MessageId] += $("ExecutedCount",0);
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["Late"] != Late ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["Late"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("Late",Late);
+	}
+	
+	if ( SaveData_Reserved[sender][SenderId][MessageId]["Condition"] != Condition ) {
+		SaveData_Reserved[sender][SenderId][MessageId]["Condition"] = nil;
+		SaveData_Reserved[sender][SenderId][MessageId] += $("Condition",Condition);
+	}
+	
+	// 受付時刻を添える（エポック秒）
+	int senttime = GetEpoch();
+	SaveData_Reserved[sender][SenderId][MessageId]["SentTime"] = nil;
+	SaveData_Reserved[sender][SenderId][MessageId] += $("SentTime",senttime);
+//----------------------------------------------------------------
+	// 完了イベントを実行
+	CompleteResponse_Send({sender,"send",MessageId,SenderId});
+}
+
+//----------------------------------------------------------------
+// 送信完了
+//----------------------------------------------------------------
+CompleteResponse_Send(array ref)
+{
+	SaveVar();
+
+	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_SendComplete";
+	dictOptionalHeader["reference"] = { ref[1], ref[2], ref[3] };
+	dictOptionalHeader["target"] = ref[0];
+	dictOptionalHeader["marker"] = version();
+	dictOptionalHeader["script_option"] = "notranslate,nobreak";
+}
+
+//----------------------------------------------------------------
+// 送信失敗
+//----------------------------------------------------------------
+ErrorResponse_Send(array ref)
+{
+	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_SendFailure";
+	dictOptionalHeader["reference"] = { ref[1], ref[2], ref[3] };
+	dictOptionalHeader["target"] = ref[0];
+	dictOptionalHeader["marker"] = version();
+	dictOptionalHeader["script_option"] = "notranslate,nobreak";
+}
