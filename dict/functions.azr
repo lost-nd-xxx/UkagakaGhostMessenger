@@ -27,16 +27,16 @@ dict SaveData_Reserved;
 array SaveData_Waiting;
 // 受信済み
 dict SaveData_Received;
-// アドレス帳
-dict SaveData_AddressBook;
+
+// ログ
+array TestLog;
 
 SaveVar()
 {
 	dictSaveData = ${
 		$("SaveData_Reserved",SaveData_Reserved),
 		$("SaveData_Waiting",SaveData_Waiting),
-		$("SaveData_Received",SaveData_Received),
-		$("SaveData_AddressBook",SaveData_AddressBook)
+		$("SaveData_Received",SaveData_Received)
 	};
 	_vsave("savedata", dictSaveData);
 
@@ -50,7 +50,6 @@ RestoreVar()
 	SaveData_Reserved = dictSaveData["SaveData_Reserved"];
 	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
 	SaveData_Received = dictSaveData["SaveData_Received"];
-	SaveData_AddressBook = dictSaveData["SaveData_AddressBook"];
 
 	// テスト用に出力しておく
 	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
@@ -62,12 +61,30 @@ RestoreVar()
 //----------------------------------------------------------------
 string OnMenuExec(dict ref)
 {
-	// array a = ListUpAllMessagesArray();
-	// array result = CheckMessagePassiveConditions( a );
+	// 表示待ちを処理
+  string script = CheckWaitingList();
 
-	// _writetext("test.json",_azv2json(_eventdict),"utf8");
+  // 全てのメッセージ
+	array msg = ListUpAllMessageArray();
 
-	return 1;
+	// 条件達成か確認
+	msg = CheckMessageCondition("",msg);
+
+	if ( _aryvn(msg)>0 ) {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(msg);
+	}
+
+	if ( _strlen(script) > 0 ) {
+		dictOptionalHeader["marker"] = version();
+		// dictOptionalHeader["script_option"] = "notranslate";
+		dictOptionalHeader["value_notify"] = script;
+		_writetext("test.json",_azv2json(script),"utf8");
+		return 0;
+	}
+	else {
+		return 1;
+	}
 }
 
 //----------------------------------------------------------------
@@ -75,7 +92,7 @@ string OnMenuExec(dict ref)
 // 引数：　年,月,日,時,分,秒をキー、値が整数の辞書型
 // 返値：　EPOCH秒の整数
 //----------------------------------------------------------------
-int GetEpoch(dict ref)
+int GetEpochSec(dict ref)
 {
 	// 結果用
 	int result;
@@ -107,12 +124,13 @@ int GetEpoch(dict ref)
 
 //----------------------------------------------------------------
 // EPOCH秒を日時へyayaで換算する
-// > EPOCH（万国標準時で1970/1/1 00:00:00）からの経過秒数を整数で指定します。
+// 引数：　EPOCH（万国標準時で1970/1/1 00:00:00）からの経過秒数を整数で
+// 返値：　年,月,日,時,分,秒,週,ミリ秒をキーとした辞書型（ミリ秒はゼロ固定　_gettime互換にするため入れている）
 //----------------------------------------------------------------
-dict GetTimeByEpoch(int ref)
+dict GetTimeByEpochSec(int ref)
 {
 	dict result;
-	if (ref==0) {ref=GetEpoch();}
+	if (ref==0) {ref=GetEpochSec();}
 	dict req = _saorirequest( "yaya", "GETTIME", ref );
 
 	int v0 = req["Value0"];

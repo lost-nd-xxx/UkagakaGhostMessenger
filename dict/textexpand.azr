@@ -1,0 +1,377 @@
+// 独自記法を実際の状態にする
+
+//----------------------------------------------------------------
+// ログ用のテキストを生成する
+// 引数：　テキスト
+// 返値：　差し替え後のテキストの段落ごとの配列
+//----------------------------------------------------------------
+array GenerateReceivedLogText(string text, string sender)
+{
+  string result_text = _strreplace(text,":nl:","<br>");
+
+  for ( int i=0; i<100; i++ ) {
+    // 代替テキスト無しの画像添付を探す
+    array search = _regex_search( result_text, ":image:([^:]+?\.\w+):(?!alt=.*:)" );
+    if ( _aryvn(search) <= 0 ) { break; }
+    string html = GenerateHtmlImgTag( search[0], sender );
+    result_text = _strreplace( result_text, search[0], html );
+  }
+
+  for ( int i=0; i<100; i++ ) {
+    // 代替テキスト付きの画像添付を探す
+    array search = _regex_search( result_text, ":image:([^:]+?\.\w+):alt=([^:]*?):" );
+    if ( _aryvn(search) <= 0 ) { break; }
+    string html = GenerateHtmlImgTag( search[0], sender );
+    result_text = _strreplace( result_text, search[0], html );
+  }
+
+  for ( int i=0; i<100; i++ ) {
+    // 内蔵スタンプを探す
+    array search = _regex_search( result_text, ":stamp(\d+):" );
+    if ( _aryvn(search) <= 0 ) { break; }
+    int number = search[1];
+    string alt;
+    alt += StampAltText()[number];
+    string html;
+    html += "<img class=\"stamp\"";
+    if ( _strlen(alt)>0 ) {
+      html_a[1] += " alt=\"";
+      html_a[1] += alt;
+      html_a[1] += "\"";
+    }
+    html += " src=\"";
+    html += filepath;
+    html += "\">";
+    result_text = _strreplace( result_text, search[0], html );
+  }
+
+  // スタンプの前後で段落を分ける
+  array paragraph;
+  for ( int i=0; i<100; i++ ) {
+    array search = _regex_search( result_text, "(^.*)(<img class=\"stamp\".*?>)" );
+    if ( _aryvn(search) <= 0 ) {
+      // 該当が無い場合脱出
+      if ( _strlen(result_text) > 0 ) {
+        // 何かがあるので吹き出しにする
+        paragraph += "<div class=\"messageBubble\"><p>" + result_text + "</p></div>";
+      }
+      break;
+    }
+    if ( _strlen(search[1]) > 0 ) {
+      // スタンプの段落ではないので吹き出しにする
+      paragraph += "<div class=\"messageBubble\"><p>" + search[1] + "</p></div>";
+    }
+    paragraph += search[2];
+    result_text = _regex_replace( result_text, "(^.*)(<img class=\"stamp\".*?>)", "" );
+  }
+
+  return paragraph;
+}
+
+//----------------------------------------------------------------
+// 拡張記法の:image:からhtmlのimgタグを返す（ズームが必要ならaタグで囲む）
+// 引数：　:image:の文字列、ゴースト名
+// 返値：　htmlタグの文字列
+//----------------------------------------------------------------
+// <a href="./res/image/うめちゃん/umechan_zu.png" data-fcaption="図だよ" class="fuwaimg">
+//   <img src="./res/image/うめちゃん/umechan_zu.png" alt="図だよ">
+// </a>
+// または
+// <img class="stamp" alt="stamp014" src="./res/stamp/manpu014.png">
+string GenerateHtmlImgTag(string str, string sender)
+{
+  string s = str;
+  s = _regex_replace( s, "^:", "" );
+  s = _regex_replace( s, ":$", "" );
+  array tag = _strsplit( s, ":" );
+  string html;
+  string alt;
+  array html_a;
+
+  // ファイルパス
+  string filename = _regex_replace( tag[1], "^nozoom=", "" );
+  array split = _strsplit(filename,"\\");
+  string filename = split[_aryvn(split)-1];
+  string filepath = "./res/image/";
+  filepath += sender;
+  filepath += "/";
+  filepath += filename;
+
+  if ( _strstr(tag[2],"alt=") == 0 ) {
+    // altが必要
+    alt += _regex_replace( tag[2], "^alt=", "" );
+  }
+
+  if ( _strstr(tag[1],"nozoom=") != 0 ) {
+    // aタグが必要
+    html_a = { "", "" };
+    html_a[1] = "<a href=\"";
+    html_a[1] += filepath;
+    html_a[1] += "\" class=\"fuwaimg\"";
+    if ( _strlen(alt)>0 ) {
+      html_a[1] += " data-fcaption=\"";
+      html_a[1] += alt;
+      html_a[1] += "\"";
+    }
+    html_a[1] += ">";
+    html_a[2] = "</a>";
+
+    // imgタグ
+    if ( _aryvn(html_a)==2 ) {
+      html += html_a[1];
+    }
+    html += "<img src=\"";
+    html += filepath;
+    html += "\"";
+    if ( _strlen(alt)>0 ) {
+      html_a[1] += " alt=\"";
+      html_a[1] += alt;
+      html_a[1] += "\"";
+    }
+    html += ">";
+    if ( _aryvn(html_a)==2 ) {
+      html += html_a[2];
+    }
+  }
+  else {
+    // スタンプ扱い
+    html += "<img class=\"stamp\"";
+    if ( _strlen(alt)>0 ) {
+      html_a[1] += " alt=\"";
+      html_a[1] += alt;
+      html_a[1] += "\"";
+    }
+    html += " src=\"";
+    html += filepath;
+    html += "\">";
+  }
+
+  return html;
+}
+
+//----------------------------------------------------------------
+// 通知用スクリプトを生成する
+// ここでは改行と画像altテキストをやる　TransformTextExpandの内容と重複しない
+// 引数：　テキスト
+// 返値：　差し替え後のスクリプトの部品　--text=文章文章,--text=文章文章
+//----------------------------------------------------------------
+string GenerateTrayBalloonScript(string text)
+{
+  array result_text = _strsplit(text,":nl:");
+  
+  for ( int i0=0; i0<_aryvn(result_text); i0++ ) {
+    string curt = result_text[i0];
+    for ( int i1=0; i1<100; i1++ ) {
+      // 代替テキスト無しの画像添付を探す
+      array search = _regex_search( curt, ":image:([^:]+?\.\w+):(?!alt=.*:)" );
+      if ( _aryvn(search) <= 0 ) { break; }
+      else {
+        string str = _regex_replace( search[1], "^nozoom=", "" );
+        array split = _strsplit(str,"\\");
+        string filename = split[_aryvn(split)-1];
+        // string filename = _strsplit(filename,".")[0];
+        curt = _strreplace( curt, search[0], ":[添付]"+filename+":" );
+      }
+    }
+    for ( int i1=0; i1<100; i1++ ) {
+      // 代替テキスト付きの画像添付を探す
+      array search = _regex_search( curt, ":image:([^:]+?\.\w+):alt=([^:]*?):" );
+      if ( _aryvn(search) <= 0 ) { break; }
+      if ( _strlen(search[2]) > 0 ) {
+        curt = _strreplace( curt, search[0], ":"+search[2]+":" );
+      }
+      else {
+        curt = _strreplace( curt, search[0], "" );
+      }
+    }
+    for ( int i1=0; i1<100; i1++ ) {
+      // 内蔵スタンプを探す
+      array search = _regex_search( curt, ":stamp(\d+):" );
+      if ( _aryvn(search) <= 0 ) { break; }
+      int number = search[1];
+      string alttxt = StampAltText()[number];
+      curt = _strreplace( curt, search[0], ":"+alttxt+":" );
+    }
+
+    result_text[i0] = curt;
+  }
+
+  string script;
+  for ( int i=0; i<_aryvn(result_text); i++ ) {
+    if ( i>0 ) { script += ","; }
+    script += "--text=";
+    script += _regex_replace(result_text[i],"[\\,\]\"]","_");
+  }
+
+  return script;
+}
+
+//----------------------------------------------------------------
+// スタンプ用代替テキストの配列
+// 引数：なし
+// 返値：配列
+//----------------------------------------------------------------
+array StampAltText()
+{
+  array a;
+  a += "";
+  a += "照れ";
+  a += "！";
+  a += "不安";
+  a += "落込";
+  a += "笑顔";
+  a += "沈黙";
+  a += "怒り";
+  a += "汗";
+  a += "照怒";
+  a += "引き";
+  a += "驚き";
+  a += "喜び";
+  a += "？";
+  a += "困り";
+  a += "☆★";
+  a += "音符";
+  a += "ドル袋";
+  a += "＄";
+  a += "きらり";
+  a += "電球";
+  a += "Zzz";
+  a += "海賊";
+  a += "どくろ";
+  a += "ハート";
+  a += "orz";
+  a += "＾▽＾";
+  a += "￣＿￣";
+  a += "￣▽￣;";
+  a += "￥";
+  a += "！？";
+  a += "ぽえ～";
+  a += "エクトプラズム";
+  a += "絆創膏";
+  a += "ぷんぷん";
+  a += "ふぅ";
+  a += "昇天";
+  a += "ピヨり";
+  a += "花";
+  a += "きらり";
+  return a;
+}
+
+//----------------------------------------------------------------
+// テキストの情報系とランダム選択を差し替える
+// 引数：　テキスト
+// 返値：　配列
+// { 差し替え後のテキスト , ランダム選択結果の配列 }
+//----------------------------------------------------------------
+array TransformTextExpand(string text)
+{
+  string result_text = text;
+  array result_choice;
+
+  // システム情報などを取得して差し替え
+  result_text = ReplaceSystemInfo(result_text);
+
+  // ランダム選択を決定して差し替え
+  result_choice = ReplaceRandomChoice(result_text);
+  result_text = result_choice[0];
+  result_choice = result_choice[1];
+
+  return { result_text, result_choice };
+}
+
+//----------------------------------------------------------------
+// ランダム単語を決定して差し替え
+// 引数：　テキスト
+// 返値：　配列
+// { 差し替え後のテキスト , ランダム選択結果の配列 }
+//----------------------------------------------------------------
+array ReplaceRandomChoice(string text)
+{
+  string result_text = text;
+  array result_choice;
+
+  for ( int i=0; i<100; i++ ) {
+    array search = _regex_search( result_text, "^(.*?):choice_start:(.+?):choice_end:" );
+		if ( _aryvn(search) <= 0 ) { break; }
+    array words = _strsplit( search[2], ":" );
+    string result = _randselect(words);
+    result_choice += result;
+    result_text = _regex_replace( result_text, "^(.*?):choice_start:(.+?):choice_end:", search[1]+result );
+  }
+
+  result { result_text, result_choice };
+}
+
+//----------------------------------------------------------------
+// システム情報などを取得して差し替え　GetSystemInfoを内包する
+// 引数：　テキスト
+// 返値：　差し替え後のテキスト
+//----------------------------------------------------------------
+string ReplaceSystemInfo(string text)
+{
+  dict info = GetSystemInfo();
+  if ( _strstr( text, ":year:"               ) >= 0 ) { text = _strreplace( text, ":year:"               , info["year"              ] ); }
+  if ( _strstr( text, ":month:"              ) >= 0 ) { text = _strreplace( text, ":month:"              , info["month"             ] ); }
+  if ( _strstr( text, ":day:"                ) >= 0 ) { text = _strreplace( text, ":day:"                , info["day"               ] ); }
+  if ( _strstr( text, ":weekday:"            ) >= 0 ) { text = _strreplace( text, ":weekday:"            , info["weekday"           ] ); }
+  if ( _strstr( text, ":hour:"               ) >= 0 ) { text = _strreplace( text, ":hour:"               , info["hour"              ] ); }
+  if ( _strstr( text, ":minute:"             ) >= 0 ) { text = _strreplace( text, ":minute:"             , info["minute"            ] ); }
+  if ( _strstr( text, ":second:"             ) >= 0 ) { text = _strreplace( text, ":second:"             , info["second"            ] ); }
+  if ( _strstr( text, ":ampm:"               ) >= 0 ) { text = _strreplace( text, ":ampm:"               , info["ampm"              ] ); }
+  if ( _strstr( text, ":hour12:"             ) >= 0 ) { text = _strreplace( text, ":hour12:"             , info["hour12"            ] ); }
+  if ( _strstr( text, ":systemuptime:"       ) >= 0 ) { text = _strreplace( text, ":systemuptime:"       , info["systemuptime"      ] ); }
+  if ( _strstr( text, ":systemupsecond:"     ) >= 0 ) { text = _strreplace( text, ":systemupsecond:"     , info["systemupsecond"    ] ); }
+  if ( _strstr( text, ":systemupminute:"     ) >= 0 ) { text = _strreplace( text, ":systemupminute:"     , info["systemupminute"    ] ); }
+  if ( _strstr( text, ":systemuphour:"       ) >= 0 ) { text = _strreplace( text, ":systemuphour:"       , info["systemuphour"      ] ); }
+  if ( _strstr( text, ":memoryload:"         ) >= 0 ) { text = _strreplace( text, ":memoryload:"         , info["memoryload"        ] ); }
+  if ( _strstr( text, ":memorytotalphys:"    ) >= 0 ) { text = _strreplace( text, ":memorytotalphys:"    , info["memorytotalphys"   ] ); }
+  if ( _strstr( text, ":memoryavailphys:"    ) >= 0 ) { text = _strreplace( text, ":memoryavailphys:"    , info["memoryavailphys"   ] ); }
+  if ( _strstr( text, ":memorytotalvirtual:" ) >= 0 ) { text = _strreplace( text, ":memorytotalvirtual:" , info["memorytotalvirtual"] ); }
+  if ( _strstr( text, ":memoryavailvirtual:" ) >= 0 ) { text = _strreplace( text, ":memoryavailvirtual:" , info["memoryavailvirtual"] ); }
+  return text;
+}
+
+//----------------------------------------------------------------
+// システム情報などを取得
+// 引数：　なし
+// 返値：　辞書型
+//----------------------------------------------------------------
+dict GetSystemInfo()
+{
+  dict systemuptime = _saorirequest( "yaya", "GETTICKCOUNT" )["Result"] / 1000;
+  dict system;
+  system += $( "systemuphour",   systemuptime / 3600 );
+  system += $( "systemupminute", ( systemuptime - system["systemuphour"] * 3600 ) / 60 );
+  system += $( "systemupsecond", systemuptime % 60 );
+
+  dict memory = _saorirequest( "yaya", "GETMEMINFO" );
+  dict time = _gettime();
+  
+  string ampm = "午前";
+  if ( ampm >= 12 ) { ampm = "午後"; }
+
+  int hour12 = time["時"] % 12;
+
+  dict result = ${
+    $("year",time["年"]),
+    $("month",time["月"]),
+    $("day",time["日"]),
+    $("weekday",time["週"]),
+    $("hour",time["時"]),
+    $("minute",time["分"]),
+    $("second",time["秒"]),
+    $("ampm",ampm),
+    $("hour12",hour12),
+    $("systemuptime",systemuptime),
+    $("systemupsecond",system["systemupsecond"]),
+    $("systemupminute",system["systemupminute"]),
+    $("systemuphour",system["systemuphour"]),
+    $("memoryload",memory["Value0"]),
+    $("memorytotalphys",memory["Value1"]),
+    $("memoryavailphys",memory["Value2"]),
+    $("memorytotalvirtual",memory["Value3"]),
+    $("memoryavailvirtual",memory["Value4"])
+  };
+
+  return result;
+}

@@ -256,6 +256,8 @@ div.kiritoriLine p {
   margin: 0;
   padding: 0;
   color: var(--color-text);
+  display: flex;
+  flex-direction: column;
 }
 
 .messageBubble img {

@@ -2,13 +2,12 @@
 dict dictOptionalHeader;
 //セーブ用
 dict dictSaveData;
-
 load()
 {
 	_script_load("dict\\functions");
 	_script_load("dict\\send");
-	// _script_load("dict\\check");
-	// _script_load("dict\\event");
+	_script_load("dict\\check");
+	_script_load("dict\\event");
 
 	dictOptionalHeader += ${
 		$("target", ""),
@@ -19,17 +18,11 @@ load()
 		$("marker", "")
 	};
 
-	// yayaをメモリに読み込んでおく
-	_saoriload( "yaya.dll", "yaya" );
-
 	RestoreVar();
 }
 
 unload()
 {
-	// yayaをアンロードしておく
-	_saoriunload( "yaya" );
-	
 	SaveVar();
 }
 

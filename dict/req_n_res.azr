@@ -1,0 +1,24 @@
+// 問い合わせと返却
+OnUkagakaGhostMessanger_Request(dict res)
+{
+  string sender = res["Reference0"];
+  string SenderId = res["Reference1"];
+  string MessageId = res["Reference2"];
+
+  array result = { sender, SenderId, MessageId };
+  
+  if ( _gettype(SaveData_Received[sender][SenderId][MessageId]) == "dict" ) {
+    result += 0;
+    result += 0;
+  }
+  else {
+    result += SaveData_Received[sender][SenderId][MessageId]["ExecutedCount"];
+    result += SaveData_Received[sender][SenderId][MessageId]["read_time"];
+    // [WIP]ランダム選択結果も入れる
+  }
+  dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Response";
+  dictOptionalHeader["reference"] = result;
+  dictOptionalHeader["target"] = sender;
+  dictOptionalHeader["marker"] = version();
+  dictOptionalHeader["script_option"] = "nobreak";
+}

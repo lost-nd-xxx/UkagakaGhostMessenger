@@ -15,7 +15,7 @@ filename,akari.dll
 
 //オプション指定-OnSecondChangeの通知頻度（秒）
 //0で無効、標準1
-secondchangeinterval,0
+secondchangeinterval,1
 
 //プラグインID
 //http://www.famkruithof.net/uuid/uuidgen とかで生成できます

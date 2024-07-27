@@ -1,4 +1,24 @@
-//送信
+//送信　＆　キャンセル
+
+//----------------------------------------------------------------
+// キャンセルイベントをゴーストから受け取った
+//----------------------------------------------------------------
+OnUkagakaGhostMessanger_Cancel(dict req)
+{
+	//----------------------------------------------------------------
+	// イベントを起こしたゴーストのゴースト名
+	string sender = TranslateSystemChar(req["Sender"]);
+	//----------------------------------------------------------------
+  // 送信者識別子
+  string SenderId = req["Reference0"];
+  if ( _strlen(SenderId) == 0 ) {
+    SenderId = sender;
+  }
+	//----------------------------------------------------------------
+  if ( _gettype(SaveData_Reserved[sender][SenderId] != "nil") ) {
+    SaveData_Reserved[sender][SenderId] = nil;
+  }
+}
 
 //----------------------------------------------------------------
 // 送信イベントをゴーストから受け取った
@@ -40,10 +60,10 @@ OnUkagakaGhostMessenger_Send(dict req)
 			ref += $(_regex_replace(split[0],"^\-\-",""),split[1]);
 		}
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// イベントを起こしたゴーストのゴースト名
 	string sender = TranslateSystemChar(req["Sender"]);
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// ゴーストのフルパス
 	string ghostpath = GetFmoInfo({sender,{"ghostpath"}})["ghostpath"];
 
@@ -52,7 +72,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 		ErrorResponse_Send({sender,"ゴーストのフォルダを認識できませんでした","",""});
 		return;
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// 省略時の値や初期値を入れる
 	string MessageId;
 	int Enable = 1;
@@ -65,9 +85,9 @@ OnUkagakaGhostMessenger_Send(dict req)
 	int RunCount = 1;
 	array Late = { 0 };
 	dict Condition;
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// ここから実際の値を確かめていく
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _strlen(ref["MessageId"]) > 0 ) {
 		MessageId = ref["MessageId"];
 	}
@@ -76,11 +96,11 @@ OnUkagakaGhostMessenger_Send(dict req)
 		ErrorResponse_Send({sender,"MessageIdを認識できませんでした","",SenderId});
 		return;
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _strlen(ref["SenderId"]) > 0 ) {
 		SenderId = ref["SenderId"];
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// 有効にするかどうか
 	if ( ref["Enable"] != "1" ) {
 		// 無効にして保存する
@@ -90,12 +110,12 @@ OnUkagakaGhostMessenger_Send(dict req)
 		CompleteResponse_Send({sender,"cancel",MessageId,SenderId});
 		return;
 	}
-//----------------------------------------------------------------
-	if ( _strlen(ref["SenderName"]) > 0 ) {
+	//----------------------------------------------------------------
+	if ( _strlen(ref["SenderName"]) > 0 && _gettype(ref["SenderName"]) == "string" ) {
 		SenderName = ref["SenderName"];
 	}
-//----------------------------------------------------------------
-	if ( _strlen(ref["SenderIcon"]) > 0 ) {
+	//----------------------------------------------------------------
+	if ( _strlen(ref["SenderIcon"]) > 0 && _gettype(ref["SenderIcon"]) == "string" ) {
 		SenderIcon = ref["SenderIcon"];
 		if ( SenderIcon != "default" ) {
 			
@@ -117,22 +137,20 @@ OnUkagakaGhostMessenger_Send(dict req)
 			}
 		}
 	}
-//----------------------------------------------------------------
-	if ( _strlen(ref["SenderProfile"]) > 0 ) {
+	//----------------------------------------------------------------
+	if ( _strlen(ref["SenderProfile"]) > 0 && _gettype(ref["SenderProfile"]) == "string" ) {
 		SenderProfile = ref["SenderProfile"];
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _strlen(ref["Text"]) > 0 ) {
 		Text = ref["Text"];
-		// 画像添付を探す
-		dict search = _saorirequest( "yaya", "RE_GREP", str, ":image:([^:]*):" );
-		int count = search["Result"];
 		array images;
-		for (int i=0; count > i ; i++) {
-			string text = result["Value"+i];
-			text = _regex_replace( text, "^:image:", "" );
-			text = _regex_replace( text, ":$", "" );
-			images += text;
+		// 画像添付を探す　_regex_searchでゼロを指定すると何も帰ってこない
+		for ( int i=1; i<100; i++ ) {
+			array search = _regex_search( Text, ":image:([^:]+?\.\w+):", i );
+			if ( _aryvn(search) <= 0 ) { break; }
+			string image = _regex_replace( search[1], "^nozoom=", "" );
+			if ( _strlen(image) > 0 ) { images += image; }
 		}
 		// 画像添付があったらコピーするか判断していく
 		if ( _aryvn(images) > 0 ) {
@@ -147,11 +165,11 @@ OnUkagakaGhostMessenger_Send(dict req)
 			}
 		}
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _aryvn(ref["EventReference"]) > 0 ) {
 		EventReference = ref["EventReference"];
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _strlen(ref["RunCount"]) > 0 ) {
 		RunCount = ref["RunCount"];
 		if ( RunCount<0 ) {
@@ -159,7 +177,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 			RunCount = 1;
 		}
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _strlen(ref["Late"]) > 0 ) {
 		if ( _regex_match( ref["Late"], "\d+" ) == 1 ) {
 			// 1個の数値だった
@@ -185,11 +203,11 @@ OnUkagakaGhostMessenger_Send(dict req)
 			}
 		}
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	if ( _dicvn(ref["Condition"]) > 0 ) {
 		Condition = ref["Condition"];
 	}
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// 予約をセーブデータに記録する
 	if ( _gettype(SaveData_Reserved[sender])=="nil" ) {
 		// 同じsenderがセーブデータに存在しないので空の辞書をセット
@@ -248,10 +266,10 @@ OnUkagakaGhostMessenger_Send(dict req)
 	}
 	
 	// 受付時刻を添える（エポック秒）
-	int senttime = GetEpoch();
+	int senttime = GetEpochSec();
 	SaveData_Reserved[sender][SenderId][MessageId]["SentTime"] = nil;
 	SaveData_Reserved[sender][SenderId][MessageId] += $("SentTime",senttime);
-//----------------------------------------------------------------
+	//----------------------------------------------------------------
 	// 完了イベントを実行
 	CompleteResponse_Send({sender,"send",MessageId,SenderId});
 }
@@ -267,7 +285,7 @@ CompleteResponse_Send(array ref)
 	dictOptionalHeader["reference"] = { ref[1], ref[2], ref[3] };
 	dictOptionalHeader["target"] = ref[0];
 	dictOptionalHeader["marker"] = version();
-	dictOptionalHeader["script_option"] = "notranslate,nobreak";
+	dictOptionalHeader["script_option"] = "nobreak";
 }
 
 //----------------------------------------------------------------
@@ -279,5 +297,5 @@ ErrorResponse_Send(array ref)
 	dictOptionalHeader["reference"] = { ref[1], ref[2], ref[3] };
 	dictOptionalHeader["target"] = ref[0];
 	dictOptionalHeader["marker"] = version();
-	dictOptionalHeader["script_option"] = "notranslate,nobreak";
+	dictOptionalHeader["script_option"] = "nobreak";
 }

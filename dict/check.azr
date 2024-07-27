@@ -14,7 +14,7 @@ string ShowMessage(dict ref)
 	dict reserved = SaveData_Reserved[sender][SenderId][MessageId];
 	dict received_msg;
 
-	// 無だったら空を入れておく
+	// 受信済みセーブデータの欄が無だったら空を入れておく
 	if ( _gettype(SaveData_Received[sender]) == "nil" ) {
 		SaveData_Received += $( sender , $() );
 	}
@@ -22,7 +22,7 @@ string ShowMessage(dict ref)
 		SaveData_Received[sender] += $( SenderId , $() );
 	}
 	if ( _gettype(SaveData_Received[sender][SenderId][MessageId]) == "nil" ) {
-		SaveData_Received[sender][SenderId] += $( MessageId , {} );
+		SaveData_Received[sender][SenderId] += $( MessageId , $() );
 	}
 
 	SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
@@ -35,30 +35,74 @@ string ShowMessage(dict ref)
 	SaveData_Received[sender][SenderId] += $( "SenderProfile" , reserved["SenderProfile"] );
 
 	string Text = reserved["Text"];
-	// ---- ここにテキスト加工を入れる ---- //
-	received_msg += $( "Text" , Text );
+	// ---- [WIP]テキスト加工を入れる ランダム選択の結果も入れる ---- //
+	SaveData_Received[sender][SenderId][MessageId]["Text"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "Text" , Text );
 
-	int time_count = GetEpoch();
-	received_msg += $( "time_count" , time_count );
+	int time_count = GetEpochSec();
+	SaveData_Received[sender][SenderId][MessageId]["time_count"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "time_count" , time_count );
 
 	dict now = _gettime();
 	string time_ymd = _sprintf("%04d/%02d/%02d",now["年"],now["月"],now["日"]);
 	string time_hm = _sprintf("%02d:%02d",now["時"],now["分"]);
-	received_msg += $( "time_ymd" , time_ymd );
-	received_msg += $( "time_hm" , time_hm );
+	SaveData_Received[sender][SenderId][MessageId]["time_ymd"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "time_ymd" , time_ymd );
+	SaveData_Received[sender][SenderId][MessageId]["time_hm"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "time_hm" , time_hm );
 
+	SaveData_Received[sender][SenderId][MessageId]["read_time"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "read_time" , 0 );
 
 	int RunCount = reserved["RunCount"];
-	int ExecutedCount = SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"];
+	int ExecutedCount = reserved["ExecutedCount"];
 	ExecutedCount++;
+	SaveData_Received[sender][SenderId][MessageId]["ExecutedCount"] = nil;
+	SaveData_Received[sender][SenderId][MessageId] += $( "ExecutedCount" , ExecutedCount );
+	// 予約情報の実行済み回数も更新する
 	SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
 
+	array EventReference;
+	if ( _aryvn(reserved["EventReference"]) > 0 ) {
+		EventReference += sender;
+		EventReference += SenderId;
+		EventReference += MessageId;
+		for ( int i=0; i<_aryvn(reserved["EventReference"]); i++ ) {
+			EventReference += reserved["EventReference"][i];
+		}
+		ExecRinging(EventReference);
+	}
 
-	array EventReference = reserved["EventReference"];
+	// 残り回数がないなら予約を消す
+	if ( reserved["ExecutedCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
+		SaveData_Reserved[sender][SenderId][MessageId] = nil;
+	}
+	// 待ちリストの削除はCheckWaitingListで行う
 
-
+	string script;
+	script += "\\C\\![set,trayballoon,--icon=none,--title=";
+	script += reserved["SenderName"];
+	script += ",--text=";
+	script += Text;
+	script += "]";
 
 	return script;
+}
+
+//----------------------------------------------------------------
+// OnUkagakaGhostMessenger_Ringingを起こす
+// 引数：　ゴースト名、キャラ名、メッセージID、追加リファレンスの配列
+// 返値：　なし
+//----------------------------------------------------------------
+string ExecRinging(array ref)
+{
+	// OnUkagakaGhostMessenger_Ringing
+	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
+	dictOptionalHeader["reference"] = ref;
+	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
+	dictOptionalHeader["marker"] = version();
+	dictOptionalHeader["script_option"] = "nobreak";
+	return "";
 }
 
 //----------------------------------------------------------------
@@ -66,20 +110,22 @@ string ShowMessage(dict ref)
 // 引数：　なし
 // 返値：　スクリプトの文字列（あれば）
 //----------------------------------------------------------------
-script CheckWaitingList()
+string CheckWaitingList()
 {
-	if ( _aryvn(SaveData_Waiting) == 0 ) {
+	if ( _aryvn(SaveData_Waiting) <= 0 ) {
 		// 待ちが無い
 		return;
 	}
 
-	int now = GetEpoch();
+	int now = GetEpochSec();
 	for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
 		dict curt = SaveData_Waiting[i];
-		int epoch = curt["epoch"];
+		int epoch = curt["epoch_sec"];
 		if ( epoch <= now ) {
 			// 達成済みを発見
 			string script = ShowMessage(curt);
+			SaveData_Waiting[i] = nil;
+			SaveVar();
 			return script;
 		}
 	}
@@ -113,13 +159,13 @@ AddMessageWaitingList(array msg)
 			int late0 = SaveData_Reserved[ghost][chara][msg_id]["Late"][0];
 			int late1 = SaveData_Reserved[ghost][chara][msg_id]["Late"][1];
 			// ここに来た時点で小→大と並べ替えられている
-			Late = _saorirequest( "yaya", "RAND", late1 - late0 );
+			Late = _rand() % ( late1 - late0 );
 			Late += late0;
 			// 手違いがあったらとりあえず0を入れる
 			if ( !(Late>=0) ) { Late = 0; }
 		}
-		int epoch = GetEpoch() + Late;
-		curt += $("epoch",epoch);
+		int epoch = GetEpochSec() + Late;
+		curt += $("epoch_sec",epoch);
 
 		// 待機配列に追加
 		SaveData_Waiting += curt;
@@ -137,14 +183,17 @@ array ListUpAllMessageArray()
 	// 格納用の変数
 	array result;
 
-	for ( int i0=0; i0<_dicvn(SaveData_Reserved); i0++ ) {
-		string ghost = _dickeyget(SaveData_Reserved)[i0];
-		
-		for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
-			string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
-			
-			for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
-				string msg = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
+	array ghosts = _dickeyget(SaveData_Reserved);
+	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+		string ghost = ghosts[i0];
+		array charas = _dickeyget(SaveData_Reserved[ghost]);
+
+		for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+			string chara = charas[i1];
+			array msgs = _dickeyget(SaveData_Reserved[ghost][chara]);
+
+			for ( int i2=0; i2<_aryvn(msgs); i2++ ) {
+				string msg = msgs[i2];
 
 				result += ${
 					$( "sender", ghost ),
@@ -154,7 +203,7 @@ array ListUpAllMessageArray()
 			}
 		}
 	}
-
+	
 	return result;
 }
 
@@ -306,6 +355,25 @@ array CheckMessagePassiveCondition(array ref)
 			message = SaveData_Reserved[sender][SenderId][MessageId];
 		}
 
+		// SaveData_Waitingにあれば不達成
+		int bingo = 0;
+		for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
+			int match = 0;
+			if ( SaveData_Waiting[i]["sender"] == sender ) { match++; };
+			if ( SaveData_Waiting[i]["SenderId"] == SenderId ) { match++; };
+			if ( SaveData_Waiting[i]["MessageId"] == MessageId ) { match++; };
+			if ( match >= 3 ) {
+				// ドンピシャのやつがあった
+				bingo = 1;
+				break;
+			}
+		}
+		if ( bingo == 1 ) {
+			// 条件不達成
+			result += 0;
+			continue;
+		}
+
 		// Time_Seconds
 		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) == "string" ) {
 			int cond_time = message["Condition"]["Time_Seconds"][0];
@@ -450,28 +518,109 @@ array CheckMessagePassiveCondition(array ref)
 			}
 		}
 
-		// 以下、受信部の仕様を固めたらまた続きを書く
-
 		// Ghost_IsInAddressBook
-		// if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) == "string" ) {
-		// 	array a = message["Condition"]["Ghost_IsInAddressBook"];
-		// 	int match = 0;
-		// 	for ( int i1=0; i1<_aryvn[a]; i1++ ) {
-		// 		array split = _strsplit(a[i1],"/");
-		// 		string s0 = split[0];
-		// 		string s1 = split[1];
-		// 		if ( _gettype(SaveData_Received[s0][s1]) != "nil" ) {
-		// 			match++;
-		// 			continue;
-		// 		}
-		// 	}
-		// 	if ( match!=_aryvn[a] ) {
-		// 		// 条件不達成
-		// 		result += 0;
-		// 		continue;
-		// 	}
-		// }
+		if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) == "string" ) {
+			array a = message["Condition"]["Ghost_IsInAddressBook"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				array split = _strsplit(a[i1],"/");
+				string s0 = split[0];
+				string s1 = split[1];
+				if ( _gettype(SaveData_Received[s0][s1]) != "nil" ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match!=_aryvn[a] ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
 
+		// Message_IsRun
+		if ( _gettype( message["Condition"]["Message_IsRun"][0] ) == "string" ) {
+			array a = message["Condition"]["Message_IsRun"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				array split = _strsplit(a[i1],"/");
+				string s0 = split[0];
+				string s1 = split[1];
+				string s2 = split[2];
+				if ( _gettype(SaveData_Received[s0][s1][s2]) != "nil" ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match!=_aryvn[a] ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Message_IsNotRun
+		if ( _gettype( message["Condition"]["Message_IsNotRun"][0] ) == "string" ) {
+			array a = message["Condition"]["Message_IsNotRun"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				array split = _strsplit(a[i1],"/");
+				string s0 = split[0];
+				string s1 = split[1];
+				string s2 = split[2];
+				if ( _gettype(SaveData_Received[s0][s1][s2]) != "nil" ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match>0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Message_IsRead
+		if ( _gettype( message["Condition"]["Message_IsRead"][0] ) == "string" ) {
+			array a = message["Condition"]["Message_IsRead"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				array split = _strsplit(a[i1],"/");
+				string s0 = split[0];
+				string s1 = split[1];
+				string s2 = split[2];
+				if ( SaveData_Received[s0][s1][s2]["read_flag"] > 0 ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match!=_aryvn[a] ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+		
+		// Message_IsNotRead
+		if ( _gettype( message["Condition"]["Message_IsNotRead"][0] ) == "string" ) {
+			array a = message["Condition"]["Message_IsNotRead"];
+			int match = 0;
+			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+				array split = _strsplit(a[i1],"/");
+				string s0 = split[0];
+				string s1 = split[1];
+				if ( SaveData_Received[s0][s1][s2]["read_flag"] > 0 ) {
+					match++;
+					continue;
+				}
+			}
+			if ( match>0 ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+		
 		// どれにも不達成がなければ達成とする
 		result += 1;
 	}

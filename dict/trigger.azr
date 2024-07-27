@@ -1,0 +1,82 @@
+// トリガー
+OnUkagakaGhostMessanger_Trigger(dict res)
+{
+  // イベント識別子
+  string EventId = res["Reference0"];
+
+  // 対象のゴースト名
+  array ghosts;
+  if ( _strlen(res["Reference1"]) > 0 ) {
+    ghosts = _strsplit(res["Reference1"],":");
+  }
+
+  // 対象の送信者識別子
+  array charas;
+  if ( _strlen(res["Reference2"]) > 0 ) {
+    charas = _strsplit(res["Reference2"],":");
+  }
+
+	// イベントを送ってきたゴースト名
+	string sender = TranslateSystemChar(ref["sender"]);
+
+  // 該当するメッセージを抜き出す
+  array msg;
+  if ( _aryvn(ghosts) == 0 ) {
+    msg = ListUpAllMessageArray();
+  }
+  else {
+    for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+      string ghost = ghosts[i0];
+      if ( _aryvn(charas) == 0 ) {
+        for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
+          string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
+          for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
+            string msg_id = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
+            if ( _gettype(SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Ghost_Triggered"]) != "nil" ) {
+              array conds = _strsplit( SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Ghost_Triggered"], ":" );
+              if ( _aryvn(conds)>=2 ) {
+                if ( conds[0]==EventId && conds[1]==sender ) {
+                  msg += ${ $( "sender", ghost ), $( "SenderId", chara ), $( "MessageId", msg_id ) };
+                }
+              }
+              else {
+                if ( conds[0]==EventId ) {
+                  msg += ${ $( "sender", ghost ), $( "SenderId", chara ), $( "MessageId", msg_id ) };
+                }
+              }
+            }
+          }
+        }
+      }
+      else {
+        for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+          string chara = charas[i];
+          for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
+            string msg_id = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
+            if ( _gettype(SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Ghost_Triggered"]) != "nil" ) {
+              array conds = _strsplit( SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Ghost_Triggered"], ":" );
+              if ( _aryvn(conds)>=2 ) {
+                if ( conds[0]==EventId && conds[1]==sender ) {
+                  msg += ${ $( "sender", ghost ), $( "SenderId", chara ), $( "MessageId", msg_id ) };
+                }
+              }
+              else {
+                if ( conds[0]==EventId ) {
+                  msg += ${ $( "sender", ghost ), $( "SenderId", chara ), $( "MessageId", msg_id ) };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+	// 他の条件も達成しているか確認
+	msg = CheckMessageCondition("Ghost_Triggered",msg);
+
+	if ( _aryvn(msg)>0 ) {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(msg);
+	}
+}

@@ -5,17 +5,27 @@
 //----------------------------------------------------------------
 string OnSecondChange(dict ref)
 {
-  // 表示待ちを処理
-  CheckWaitingList();
+	// 表示待ちを処理
+  string script = CheckWaitingList();
 
   // 全てのメッセージ
 	array msg = ListUpAllMessageArray();
+
 	// 条件達成か確認
 	msg = CheckMessageCondition("",msg);
 
 	if ( _aryvn(msg)>0 ) {
 		// 条件を満たしたメッセージがある
 		AddMessageWaitingList(msg);
+	}
+
+	if ( _strlen(script) > 0 ) {
+		dictOptionalHeader["marker"] = version();
+		dictOptionalHeader["script_option"] = "nobreak";
+		return script;
+	}
+	else {
+		return;
 	}
 }
 
@@ -35,10 +45,7 @@ string OnGhostBoot(dict ref)
 
 	if ( _aryvn(msg)>0 ) {
 		// 条件を満たしたメッセージがある
-		for ( int i=0; i<_aryvn(msg); i++ ) {
-			// 待機配列に追加
-			SaveData_Waiting += msg[i];
-		}
+		AddMessageWaitingList(msg);
 	}
 }
 
