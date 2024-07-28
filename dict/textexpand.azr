@@ -73,11 +73,6 @@ array GenerateReceivedLogText(string text, string sender)
 // 引数：　:image:の文字列、ゴースト名
 // 返値：　htmlタグの文字列
 //----------------------------------------------------------------
-// <a href="./res/image/うめちゃん/umechan_zu.png" data-fcaption="図だよ" class="fuwaimg">
-//   <img src="./res/image/うめちゃん/umechan_zu.png" alt="図だよ">
-// </a>
-// または
-// <img class="stamp" alt="stamp014" src="./res/stamp/manpu014.png">
 string GenerateHtmlImgTag(string str, string sender)
 {
   string s = str;
@@ -198,8 +193,7 @@ string GenerateTrayBalloonScript(string text)
 
   string script;
   for ( int i=0; i<_aryvn(result_text); i++ ) {
-    if ( i>0 ) { script += ","; }
-    script += "--text=";
+    script += ",--text=";
     script += _regex_replace(result_text[i],"[\\,\]\"]","_");
   }
 
@@ -299,7 +293,7 @@ array ReplaceRandomChoice(string text)
     result_text = _regex_replace( result_text, "^(.*?):choice_start:(.+?):choice_end:", search[1]+result );
   }
 
-  result { result_text, result_choice };
+  return { result_text, result_choice };
 }
 
 //----------------------------------------------------------------

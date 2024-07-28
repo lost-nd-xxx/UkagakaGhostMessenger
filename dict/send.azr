@@ -53,7 +53,8 @@ OnUkagakaGhostMessenger_Send(dict req)
 			if ( _gettype(ref["Condition"][key]) == "nil" ) {
 				ref["Condition"] += $(key,{});
 			}
-			ref["Condition"][key] += a;
+			if ( _aryvn(a) >= 2 ) { a = AsortEx("string,ascending",a); }
+			ref["Condition"][key] = a;
 		}
 		else {
 			array split = _strsplit(text,"=");
@@ -92,9 +93,8 @@ OnUkagakaGhostMessenger_Send(dict req)
 		MessageId = ref["MessageId"];
 	}
 	else {
-		//省略不可なのでエラーを出す
-		ErrorResponse_Send({sender,"MessageIdを認識できませんでした","",SenderId});
-		return;
+		// プロフィール更新のみでメッセージ識別子が無い場合
+		MessageId = GetEpochSec();
 	}
 	//----------------------------------------------------------------
 	if ( _strlen(ref["SenderId"]) > 0 ) {

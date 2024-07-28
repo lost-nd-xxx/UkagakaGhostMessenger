@@ -9,19 +9,28 @@
 //******************************************************************************
 
 //---- 文字コード -----------------------------------------------------------------------
-charset.dic, UTF-8		// 辞書ファイル
-charset.output, UTF-8		// 出力
+charset.dic, UTF-8
+// 辞書ファイル
+charset.output, Shift_JIS
+// 出力
 
 //---- 言語 -----------------------------------------------------------------------------
-messagetxt, messagetxt/japanese.txt	// ログに記録されるエラーメッセージ類の言語ファイル
+messagetxt, messagetxt/japanese.txt
+// ログに記録されるエラーメッセージ類の言語ファイル
 
 //---- 読み込む辞書 ---------------------------------------------------------------------
-dic, dict/ayasaori.aym, UTF-8	// 文SAORIインターフェイスモジュール
-dic, dict/builtins.aym, UTF-8	// ビルトイン関数モジュール
+dic, dict/ayasaori.aym, UTF-8
+// 文SAORIインターフェイスモジュール
+dic, dict/builtins.aym, UTF-8
+// ビルトイン関数モジュール
+dic, dict/functions.aym, UTF-8
 
 //---- 実行ログ -------------------------------------------------------------------------
-//log, ayasaori.log		// 実行ログをayasaori.logに記録します。開発時には記録しておいたほうが良いです。
-iolog, off				// load, unload, request 実行時の記録 on で記録する。
+// log, ayasaori.log
+// 実行ログをayasaori.logに記録します。開発時には記録しておいたほうが良いです。
+iolog, off
+// load, unload, request 実行時の記録 on で記録する。
 
 //---- セーブファイル -------------------------------------------------------------------
-save.auto, off			// 自動保存機能
+save.auto, off
+// 自動保存機能

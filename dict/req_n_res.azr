@@ -1,20 +1,60 @@
 // 問い合わせと返却
 OnUkagakaGhostMessanger_Request(dict res)
 {
-  string sender = res["Reference0"];
-  string SenderId = res["Reference1"];
+  string sender;
+  string SenderId;
   string MessageId = res["Reference2"];
+
+  if ( _strlen(res["Reference0"])>0 ) {
+    sender = res["Reference0"];
+  }
+  else {
+    sender = TranslateSystemChar(res["Sender"]);
+  }
+
+  if ( _strlen(res["Reference1"])>0 ) {
+    SenderId = res["Reference1"];
+  }
+  else {
+    SenderId = sender;
+  }
 
   array result = { sender, SenderId, MessageId };
   
-  if ( _gettype(SaveData_Received[sender][SenderId][MessageId]) == "dict" ) {
-    result += 0;
-    result += 0;
+  int cnt = _aryvn(SaveData_Received[sender][SenderId]["msgs"][MessageId]);
+  if ( cnt == 0 ) {
+    // 無かった
+    result += "0";
+    result += "0";
+    result += "0";
   }
   else {
-    result += SaveData_Received[sender][SenderId][MessageId]["ExecutedCount"];
-    result += SaveData_Received[sender][SenderId][MessageId]["read_time"];
-    // [WIP]ランダム選択結果も入れる
+    // あった
+    cnt--;
+    int count_int = SaveData_Received[sender][SenderId]["msgs"][MessageId][cnt]["ExecutedCount"];
+    string count_str = count_int;
+    result += count_str;
+
+    int time_count = SaveData_Received[sender][SenderId]["msgs"][MessageId][cnt]["time_count"];
+    string time_str = "0";
+    if ( time_count > 0 ) {
+      dict t = GetTimeByEpochSec(time_count);
+      time_str = _sprintf( "%04d/%02d/%02d %02d:%02d:%02d", t["年"], t["月"], t["日"], t["時"], t["分"], t["秒"] );
+    }
+    result += time_str;
+
+    int read_time = SaveData_Received[sender][SenderId]["msgs"][MessageId][cnt]["read_time"];
+    time_str = "0";
+    if ( read_time > 0 ) {
+      dict t = GetTimeByEpochSec(read_time);
+      time_str = _sprintf( "%04d/%02d/%02d %02d:%02d:%02d", t["年"], t["月"], t["日"], t["時"], t["分"], t["秒"] );
+    }
+    result += time_str;
+
+    array random = SaveData_Received[sender][SenderId]["msgs"][MessageId][cnt]["RandomResult"];
+    for ( int i=0; i<_aryvn(random); i++ ) {
+      result += random[i];
+    }
   }
   dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Response";
   dictOptionalHeader["reference"] = result;

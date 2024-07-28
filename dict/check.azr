@@ -4,7 +4,7 @@
 // 表示用の情報を返しつつ、受信枠の情報を更新する
 // 引数：　辞書型のメッセージ単体情報
 // ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }
-// 返値：　スクリプトの文字列
+// 返値：　通知用スクリプト
 //----------------------------------------------------------------
 string ShowMessage(dict ref)
 {
@@ -16,93 +16,107 @@ string ShowMessage(dict ref)
 
 	// 受信済みセーブデータの欄が無だったら空を入れておく
 	if ( _gettype(SaveData_Received[sender]) == "nil" ) {
-		SaveData_Received += $( sender , $() );
+		SaveData_Received += $( sender, $() );
 	}
 	if ( _gettype(SaveData_Received[sender][SenderId]) == "nil" ) {
-		SaveData_Received[sender] += $( SenderId , $() );
+		SaveData_Received[sender] += $( SenderId, $() );
 	}
-	if ( _gettype(SaveData_Received[sender][SenderId][MessageId]) == "nil" ) {
-		SaveData_Received[sender][SenderId] += $( MessageId , $() );
+	if ( _gettype(SaveData_Received[sender][SenderId]["msgs"]) == "nil" ) {
+		SaveData_Received[sender][SenderId] += $( "msgs", $() );
+	}
+	if ( _gettype(SaveData_Received[sender][SenderId]["msgs"][MessageId]) == "nil" ) {
+		SaveData_Received[sender][SenderId]["msgs"] += $( MessageId, {} );
 	}
 
 	SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderIcon" , reserved["SenderIcon"] );
+	SaveData_Received[sender][SenderId] += $( "SenderIcon", reserved["SenderIcon"] );
 
 	SaveData_Received[sender][SenderId]["SenderName"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderName" , reserved["SenderName"] );
+	SaveData_Received[sender][SenderId] += $( "SenderName", reserved["SenderName"] );
 
 	SaveData_Received[sender][SenderId]["SenderProfile"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderProfile" , reserved["SenderProfile"] );
-
-	string Text = reserved["Text"];
-	// ---- [WIP]テキスト加工を入れる ランダム選択の結果も入れる ---- //
-	SaveData_Received[sender][SenderId][MessageId]["Text"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "Text" , Text );
+	SaveData_Received[sender][SenderId] += $( "SenderProfile", reserved["SenderProfile"] );
 
 	int time_count = GetEpochSec();
-	SaveData_Received[sender][SenderId][MessageId]["time_count"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "time_count" , time_count );
-
-	dict now = _gettime();
-	string time_ymd = _sprintf("%04d/%02d/%02d",now["年"],now["月"],now["日"]);
-	string time_hm = _sprintf("%02d:%02d",now["時"],now["分"]);
-	SaveData_Received[sender][SenderId][MessageId]["time_ymd"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "time_ymd" , time_ymd );
-	SaveData_Received[sender][SenderId][MessageId]["time_hm"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "time_hm" , time_hm );
-
-	SaveData_Received[sender][SenderId][MessageId]["read_time"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "read_time" , 0 );
+	received_msg += $( "time_count", time_count );
+	SaveData_Received[sender][SenderId]["time_count"] = nil;
+	SaveData_Received[sender][SenderId] += $( "time_count", time_count );
 
 	int RunCount = reserved["RunCount"];
 	int ExecutedCount = reserved["ExecutedCount"];
 	ExecutedCount++;
-	SaveData_Received[sender][SenderId][MessageId]["ExecutedCount"] = nil;
-	SaveData_Received[sender][SenderId][MessageId] += $( "ExecutedCount" , ExecutedCount );
+	received_msg += $( "ExecutedCount", ExecutedCount );
 	// 予約情報の実行済み回数も更新する
 	SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
 
-	array EventReference;
-	if ( _aryvn(reserved["EventReference"]) > 0 ) {
-		EventReference += sender;
-		EventReference += SenderId;
-		EventReference += MessageId;
-		for ( int i=0; i<_aryvn(reserved["EventReference"]); i++ ) {
-			EventReference += reserved["EventReference"][i];
+	string Text = reserved["Text"];
+	// テキスト加工を入れる ランダム選択の結果も入れる //
+	string script;
+	if ( _strlen(Text) > 0 ) {
+		array a = TransformTextExpand(Text);
+		Text = a[0];
+
+		if ( _aryvn(a[1]) > 0 ) {
+			received_msg += $( "RandomResult", a[1] );
 		}
-		ExecRinging(EventReference);
+
+		// 通知用スクリプトを作る
+		script += "\\![set,trayballoon,--icon=none,--title=";
+		script += reserved["SenderName"];
+		script += GenerateTrayBalloonScript(Text);
+		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]\\e";
+
+		array text_array = GenerateReceivedLogText(Text,sender);
+
+		received_msg += $( "Text", text_array );
+
+		SaveData_Received[sender][SenderId]["msgs"][MessageId] += received_msg;
+
+		Waiting_Ringing = {};
+		Waiting_Ringing += sender;
+		Waiting_Ringing += SenderId;
+		Waiting_Ringing += MessageId;
+		for ( int i=0; i<_aryvn(reserved["EventReference"]); i++ ) {
+			Waiting_Ringing += reserved["EventReference"][i];
+		}
+	}
+	else {
+		Waiting_Ringing = {};
 	}
 
 	// 残り回数がないなら予約を消す
-	if ( reserved["ExecutedCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
+	if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
 		SaveData_Reserved[sender][SenderId][MessageId] = nil;
 	}
-	// 待ちリストの削除はCheckWaitingListで行う
+	// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
 
-	string script;
-	script += "\\C\\![set,trayballoon,--icon=none,--title=";
-	script += reserved["SenderName"];
-	script += ",--text=";
-	script += Text;
-	script += "]";
+	// Message_Runを満たしたメッセージ
+	array msg = PickUpMessageByCondition("Message_Run",{sender,SenderId,MessageId});
+	// Message_Run以外の条件を満たしているか調べる
+	msg = CheckMessageCondition("Message_Run",msg);
+	if ( _aryvn(msg)>0 ) {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(msg);
+	}
 
 	return script;
 }
 
 //----------------------------------------------------------------
 // OnUkagakaGhostMessenger_Ringingを起こす
-// 引数：　ゴースト名、キャラ名、メッセージID、追加リファレンスの配列
-// 返値：　なし
+// 引数・返値：　なし
 //----------------------------------------------------------------
-string ExecRinging(array ref)
+// プラグイン読み込み前の情報を持ち越さない
+array Waiting_Ringing;
+OnUkagakaGhostMessenger_ExecRinging()
 {
 	// OnUkagakaGhostMessenger_Ringing
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
-	dictOptionalHeader["reference"] = ref;
+	dictOptionalHeader["reference"] = Waiting_Ringing;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
 	dictOptionalHeader["marker"] = version();
 	dictOptionalHeader["script_option"] = "nobreak";
-	return "";
+	Waiting_Ringing = {};
 }
 
 //----------------------------------------------------------------
@@ -148,6 +162,11 @@ AddMessageWaitingList(array msg)
 		string chara = curt["SenderId"];
 		string msg_id = curt["MessageId"];
 
+		if ( _dicvn(SaveData_Reserved[ghost][chara][msg_id]) <= 0 ) {
+			// メッセージが予約に見つからなかったので飛ばす
+			continue;
+		}
+
 		// Lateを計算
 		int Late;
 		if ( _aryvn(SaveData_Reserved[ghost][chara][msg_id]["Late"]) == 1 ) {
@@ -170,6 +189,7 @@ AddMessageWaitingList(array msg)
 		// 待機配列に追加
 		SaveData_Waiting += curt;
 	}
+	SaveVar();
 }
 
 //----------------------------------------------------------------
@@ -262,17 +282,17 @@ array CheckMessageCondition( string exclude, array ref )
 	// 受動条件の確認
 	result = CheckMessagePassiveCondition(ref);
 
-	// キー名のリストを取得
-	array conds = ListUpMessageConditionKey(passive);
+	// 能動条件のキー名のリストを取得
+	array conds = ListUpMessageConditionKey(result);
 
 	// 末尾から処理しないと、配列の番号が消したぶんだけずれる
-	for ( int i0=_aryvn(result); i0>=0; i0-- ) {
+	for ( int i0=_aryvn(result)-1; i0>=0; i0-- ) {
 		array keys = conds[i0];
 
 		for ( int i1=0; i1<_aryvn(keys); i1++ ) {
 
-			if ( keys[i1] == exclude ) {
-				// 除外指定と一致したら無視
+			if ( keys[i1] == exclude && _strlen(exclude)>0 ) {
+				// 除外指定と一致するならスルー
 				continue;
 			}
 
@@ -283,7 +303,7 @@ array CheckMessageCondition( string exclude, array ref )
 			}
 		}
 	}
-	
+
 	return result;
 }
 
@@ -311,7 +331,7 @@ array ListUpMessageConditionKey(array ref)
 		}
 		else {
 			// 適切だった
-			output += _dickeyget(SaveData_Reserved[sender][SenderId][MessageId]["Condition"]);
+			output += _dickeyget(conds);
 		}
 	}
 
@@ -331,7 +351,7 @@ array CheckMessagePassiveCondition(array ref)
 
 	// 現在の時間
 	dict time = _gettime();
-	int etime = _etime();
+	int EpochSec = GetEpochSec();
 
 	// 返却用の配列
 	array result;
@@ -377,7 +397,7 @@ array CheckMessagePassiveCondition(array ref)
 		// Time_Seconds
 		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) == "string" ) {
 			int cond_time = message["Condition"]["Time_Seconds"][0];
-			if ( message["SentTime"] + cond_time > etime ) {
+			if ( ( message["SentTime"] + cond_time ) > EpochSec ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -442,8 +462,8 @@ array CheckMessagePassiveCondition(array ref)
 				countup++;
 				countdown--;
 			}
-			int cond_e = _etime( cond["年"], cond["月"], cond["日"], cond["時"], cond["分"], cond["秒"] );
-			if ( etime < cond_e ) {
+			int cond_e = _EpochSec( cond["年"], cond["月"], cond["日"], cond["時"], cond["分"], cond["秒"] );
+			if ( EpochSec < cond_e ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -454,14 +474,13 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Ghost_IsBooting"][0] ) == "string" ) {
 			array a = message["Condition"]["Ghost_IsBooting"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				string curt_ghost = a[i1];
-				if ( GetFmoInfo({curt_ghost,{"fullname"}}) == curt_ghost ) {
+				if ( GetFmoInfo({curt_ghost,{"fullname"}})["fullname"] == curt_ghost ) {
 					match++;
-					continue;
 				}
 			}
-			if ( match != _aryvn[a] ) {
+			if ( match != _aryvn(a) ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -472,11 +491,10 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Ghost_IsNotBooting"][0] ) == "string" ) {
 			array a = message["Condition"]["Ghost_IsNotBooting"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				string curt_ghost = a[i1];
-				if ( GetFmoInfo({curt_ghost,{"fullname"}}) == curt_ghost ) {
+				if ( GetFmoInfo({curt_ghost,{"fullname"}})["fullname"] == curt_ghost ) {
 					match++;
-					continue;
 				}
 			}
 			if ( match>0 ) {
@@ -522,7 +540,7 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) == "string" ) {
 			array a = message["Condition"]["Ghost_IsInAddressBook"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				array split = _strsplit(a[i1],"/");
 				string s0 = split[0];
 				string s1 = split[1];
@@ -531,7 +549,7 @@ array CheckMessagePassiveCondition(array ref)
 					continue;
 				}
 			}
-			if ( match!=_aryvn[a] ) {
+			if ( match!=_aryvn(a) ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -542,7 +560,7 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Message_IsRun"][0] ) == "string" ) {
 			array a = message["Condition"]["Message_IsRun"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				array split = _strsplit(a[i1],"/");
 				string s0 = split[0];
 				string s1 = split[1];
@@ -552,7 +570,7 @@ array CheckMessagePassiveCondition(array ref)
 					continue;
 				}
 			}
-			if ( match!=_aryvn[a] ) {
+			if ( match!=_aryvn(a) ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -563,7 +581,7 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Message_IsNotRun"][0] ) == "string" ) {
 			array a = message["Condition"]["Message_IsNotRun"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				array split = _strsplit(a[i1],"/");
 				string s0 = split[0];
 				string s1 = split[1];
@@ -584,7 +602,7 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Message_IsRead"][0] ) == "string" ) {
 			array a = message["Condition"]["Message_IsRead"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				array split = _strsplit(a[i1],"/");
 				string s0 = split[0];
 				string s1 = split[1];
@@ -594,7 +612,7 @@ array CheckMessagePassiveCondition(array ref)
 					continue;
 				}
 			}
-			if ( match!=_aryvn[a] ) {
+			if ( match!=_aryvn(a) ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -605,7 +623,7 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Message_IsNotRead"][0] ) == "string" ) {
 			array a = message["Condition"]["Message_IsNotRead"];
 			int match = 0;
-			for ( int i1=0; i1<_aryvn[a]; i1++ ) {
+			for ( int i1=0; i1<_aryvn(a); i1++ ) {
 				array split = _strsplit(a[i1],"/");
 				string s0 = split[0];
 				string s1 = split[1];
@@ -649,18 +667,21 @@ array PickUpMessageByCondition(string cond, array vals)
 	// 格納用の変数
 	array result;
 
-	for ( int i0=0; i0<_dicvn(SaveData_Reserved); i0++ ) {
-		// 個別のゴースト
-		string ghost = _dickeyget(SaveData_Reserved)[i0];
-		
-		for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
-			// ゴースト内の送信者
-			string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
-			
-			for ( int i2=0; i2<_dicvn(SaveData_Reserved[ghost][chara]); i2++ ) {
-				// 送信者のメッセージ
-				string msg = _dickeyget(SaveData_Reserved[ghost][chara])[i2];
-				array conds = _dickeyget(SaveData_Reserved[ghost][chara][msg]["Condition"][cond]);
+	// 2つ以上なら並べ替えておく
+	if ( _aryvn(vals) >= 2 ) { vals = AsortEx("string,ascending",vals); }
+
+	array ghosts = _dickeyget(SaveData_Reserved);
+	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+		string ghost = ghosts[i0];
+		array charas = _dickeyget(SaveData_Reserved[ghost]);
+
+		for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+			string chara = charas[i1];
+			array msgs = _dickeyget(SaveData_Reserved[ghost][chara]);
+
+			for ( int i2=0; i2<_aryvn(msgs); i2++ ) {
+				string msg = msgs[i2];
+				array conds = SaveData_Reserved[ghost][chara][msg]["Condition"][cond];
 
 				// 指定された条件の種類がある
 				if ( _aryvn(conds)>0 && conds == vals ) {

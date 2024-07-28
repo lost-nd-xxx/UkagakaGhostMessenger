@@ -11,8 +11,10 @@ string OnSecondChange(dict ref)
   // 全てのメッセージ
 	array msg = ListUpAllMessageArray();
 
-	// 条件達成か確認
-	msg = CheckMessageCondition("",msg);
+	if ( _aryvn(msg)>0 ) {
+		// 条件達成か確認
+		msg = CheckMessageCondition("",msg);
+	}
 
 	if ( _aryvn(msg)>0 ) {
 		// 条件を満たしたメッセージがある
@@ -32,7 +34,7 @@ string OnSecondChange(dict ref)
 //----------------------------------------------------------------
 // ゴーストが起動した
 //----------------------------------------------------------------
-string OnGhostBoot(dict ref)
+OnGhostBoot(dict ref)
 {
 	// 起動したゴースト名
 	string ghostname = TranslateSystemChar(ref["Reference1"]);
@@ -40,8 +42,32 @@ string OnGhostBoot(dict ref)
 	// Ghost_Bootedを満たしたメッセージ
 	array msg = PickUpMessageByCondition("Ghost_Booted",{ghostname});
 
-	// Ghost_Booted以外の条件を満たしているか調べる
-	msg = CheckMessageCondition("Ghost_Booted",msg);
+	if ( _aryvn(msg)>0 ) {
+		// Ghost_Booted以外の条件を満たしているか調べる
+		msg = CheckMessageCondition("Ghost_Booted",msg);
+	}
+
+	if ( _aryvn(msg)>0 ) {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(msg);
+	}
+}
+
+//----------------------------------------------------------------
+// ゴーストが終了した
+//----------------------------------------------------------------
+OnGhostExit(dict ref)
+{
+	// 終了したゴースト名
+	string ghostname = TranslateSystemChar(ref["Reference1"]);
+
+	// Ghost_Closedを満たしたメッセージ
+	array msg = PickUpMessageByCondition("Ghost_Closed",{ghostname});
+
+	if ( _aryvn(msg)>0 ) {
+		// Ghost_Closed以外の条件を満たしているか調べる
+		msg = CheckMessageCondition("Ghost_Closed",msg);
+	}
 
 	if ( _aryvn(msg)>0 ) {
 		// 条件を満たしたメッセージがある

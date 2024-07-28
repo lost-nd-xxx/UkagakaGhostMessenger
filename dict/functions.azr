@@ -38,7 +38,9 @@ SaveVar()
 		$("SaveData_Waiting",SaveData_Waiting),
 		$("SaveData_Received",SaveData_Received)
 	};
+
 	_vsave("savedata", dictSaveData);
+	// UpdateWebJson();
 
 	// テスト用に出力しておく
 	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
@@ -51,8 +53,19 @@ RestoreVar()
 	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
 	SaveData_Received = dictSaveData["SaveData_Received"];
 
+	// UpdateWebJson();
+
 	// テスト用に出力しておく
 	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+}
+
+//----------------------------------------------------------------
+// web用jsonを出力する
+//----------------------------------------------------------------
+UpdateWebJson()
+{
+	dict webjson;
+	
 }
 
 //----------------------------------------------------------------
@@ -61,30 +74,22 @@ RestoreVar()
 //----------------------------------------------------------------
 string OnMenuExec(dict ref)
 {
-	// 表示待ちを処理
-  string script = CheckWaitingList();
+	// // Ghost_Bootedを満たしたメッセージ
+	// array msg = PickUpMessageByCondition("Ghost_IsBooting",{"Ｒポストと狛犬"});
 
-  // 全てのメッセージ
-	array msg = ListUpAllMessageArray();
+	// if ( _aryvn(msg)>0 ) {
+	// 	// Ghost_Booted以外の条件を満たしているか調べる
+	// 	msg = CheckMessageCondition("Ghost_IsBooting",msg);
+	// }
 
-	// 条件達成か確認
-	msg = CheckMessageCondition("",msg);
+	// if ( _aryvn(msg)>0 ) {
+	// 	// 条件を満たしたメッセージがある
+	// 	AddMessageWaitingList(msg);
+	// }
 
-	if ( _aryvn(msg)>0 ) {
-		// 条件を満たしたメッセージがある
-		AddMessageWaitingList(msg);
-	}
+	string result = GetFmoInfo({"Ｒポストと狛犬",{"modulestate"}})["modulestate"];
 
-	if ( _strlen(script) > 0 ) {
-		dictOptionalHeader["marker"] = version();
-		// dictOptionalHeader["script_option"] = "notranslate";
-		dictOptionalHeader["value_notify"] = script;
-		_writetext("test.json",_azv2json(script),"utf8");
-		return 0;
-	}
-	else {
-		return 1;
-	}
+	return result;
 }
 
 //----------------------------------------------------------------
@@ -102,7 +107,7 @@ int GetEpochSec(dict ref)
 
 	if ( _dicvn(ref) <= 0 ) {
 		// 現在の日時を使う
-		result = _etime(t["年"], t["月"], t["日"], t["時"], t["分"], t["秒"] );
+		result = _etime();
 	}
 	else {
 		// 省略されていたら現在の値を入れる
@@ -216,20 +221,20 @@ string TranslateSystemChar(string ref)
 //----------------------------------------------------------------
 // スコープを一番外側にする
 dict FmoTable;
-array FmoChache;
+array FmoCache;
 
 RefreshFmo()
 {
 	// 現在のfmoを取得
 	array raw_fmo = _getfmo();
 
-	if ( _arystr(FmoChache) == _arystr(raw_fmo) ) {
+	if ( FmoCache == raw_fmo ) {
 		// 前回と変化が無かったので関数を終了
 		return;
 	}
 	else {
 		// 変化があるか確認する用のキャッシュを更新
-		FmoChache = raw_fmo;
+		FmoCache = raw_fmo;
 	}
 
 	// 結果用の変数を空の辞書型に戻す
@@ -254,6 +259,7 @@ RefreshFmo()
 		// 値を格納
 		FmoTable[id] += $( key, split[1] );
 	}
+	return;
 }
 
 //----------------------------------------------------------------
@@ -366,4 +372,29 @@ string CopyImage( string original, string sender )
 		// コピー失敗
 		return;
 	}
+}
+
+//----------------------------------------------------------------
+// 配列をソートする
+// 引数：　オプションの文字列, 対象の配列
+// 返値：　並べ替えの配列　失敗時は無
+//----------------------------------------------------------------
+array AsortEx( string option, array ar0 )
+{
+	if ( _aryvn(ar0) > 0 ) {
+		array ar1;
+		for ( int i=0; i<_aryvn(ar0); i++ ) {
+			if ( i > 0 ) { ar1 += ","; }
+			ar1 += ar0[i];
+		}
+		dict d = _saorirequest( "yaya", "ASORTEX", option, _arystr(ar1) );
+		array ar2;
+		for ( int i=0; i<100; i++ ) {
+			// 何もかもすべて文字列として帰ってくる
+			if ( _gettype(d["Value"+i]) != "string" ) { break; }
+			ar2 += d["Value"+i];
+		}
+		if ( _aryvn(ar2) > 0 ) { return ar2; }
+	}
+	return;
 }
