@@ -75,16 +75,16 @@ div#fuwaimg_img.zoom_in {
   width: 90vw;
   max-width: 100%;
   overflow: scroll;
-  cursor: grab;
+  /* cursor: grab; */
 }
 div#fuwaimg_img.zoom_in:active {
-  cursor: grabbing;
+  /* cursor: grabbing; */
 }
 div#fuwaimg_img:not(.zoom_in) div#fuwaimg_imginner {
   transform: none!important;
 }
 div#fuwaimg_img.zoom_in::-webkit-scrollbar{
-  display: none;
+  display: block;
 }
 div#fuwaimg_img.zoom_in img {
   max-width: none;
@@ -143,7 +143,7 @@ button#fuwaimg_close:after{
     transform: rotate(-45deg);
     transform-origin:100% 50%;
     right: 3px;
-    pointer-events: ;
+    pointer-events: "";
 }
 button#fuwaimg_zoom {
   background: transparent;

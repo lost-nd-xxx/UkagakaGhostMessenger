@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>UkagakaGhostMessenger 個別トーク履歴</title>
+    <link rel="stylesheet" href="./res/main.css">
+    <link rel="stylesheet" href="./res/fuwaimg/css/fuwaimg.css">
+  </head>
+
+  <body>
+    <div class="sidebar">
+      <div class="nav-content">
+        <ul>
+          <li>
+            <a href="#" id="downloadLink">
+              <img src="./res/svg/refresh.svg" alt="保存する" class="navIcon">
+              <p class="navItemText">保存する</p>
+            </a>
+          </li>
+          <li>
+            <a href="./ugm_talk.html">
+              <img src="./res/svg/group.svg" alt="一覧に戻る" class="navIcon">
+              <p class="navItemText">一覧に戻る</p>
+            </a>
+          </li>
+          <li>
+            <a href="./ugm_information.html">
+              <img src="./res/svg/help.svg" alt="取扱説明" class="navIcon">
+              <p class="navItemText">取扱説明</p>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- sidebar閉じ -->
+
+    <div class="main">
+
+      <div class="header">
+        <div class="headerContainer">
+          <div class="profileContainer">
+            <img class="profileIcon" alt="送信者アイコン" src="./res/image/icon_default.png">
+            <p class="profileName">送信者名</p>
+          </div>
+          <div class="profileContainer">
+            <div class="profileText">
+              <p>自己紹介文章</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- header閉じ -->
+
+      <div class="contentContainer">
+      </div>
+      <!-- contentContainer閉じ -->
+
+      <div class="footer">
+        <div class="footerContainer">
+          <p id="new">UkagakaGhostMessenger</p>
+        </div>
+      </div>
+      <!-- footer閉じ -->
+
+    </div>
+    <!-- main閉じ -->
+
+    <!-- jsここから -->
+    <div id="js_module">
+      <script id="fetchJs" src="./detail-script.js"></script>
+    </div>
+    <!-- jsここまで -->
+  </body>
+</html>

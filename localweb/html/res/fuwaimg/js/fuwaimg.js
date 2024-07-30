@@ -21,16 +21,18 @@
 
   // -----------------------------------------------------
 
-    var root;
-    var scripts = document.getElementsByTagName("script");
-    var i = scripts.length;
-    while (i--) {
-        var match = scripts[i].src.match(/(^|.*\/)fuwaimg\.js$/);
-        if (match) {
-            root = match[1];
-            break;
-        }
-    }
+  // var root;
+  // var scripts = document.getElementsByTagName("script");
+  // var i = scripts.length;
+  // while (i--) {
+  //     var match = scripts[i].src.match(/(^|.*\/)fuwaimg\.js$/);
+  //     if (match) {
+  //         root = match[1];
+  //         break;
+  //     }
+  // }
+
+  var root = 'http://localhost:8000/res/fuwaimg/js/';
 
   // -----------------------------------------------------
 
@@ -300,7 +302,7 @@
       showimg.style.maxWidth = showimg.naturalWidth + 'px';
       parent2.style.width = showimg.naturalWidth + 'px';
       parent3.style.width = showimg.naturalWidth + 'px';
-      setScrollBooster();
+      // setScrollBooster();
       prevbtn.style.opacity = '0';
       prevbtn.style.pointerEvents = 'none';
       nextbtn.style.opacity = '0';
@@ -308,7 +310,7 @@
       newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomout.svg');
     } else {
       setWindowWidth(smallImgWidth);
-      setScrollBooster();
+      // setScrollBooster();
       newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomin.svg');
       prevbtn.style.opacity = '1';
       prevbtn.style.pointerEvents = 'all';
@@ -402,20 +404,20 @@
     }
     setSwipe('#fuwaimg_img');
 
-    // scrollboosterの設定
+    // // scrollboosterの設定
     
-    function setScrollBooster() {
-      var scrollEl = document.querySelector("#fuwaimg_imginner");
-      var scr = new ScrollBooster({
-        viewport: document.querySelector("#fuwaimg_img"),
-        // content: scrollEl,
-        emulateScroll: true,
-        bounce: false,
-        onUpdate: function(data) {
-          scrollEl.style.transform =
-            "translate(" + -data.position.x + "px, " + -data.position.y + "px)";
-        }
-      });
-    };
+    // function setScrollBooster() {
+    //   var scrollEl = document.querySelector("#fuwaimg_imginner");
+    //   var scr = new ScrollBooster({
+    //     viewport: document.querySelector("#fuwaimg_img"),
+    //     // content: scrollEl,
+    //     emulateScroll: true,
+    //     bounce: false,
+    //     onUpdate: function(data) {
+    //       scrollEl.style.transform =
+    //         "translate(" + -data.position.x + "px, " + -data.position.y + "px)";
+    //     }
+    //   });
+    // };
     
 }

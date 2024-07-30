@@ -34,8 +34,10 @@ string ShowMessage(dict ref)
 	SaveData_Received[sender][SenderId]["SenderName"] = nil;
 	SaveData_Received[sender][SenderId] += $( "SenderName", reserved["SenderName"] );
 
+	string SenderProfile = TransformTextExpand(reserved["SenderProfile"])[0];
+	SenderProfile = _strreplace( SenderProfile, ":nl:", "<br>" );
 	SaveData_Received[sender][SenderId]["SenderProfile"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderProfile", reserved["SenderProfile"] );
+	SaveData_Received[sender][SenderId] += $( "SenderProfile", SenderProfile );
 
 	int time_count = GetEpochSec();
 	received_msg += $( "time_count", time_count );
@@ -98,6 +100,9 @@ string ShowMessage(dict ref)
 		// 条件を満たしたメッセージがある
 		AddMessageWaitingList(msg);
 	}
+
+	// // web用jsonを出力する
+	// UpdateWebJson();
 
 	return script;
 }

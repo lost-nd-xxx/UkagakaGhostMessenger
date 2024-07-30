@@ -36,61 +36,44 @@
 	<a href="https://ukatech.github.io/jsstp-lib/playground">Playground</a>
 
 
-	<script type="text/javascript" src="./jsstp.min.js"></script>
+	<script type="text/javascript" id="jsstp_mjs" src="./jsstp.min.js"></script>
 	<script>
-	var fmo = await jsstp.get_fmo_infos();
-	var str = document.getElementById("json").innerHTML;
-	str = str.replace("OnTest",fmo.uuids[0]);
-	document.getElementById("json").innerHTML = str;
-		// 获取输入框的值并转换为object，如有报错则弹窗
-		function getjson() {
-			try {
-				return JSON.parse(document.getElementById("json").value);
-			} catch (e) {
-				alert(e);
-			}
-		}
-		function gettype() {
-			return document.getElementById("type").value;
-		}
-		function send() {
-			return jsstp[gettype()](getjson()).then((result) => {
-				// 设置回显框的值
-				document.getElementById("result").value = JSON.stringify(result, null, "\t");
-			}).catch((e) => {
-				// 弹窗报错
-				alert(e);
-			});
-		}
-		// 解析并处理url参数
-		async function args_handler() {
-			// 获取url参数
-			let args = location.search;
-			// 如果没有参数则返回
-			if (!args) return;
-			// 去掉开头的"?"并分割参数
-			args = args.substring(1).split("&");
-			// 遍历参数并存于map
-			let argv = {};
-			args.forEach((pair)=>{
-				pair = pair.split("=");
-				// 对参数值解码
-				argv[pair[0]] = decodeURIComponent(pair[1]);
-			});
-			// 如果有"json"参数则设置输入框的值
-			if (argv.json)
-				document.getElementById("json").value = argv.json;
-			// 如果有"type"参数则设置下拉选单的值
-			if (argv.type)
-				document.getElementById("type").value = argv.type;
-			// 如果有"send"参数则调用send函数
-			if (argv.send)
-				await send().catch((e)=>{});
-			// 如果有"jumpback"参数则跳转到该参数指定的url
-			if (argv.jumpback)
-				window.location = argv.jumpback;
-		}
-		args_handler();
+	// document.addEventListener('DOMContentLoaded', () => {
+	// 	let fmo;
+
+	// 	var updateHtml = async () => {
+			
+	// 		await new Promise((resolve) => {
+	// 			document.getElementById('json').innerText = 'nowloading...';
+	// 			resolve(1);
+	// 		});
+			
+	// 		await new Promise((resolve) => {
+	// 			fmo = jsstp.get_fmo_infos();
+	// 			resolve(1);
+	// 		});
+
+	// 		await new Promise((resolve) => {
+	// 			// document.getElementById('json').innerText = JSON.parse(result);
+	// 			resolve(1);
+	// 		});
+
+	// 	};
+
+	// 	updateHtml();
+	// 	let result = fmo.get_list_of("fullname")[0];
+	// 	setInterval(
+	// 		console.log(result),1000
+	// 	);
+	// });
+
+	// let fmo = jsstp.get_fmo_infos();
+	// if (fmo.available) {
+	// 	console.log(fmo);
+	// } else {
+	// 	console.log('not avaiable');
+	// };
+
 	</script>
 
 

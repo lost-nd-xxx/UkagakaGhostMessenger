@@ -60,15 +60,6 @@ RestoreVar()
 }
 
 //----------------------------------------------------------------
-// web用jsonを出力する
-//----------------------------------------------------------------
-UpdateWebJson()
-{
-	dict webjson;
-	
-}
-
-//----------------------------------------------------------------
 // OnMenuExec
 // 動作テストに使っているが、最終的にはミュブロの操作周りを置く
 //----------------------------------------------------------------
@@ -87,9 +78,42 @@ string OnMenuExec(dict ref)
 	// 	AddMessageWaitingList(msg);
 	// }
 
-	string result = GetFmoInfo({"Ｒポストと狛犬",{"modulestate"}})["modulestate"];
+	// RefreshFmo();
+	// string result = _dickeyget(FmoTable)[0];
 
 	return result;
+}
+
+//----------------------------------------------------------------
+// web用jsonを出力する [WIP]
+//----------------------------------------------------------------
+UpdateWebJson()
+{
+	array webjson;
+
+	dict d = SaveData_Received;
+
+	// // 格納用の変数
+	// array result;
+
+	// array ghosts = _dickeyget(d);
+	// for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+	// 	string ghost = ghosts[i0];
+	// 	array charas = _dickeyget(d[ghost]);
+
+	// 	for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+	// 		string chara = charas[i1];
+	// 		int last_update = _dickeyget(d[ghost][chara]["time_count"]);
+
+	// 		array msgs = _dickeyget(d[ghost][chara]["msgs"]);
+
+	// 		result += ${
+	// 			$( "sender", ghost )
+	// 		};
+
+	// 	}
+	// }
+
 }
 
 //----------------------------------------------------------------
