@@ -1,4 +1,4 @@
-# UkagakaGhostMessanger 仕様定義(仮)
+# UkagakaGhostMessenger 仕様定義(仮)
 ## 目次
 - [このプラグインが起こすイベント](#このプラグインが起こすイベント)
   - [OnUkagakaGhostMessenger_Ringing](#OnUkagakaGhostMessenger_Ringing)
@@ -9,10 +9,10 @@
   - [OnUkagakaGhostMessenger_SendComplete](#OnUkagakaGhostMessenger_SendComplete)
   - [OnUkagakaGhostMessenger_SendFailure](#OnUkagakaGhostMessenger_SendFailure)
 - [このプラグインに起こせるイベント](#このプラグインに起こせるイベント)
-  - [OnUkagakaGhostMessanger_Trigger](#OnUkagakaGhostMessanger_Trigger)
-  - [OnUkagakaGhostMessanger_Request](#OnUkagakaGhostMessanger_Request)
-  - [OnUkagakaGhostMessanger_Cancel](#OnUkagakaGhostMessanger_Cancel)
-  - [OnUkagakaGhostMessanger_Send](#OnUkagakaGhostMessanger_Send)
+  - [OnUkagakaGhostMessenger_Trigger](#OnUkagakaGhostMessenger_Trigger)
+  - [OnUkagakaGhostMessenger_Request](#OnUkagakaGhostMessenger_Request)
+  - [OnUkagakaGhostMessenger_Cancel](#OnUkagakaGhostMessenger_Cancel)
+  - [OnUkagakaGhostMessenger_Send](#OnUkagakaGhostMessenger_Send)
     - [SenderId](#SenderId)
     - [SenderName](#SenderName)
     - [SenderIcon](#SenderIcon)
@@ -67,9 +67,9 @@ Reference3～: 追加情報(メッセージに情報があれば)\
 [「EventReference」も参照のこと](#EventReference)
 
 ### OnUkagakaGhostMessenger_Response
-\[対象ゴースト]このプラグインに[OnUkagakaGhostMessanger_Request](#OnUkagakaGhostMessanger_Request)を送付したゴースト\
+\[対象ゴースト]このプラグインに[OnUkagakaGhostMessenger_Request](#OnUkagakaGhostMessenger_Request)を送付したゴースト\
 \[イベント種別]GET(即時トーク可能)\
-\[いつ]OnUkagakaGhostMessanger_Requestの送信後すぐ\
+\[いつ]OnUkagakaGhostMessenger_Requestの送信後すぐ\
 Reference0: ゴースト名\
 Reference1: 送信者識別子\
 Reference2: メッセージ識別子\
@@ -96,11 +96,11 @@ Reference1: 処理できなかったメッセージ識別子（わからない�
 Reference2: 指定されていた送信者識別子（わからない場合空欄）
 
 ## このプラグインに起こせるイベント
-* ゴーストから`\![raiseplugin,UkagakaGhostMessanger,イベント名,Reference0,Reference1,～～]`などとする
+* ゴーストから`\![raiseplugin,UkagakaGhostMessenger,イベント名,Reference0,Reference1,～～]`などとする
 * [ゴースト名に含まれるシステム予約字は半角アンダーバーに差し替えた状態で送る](#差し替え対象のシステム予約字)
   * 例: Emily/Phase4.5 -> Emily_Phase4.5
 
-### OnUkagakaGhostMessanger_Trigger
+### OnUkagakaGhostMessenger_Trigger
 Reference0: \[省略不可]イベント識別子\
 Reference1: \[省略可]対象ゴースト名\
 \[省略時の動作]全員\
@@ -108,7 +108,7 @@ Reference2: \[省略可]対象の送信者識別子\
 \[省略時の動作]Reference1で指定されたゴースト内の全員　省略したら全ての全員\
 メッセージに影響するトリガーをゴーストから起こす
 
-### OnUkagakaGhostMessanger_Request
+### OnUkagakaGhostMessenger_Request
 Reference0: \[省略可]ゴースト名\
 Reference1: \[省略可]送信者識別子\
 Reference2: \[省略不可]メッセージ識別子\
@@ -117,15 +117,15 @@ Reference2: \[省略不可]メッセージ識別子\
 Reference0やReference1を省略した場合、どちらも現在のゴースト名が用いられる
 情報問い合わせの結果は[OnUkagakaGhostMessenger_Response](#OnUkagakaGhostMessenger_Response)で返却される
 
-### OnUkagakaGhostMessanger_Cancel
+### OnUkagakaGhostMessenger_Cancel
 Reference0: \[省略可]送信者識別子\
 \[省略時の動作]そのゴーストに属する送信者識別子全て\
 指定した送信者識別子の送信予約を全て取り消す
 
-### OnUkagakaGhostMessanger_Send
+### OnUkagakaGhostMessenger_Send
 メッセージ送信や送信取り消しなどの設定\
 Referenceは順不同\
-`\![raiseplugin,UkagakaGhostMessanger,OnUkagakaGhostMessanger_Send,--SenderId=送信者識別子]`などのように指定\
+`\![raiseplugin,UkagakaGhostMessenger,OnUkagakaGhostMessenger_Send,--SenderId=送信者識別子]`などのように指定\
 書式は後述
 
 #### SenderId
@@ -235,7 +235,7 @@ Referenceは順不同\
 複数体指定する時は`Ghost_InAddressBook:ゴースト名１/送信者識別子１:ゴースト名２/送信者識別子２`のようにする
 
 ##### Ghost_Triggered:イベント識別子:トリガーを立ててきたゴースト名
-[OnUkagakaGhostMessanger_Trigger](#OnUkagakaGhostMessanger_Trigger)で、\
+[OnUkagakaGhostMessenger_Trigger](#OnUkagakaGhostMessenger_Trigger)で、\
 起動中ゴーストが特定のイベント識別子を指定した時\
 ゴースト名は省略可能\
 その場合`Ghost_Triggered:イベント識別子`となる
@@ -293,7 +293,7 @@ Referenceは順不同\
 \[反映される枠]メッセージ本文/送信者プロフィール文\
 `:choice_start:単語１:単語２～～:choice_end:`\
 例：`:choice_start:もも:くり:かき:ワンワン:ウキキ:ケンケン:choice_end:`
-メッセージ本文に用いた場合のランダム選択結果は、OnUkagakaGhostMessanger_Requestで取得できる
+メッセージ本文に用いた場合のランダム選択結果は、OnUkagakaGhostMessenger_Requestで取得できる
 
 ### 条件達成時の時間類
 \[反映される枠]メッセージ本文/送信者プロフィール文\

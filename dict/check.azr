@@ -43,6 +43,10 @@ string ShowMessage(dict ref)
 	received_msg += $( "time_count", time_count );
 	SaveData_Received[sender][SenderId]["time_count"] = nil;
 	SaveData_Received[sender][SenderId] += $( "time_count", time_count );
+	// 実行速度のため、時間の文字列もここで作っておく
+	// セーブデータ容量は増えるが、メッセージごとに数文字なのでたぶん大丈夫
+	dict t = _gettime();
+	received_msg += $( "time_text", { _sprintf("%04d/%02d/%02d",t["年"],t["月"],t["日"]), _sprintf("%02d:%02d",t["時"],t["分"]) } );
 
 	int RunCount = reserved["RunCount"];
 	int ExecutedCount = reserved["ExecutedCount"];
@@ -452,7 +456,8 @@ array CheckMessagePassiveCondition(array ref)
 			
 			int countup = 0;
 			int countdown = _aryvn(tmp_time) - 1;
-			while ( countup < 5 ) {
+
+			while ( countup < 5 && countdown >= 0 ) {
 				int current;
 				string tmp_key = key[countup];
 				if ( countdown < 0 ) {
@@ -467,7 +472,8 @@ array CheckMessagePassiveCondition(array ref)
 				countup++;
 				countdown--;
 			}
-			int cond_e = _EpochSec( cond["年"], cond["月"], cond["日"], cond["時"], cond["分"], cond["秒"] );
+			cond += $("秒",0);
+			int cond_e = GetEpochSec( cond );
 			if ( EpochSec < cond_e ) {
 				// 条件不達成
 				result += 0;

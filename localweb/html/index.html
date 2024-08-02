@@ -16,14 +16,11 @@
 		<option value="GIVE">GIVE</option>
 	</select>
 	<br>
-<textarea id="json" cols="50" rows="10">
-{
-	"Event": "OnTest",
-	"Script": "\\0Hello, World!\\e"
-}
-</textarea>
+	<textarea id="json" cols="50" rows="10">
+		nowloading...
+	</textarea>
 	<br>
-	<button onclick="send()">send</button>
+	<button onclick="jsstp.SEND(document.getElementById('json').innerText)">send</button>
 	<br>
 	<textarea id="result" cols="50" rows="10" readonly></textarea>
 	<br>
@@ -38,42 +35,12 @@
 
 	<script type="text/javascript" id="jsstp_mjs" src="./jsstp.min.js"></script>
 	<script>
-	// document.addEventListener('DOMContentLoaded', () => {
-	// 	let fmo;
-
-	// 	var updateHtml = async () => {
-			
-	// 		await new Promise((resolve) => {
-	// 			document.getElementById('json').innerText = 'nowloading...';
-	// 			resolve(1);
-	// 		});
-			
-	// 		await new Promise((resolve) => {
-	// 			fmo = jsstp.get_fmo_infos();
-	// 			resolve(1);
-	// 		});
-
-	// 		await new Promise((resolve) => {
-	// 			// document.getElementById('json').innerText = JSON.parse(result);
-	// 			resolve(1);
-	// 		});
-
-	// 	};
-
-	// 	updateHtml();
-	// 	let result = fmo.get_list_of("fullname")[0];
-	// 	setInterval(
-	// 		console.log(result),1000
-	// 	);
-	// });
-
-	// let fmo = jsstp.get_fmo_infos();
-	// if (fmo.available) {
-	// 	console.log(fmo);
-	// } else {
-	// 	console.log('not avaiable');
-	// };
-
+		document.addEventListener('DOMContentLoaded', () => {
+			(async () => {
+				const fmo = await jsstp.get_fmo_infos();
+				console.log(jsstp.SEND({"ID":fmo.keys[0],"Script":"\\![raiseplugin,c58b6320-caf8-11ed-a901-0800200c9a66,OnWalletOfUnyu,menu]"}));
+			})();
+		});
 	</script>
 
 

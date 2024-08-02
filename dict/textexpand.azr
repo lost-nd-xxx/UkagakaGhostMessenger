@@ -11,7 +11,7 @@ array GenerateReceivedLogText(string text, string sender)
 
   for ( int i=0; i<100; i++ ) {
     // 代替テキスト無しの画像添付を探す
-    array search = _regex_search( result_text, ":image:([^:]+?\.\w+):(?!alt=.*:)" );
+    array search = _regex_search( result_text, ":image:([^:]+?\\.\\w+):(?!alt=.*:)" );
     if ( _aryvn(search) <= 0 ) { break; }
     string html = GenerateHtmlImgTag( search[0], sender );
     result_text = _strreplace( result_text, search[0], html );
@@ -31,38 +31,38 @@ array GenerateReceivedLogText(string text, string sender)
     if ( _aryvn(search) <= 0 ) { break; }
     int number = search[1];
     string alt;
-    alt += StampAltText()[number];
-    string html;
-    html += "<img class=\"stamp\"";
+    alt = StampAltText()[number];
+    string html = "<img class=\"stamp\"";
     if ( _strlen(alt)>0 ) {
-      html_a[1] += " alt=\"";
-      html_a[1] += alt;
-      html_a[1] += "\"";
+      html += " alt=\"";
+      html += alt;
+      html += "\"";
     }
     html += " src=\"";
-    html += filepath;
-    html += "\">";
+    html += "./res/stamp/stamp";
+    html += search[1];
+    html += ".png\">";
     result_text = _strreplace( result_text, search[0], html );
   }
 
   // スタンプの前後で段落を分ける
   array paragraph;
   for ( int i=0; i<100; i++ ) {
-    array search = _regex_search( result_text, "(^.*)(<img class=\"stamp\".*?>)" );
+    array search = _regex_search( result_text, "^(.*?)(<img class=\"stamp\".*?>)" );
     if ( _aryvn(search) <= 0 ) {
       // 該当が無い場合脱出
       if ( _strlen(result_text) > 0 ) {
-        // 何かがあるので吹き出しにする
-        paragraph += "<div class=\"messageBubble\"><p>" + result_text + "</p></div>";
+        // 何かがあるので段落にする
+        paragraph += result_text;
       }
       break;
     }
     if ( _strlen(search[1]) > 0 ) {
-      // スタンプの段落ではないので吹き出しにする
-      paragraph += "<div class=\"messageBubble\"><p>" + search[1] + "</p></div>";
+      // 何かがあるので段落にする
+      paragraph += search[1];
     }
     paragraph += search[2];
-    result_text = _regex_replace( result_text, "(^.*)(<img class=\"stamp\".*?>)", "" );
+    result_text = _regex_replace( result_text, "^.*?<img class=\"stamp\".*?>", "" );
   }
 
   return paragraph;
@@ -100,41 +100,41 @@ string GenerateHtmlImgTag(string str, string sender)
   if ( _strstr(tag[1],"nozoom=") != 0 ) {
     // aタグが必要
     html_a = { "", "" };
-    html_a[1] = "<a href=\"";
-    html_a[1] += filepath;
-    html_a[1] += "\" class=\"fuwaimg\"";
+    html_a[0] = "<a href=\"";
+    html_a[0] += filepath;
+    html_a[0] += "\" class=\"fuwaimg\"";
     if ( _strlen(alt)>0 ) {
-      html_a[1] += " data-fcaption=\"";
-      html_a[1] += alt;
-      html_a[1] += "\"";
+      html_a[0] += " data-fcaption=\"";
+      html_a[0] += alt;
+      html_a[0] += "\"";
     }
-    html_a[1] += ">";
-    html_a[2] = "</a>";
+    html_a[0] += ">";
+    html_a[1] = "</a>";
 
     // imgタグ
     if ( _aryvn(html_a)==2 ) {
-      html += html_a[1];
+      html += html_a[0];
     }
     html += "<img src=\"";
     html += filepath;
     html += "\"";
     if ( _strlen(alt)>0 ) {
-      html_a[1] += " alt=\"";
-      html_a[1] += alt;
-      html_a[1] += "\"";
+      html += " alt=\"";
+      html += alt;
+      html += "\"";
     }
     html += ">";
     if ( _aryvn(html_a)==2 ) {
-      html += html_a[2];
+      html += html_a[1];
     }
   }
   else {
     // スタンプ扱い
     html += "<img class=\"stamp\"";
     if ( _strlen(alt)>0 ) {
-      html_a[1] += " alt=\"";
-      html_a[1] += alt;
-      html_a[1] += "\"";
+      html += " alt=\"";
+      html += alt;
+      html += "\"";
     }
     html += " src=\"";
     html += filepath;
@@ -165,7 +165,7 @@ string GenerateTrayBalloonScript(string text)
         array split = _strsplit(str,"\\");
         string filename = split[_aryvn(split)-1];
         // string filename = _strsplit(filename,".")[0];
-        curt = _strreplace( curt, search[0], ":[添付]"+filename+":" );
+        curt = _strreplace( curt, search[0], ":添付:"+filename+":" );
       }
     }
     for ( int i1=0; i1<100; i1++ ) {

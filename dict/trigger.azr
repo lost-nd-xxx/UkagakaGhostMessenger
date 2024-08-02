@@ -1,5 +1,5 @@
 // トリガー
-OnUkagakaGhostMessanger_Trigger(dict res)
+OnUkagakaGhostMessenger_Trigger(dict res)
 {
   // イベント識別子
   string EventId = res["Reference0"];

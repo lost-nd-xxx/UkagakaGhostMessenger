@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             // 見つからなかった場合
             // ページタイトル
-            document.getElementsByTagName('title')[0].innerText = 'UkagakaGhostMessanger エラー';
+            document.getElementsByTagName('title')[0].innerText = 'UkagakaGhostMessenger エラー';
             // 中身 どシンプル
             document.getElementsByTagName('body')[0].innerHTML = `
             <h1>アカウントを見つけられませんでした</h1>

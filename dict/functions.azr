@@ -61,59 +61,114 @@ RestoreVar()
 
 //----------------------------------------------------------------
 // OnMenuExec
-// 動作テストに使っているが、最終的にはミュブロの操作周りを置く
+// 動作テストに使っているが、最終的には何らかの操作を置く
 //----------------------------------------------------------------
 string OnMenuExec(dict ref)
 {
-	// // Ghost_Bootedを満たしたメッセージ
-	// array msg = PickUpMessageByCondition("Ghost_IsBooting",{"Ｒポストと狛犬"});
-
-	// if ( _aryvn(msg)>0 ) {
-	// 	// Ghost_Booted以外の条件を満たしているか調べる
-	// 	msg = CheckMessageCondition("Ghost_IsBooting",msg);
-	// }
-
-	// if ( _aryvn(msg)>0 ) {
-	// 	// 条件を満たしたメッセージがある
-	// 	AddMessageWaitingList(msg);
-	// }
-
-	// RefreshFmo();
-	// string result = _dickeyget(FmoTable)[0];
-
-	return result;
+	UpdateWebJson();
+	
+	return 1;
 }
 
 //----------------------------------------------------------------
 // web用jsonを出力する [WIP]
 //----------------------------------------------------------------
-UpdateWebJson()
+string UpdateWebJson()
 {
 	array webjson;
 
-	dict d = SaveData_Received;
+	array ghosts = _dickeyget(SaveData_Received);
+	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+		string ghost = ghosts[i0];
+		array charas = _dickeyget(SaveData_Received[ghost]);
+		for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+			string chara = charas[i1];
+			// 送信者ごとの情報をまとめる
+			dict info = $();
+			// ゴースト名と送信者識別子を:でつないでmd5をかませたものをIDとする
+			info += $("id",_md5(ghost+":"+chara));
+			// アイコン
+			if ( SaveData_Received[ghost][chara]["SenderIcon"] == "default" ) {
+				// デフォルト
+				info += $("SenderIcon","./res/image/icon_default.png");
+			}
+			else {
+				// それ以外
+				info += $("SenderIcon","./res/image/"+ghost+"/"+SaveData_Received[ghost][chara]["SenderIcon"]);
+			}
+			// 表示名
+			info += $("SenderName",SaveData_Received[ghost][chara]["SenderName"]);
+			// プロフ文
+			info += $("SenderProfile",SaveData_Received[ghost][chara]["SenderProfile"]);
+			// アカウント更新時間比較用の数値
+			info += $("time_count",SaveData_Received[ghost][chara]["time_count"]);
+			// メッセージを追加していく
+			array msg_ids = _dickeyget(SaveData_Received[ghost][chara]["msgs"]);
+			// メッセージを日付ごとにわけ、時間順に並べ替える
+			dict messages_to_sort = $();
+			for ( int i2=0; i2<_aryvn(msg_ids); i2++ ) {
+				string msg_id = msg_ids[i2];
+				array msg_id_msgs = SaveData_Received[ghost][chara]["msgs"][msg_id];
+				for ( int i3=0; i3<_aryvn( msg_id_msgs ); i3++ ) {
+					array msg_txt = msg_id_msgs[i3]["Text"];
+					string msg_day = msg_id_msgs[i3]["time_text"][0];
+					string msg_minute = msg_id_msgs[i3]["time_text"][1];
+					int msg_time_cnt = msg_id_msgs[i3]["time_count"];
+					// 切り取り線（日付）を入れる
+					if ( _gettype( messages_to_sort[msg_day] )=="nil" ) {
+						messages_to_sort += $( msg_day, $() );
+						// messages_to_sort[msg_day] += $( "0000000000", $() );
+						// messages_to_sort[msg_day]["0000000000"] += $("type","kiritori");
+						// messages_to_sort[msg_day]["0000000000"] += $("time",msg_day);
+					}
+					// 時計ずれなどによる時間被り対策のため配列とする
+					if ( _gettype( messages_to_sort[msg_day][msg_time_cnt] )=="nil" ) {
+						messages_to_sort[msg_day] += $( msg_time_cnt, {} );
+					}
+					// 配列に入れていく
+					for ( int i4=0; i4<_aryvn(msg_txt); i4++ ) {
+						dict d = $();
+						if ( _strstr(msg_txt[i4],"class=\"stamp\"",0)!=-1 ) {
+							// スタンプ
+							if ( _aryvn( _regex_search( msg_txt[i4], "alt=\"(.+?)\"" ) ) > 0 ) {
+								d += $( "alt", _regex_search( msg_txt[i4], "alt=\"(.+?)\"" )[1] );
+							}
+							d += $("type","stamp");
+							d += $("time",msg_minute);
+							d += $("src",_regex_search( msg_txt[i4], "src=\"(.+?)\"" )[1] );
+						}
+						else {
+							// ふきだし
+							d += $("type","bubble");
+							d += $("time",msg_minute);
+							d += $("innerHTML",msg_txt[i4]);
+						}
+						messages_to_sort[msg_day][msg_time_cnt] += d;
+					}
+				}
+			}
 
-	// // 格納用の変数
-	// array result;
-
-	// array ghosts = _dickeyget(d);
-	// for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
-	// 	string ghost = ghosts[i0];
-	// 	array charas = _dickeyget(d[ghost]);
-
-	// 	for ( int i1=0; i1<_aryvn(charas); i1++ ) {
-	// 		string chara = charas[i1];
-	// 		int last_update = _dickeyget(d[ghost][chara]["time_count"]);
-
-	// 		array msgs = _dickeyget(d[ghost][chara]["msgs"]);
-
-	// 		result += ${
-	// 			$( "sender", ghost )
-	// 		};
-
-	// 	}
-	// }
-
+			array ar;
+			for ( int i2=0; i2<_dicvn(messages_to_sort); i2++ ) {
+				string day = _dickeyget(messages_to_sort)[i2];
+				// 1次元目は日付なのでまず切り取り線を入れる
+				ar += ${
+					$("type","kiritori"),
+					$("time",day)
+				};
+				for ( int i3=0; i3<_dicvn(messages_to_sort[day]); i3++ ) {
+					string second = _dickeyget(messages_to_sort[day])[i3];
+					for ( int i4=0; i4<_aryvn(messages_to_sort[day][second]); i4++ ) {
+						ar += messages_to_sort[day][second][i4];
+					}
+				}
+			}
+			info += $("msgs",ar);
+			webjson += info;
+		}
+	}
+	_writetext("test.json",_azv2json(webjson),"utf8");
+	return;
 }
 
 //----------------------------------------------------------------
@@ -142,6 +197,7 @@ int GetEpochSec(dict ref)
 		if (_gettype(ref["時"]) == "long") {arg += ref["時"];}; else {arg += t["時"];};
 		if (_gettype(ref["分"]) == "long") {arg += ref["分"];}; else {arg += t["分"];};
 		if (_gettype(ref["秒"]) == "long") {arg += ref["秒"];}; else {arg += t["秒"];};
+
 		result = _etime( arg[0], arg[1], arg[2], arg[3], arg[4], arg[5] );
 	}
 
@@ -400,25 +456,39 @@ string CopyImage( string original, string sender )
 
 //----------------------------------------------------------------
 // 配列をソートする
-// 引数：　オプションの文字列, 対象の配列
-// 返値：　並べ替えの配列　失敗時は無
+// 引数：　対象の配列
+// 返値：　並べ替え後の配列　失敗時は無
 //----------------------------------------------------------------
-array AsortEx( string option, array ar0 )
+array AsortEx( array ar )
 {
-	if ( _aryvn(ar0) > 0 ) {
-		array ar1;
-		for ( int i=0; i<_aryvn(ar0); i++ ) {
-			if ( i > 0 ) { ar1 += ","; }
-			ar1 += ar0[i];
-		}
-		dict d = _saorirequest( "yaya", "ASORTEX", option, _arystr(ar1) );
-		array ar2;
-		for ( int i=0; i<100; i++ ) {
-			// 何もかもすべて文字列として帰ってくる
-			if ( _gettype(d["Value"+i]) != "string" ) { break; }
-			ar2 += d["Value"+i];
-		}
-		if ( _aryvn(ar2) > 0 ) { return ar2; }
+	// if ( _aryvn(ar0) > 0 ) {
+	// 	array ar1;
+	// 	for ( int i=0; i<_aryvn(ar0); i++ ) {
+	// 		if ( i > 0 ) { ar1 += ","; }
+	// 		ar1 += ar0[i];
+	// 	}
+	// 	dict d = _saorirequest( "yaya", "ASORTEX", option, _arystr(ar1) );
+	// 	array ar2;
+	// 	for ( int i=0; i<100; i++ ) {
+	// 		// 何もかもすべて文字列として帰ってくる
+	// 		if ( _gettype(d["Value"+i]) != "string" ) { break; }
+	// 		ar2 += d["Value"+i];
+	// 	}
+	// 	if ( _aryvn(ar2) > 0 ) { return ar2; }
+	// }
+	// return;
+
+	// まず辞書に入れる
+	dict d;
+	for ( int i=0; i<_aryvn(ar); i++ ) {
+		d += $( ar[i], ar[i] );
 	}
-	return;
+
+	// 辞書から取り出す　たぶん文字コード順
+	array result;
+	for ( int i=0; i<_aryvn(ar); i++ ) {
+		result += _dickeyget(d)[i];
+	}
+
+	return result;
 }

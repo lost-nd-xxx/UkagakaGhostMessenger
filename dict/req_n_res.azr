@@ -1,5 +1,5 @@
 // 問い合わせと返却
-OnUkagakaGhostMessanger_Request(dict res)
+OnUkagakaGhostMessenger_Request(dict res)
 {
   string sender;
   string SenderId;
