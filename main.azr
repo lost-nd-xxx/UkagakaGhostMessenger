@@ -8,9 +8,10 @@ load()
 	_script_load("dict\\send");
 	_script_load("dict\\check");
 	_script_load("dict\\event");
-	_script_load("dict\\req_n_res");
+	_script_load("dict\\reqnres");
 	_script_load("dict\\textexpand");
 	_script_load("dict\\trigger");
+	_script_load("dict\\fromweb");
 
 	dictOptionalHeader += ${
 		$("target", ""),

@@ -48,8 +48,8 @@ func checkProcess(name string) bool {
 }
 
 func main() {
-    fs := http.FileServer(http.Dir("web"))
-    http.Handle("/", fs)
+    fs := http.FileServer(http.Dir("html"))
+    http.Handle("/ugm/", fs)
 
     srv := &http.Server{
         Addr: ":8000",

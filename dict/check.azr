@@ -14,7 +14,15 @@ string ShowMessage(dict ref)
 	dict reserved = SaveData_Reserved[sender][SenderId][MessageId];
 	dict received_msg;
 
-	// 受信済みセーブデータの欄が無だったら空を入れておく
+	int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
+	if ( block_flag!=0 ) {
+		// ブロックされているので処理しない
+		// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
+		// SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		return;
+	}
+
+	// 受信済みセーブデータの欄が無だったら空や初期値を入れておく
 	if ( _gettype(SaveData_Received[sender]) == "nil" ) {
 		SaveData_Received += $( sender, $() );
 	}
@@ -26,6 +34,12 @@ string ShowMessage(dict ref)
 	}
 	if ( _gettype(SaveData_Received[sender][SenderId]["msgs"][MessageId]) == "nil" ) {
 		SaveData_Received[sender][SenderId]["msgs"] += $( MessageId, {} );
+	}
+	if ( _gettype(SaveData_Received[sender][SenderId]["block_flag"]) == "nil" ) {
+		SaveData_Received[sender][SenderId]["block_flag"] = 0;
+	}
+	if ( _gettype(SaveData_Received[sender][SenderId]["mute_flag"]) == "nil" ) {
+		SaveData_Received[sender][SenderId]["mute_flag"] = 0;
 	}
 
 	SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
@@ -105,10 +119,17 @@ string ShowMessage(dict ref)
 		AddMessageWaitingList(msg);
 	}
 
-	// // web用jsonを出力する
-	// UpdateWebJson();
+	// web用jsonを出力する
+	UpdateWebJson();
 
-	return script;
+	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
+	else if ( mute_flag==0 && oyasumi_flag==0 ) {
+		// ミュートされていない ＆ おやすみモードでなければ通知を出す
+		return script;
+	}
+	else {
+		return;
+	}
 }
 
 //----------------------------------------------------------------
@@ -119,7 +140,6 @@ string ShowMessage(dict ref)
 array Waiting_Ringing;
 OnUkagakaGhostMessenger_ExecRinging()
 {
-	// OnUkagakaGhostMessenger_Ringing
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
 	dictOptionalHeader["reference"] = Waiting_Ringing;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
@@ -371,6 +391,13 @@ array CheckMessagePassiveCondition(array ref)
 		string SenderId = ref[i0]["SenderId"];
 		string MessageId = ref[i0]["MessageId"];
 
+		int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
+		if ( block_flag != 0 ) {
+			// ブロック中なので条件を達成しない
+			result += 0;
+			continue;
+		}
+		
 		// 指定されたメッセージの中身を格納したい
 		dict message;
 

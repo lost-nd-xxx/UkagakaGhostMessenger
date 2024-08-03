@@ -21,6 +21,8 @@ string version()
 // セーブデータを分配
 // 引数・返値：　なし
 //----------------------------------------------------------------
+// おやすみモードのフラグ　セーブファイルに保存しない
+int oyasumi_flag;
 // 予約中
 dict SaveData_Reserved;
 // 条件を満たして受信待機中
@@ -40,10 +42,9 @@ SaveVar()
 	};
 
 	_vsave("savedata", dictSaveData);
-	// UpdateWebJson();
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 RestoreVar()
@@ -53,10 +54,11 @@ RestoreVar()
 	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
 	SaveData_Received = dictSaveData["SaveData_Received"];
 
-	// UpdateWebJson();
+	// web用jsonを出力する
+	UpdateWebJson();
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 //----------------------------------------------------------------
@@ -73,9 +75,10 @@ string OnMenuExec(dict ref)
 //----------------------------------------------------------------
 // web用jsonを出力する [WIP]
 //----------------------------------------------------------------
-string UpdateWebJson()
+UpdateWebJson()
 {
 	array webjson;
+	dict jsontmp;
 
 	array ghosts = _dickeyget(SaveData_Received);
 	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
@@ -84,24 +87,28 @@ string UpdateWebJson()
 		for ( int i1=0; i1<_aryvn(charas); i1++ ) {
 			string chara = charas[i1];
 			// 送信者ごとの情報をまとめる
-			dict info = $();
-			// ゴースト名と送信者識別子を:でつないでmd5をかませたものをIDとする
-			info += $("id",_md5(ghost+":"+chara));
+			dict account = $();
+			account += $("sender",ghost);
+			account += $("SenderId",chara);
+			int flag = SaveData_Received[ghost][chara]["block_flag"];
+			account += $("block_flag",flag);
+			flag = SaveData_Received[ghost][chara]["mute_flag"];
+			account += $("mute_flag",flag);
 			// アイコン
 			if ( SaveData_Received[ghost][chara]["SenderIcon"] == "default" ) {
 				// デフォルト
-				info += $("SenderIcon","./res/image/icon_default.png");
+				account += $("SenderIcon","./res/image/icon_default.png");
 			}
 			else {
 				// それ以外
-				info += $("SenderIcon","./res/image/"+ghost+"/"+SaveData_Received[ghost][chara]["SenderIcon"]);
+				account += $("SenderIcon","./res/image/"+ghost+"/"+SaveData_Received[ghost][chara]["SenderIcon"]);
 			}
 			// 表示名
-			info += $("SenderName",SaveData_Received[ghost][chara]["SenderName"]);
+			account += $("SenderName",SaveData_Received[ghost][chara]["SenderName"]);
 			// プロフ文
-			info += $("SenderProfile",SaveData_Received[ghost][chara]["SenderProfile"]);
+			account += $("SenderProfile",SaveData_Received[ghost][chara]["SenderProfile"]);
 			// アカウント更新時間比較用の数値
-			info += $("time_count",SaveData_Received[ghost][chara]["time_count"]);
+			account += $("time_count",SaveData_Received[ghost][chara]["time_count"]);
 			// メッセージを追加していく
 			array msg_ids = _dickeyget(SaveData_Received[ghost][chara]["msgs"]);
 			// メッセージを日付ごとにわけ、時間順に並べ替える
@@ -117,9 +124,6 @@ string UpdateWebJson()
 					// 切り取り線（日付）を入れる
 					if ( _gettype( messages_to_sort[msg_day] )=="nil" ) {
 						messages_to_sort += $( msg_day, $() );
-						// messages_to_sort[msg_day] += $( "0000000000", $() );
-						// messages_to_sort[msg_day]["0000000000"] += $("type","kiritori");
-						// messages_to_sort[msg_day]["0000000000"] += $("time",msg_day);
 					}
 					// 時計ずれなどによる時間被り対策のため配列とする
 					if ( _gettype( messages_to_sort[msg_day][msg_time_cnt] )=="nil" ) {
@@ -163,11 +167,14 @@ string UpdateWebJson()
 					}
 				}
 			}
-			info += $("msgs",ar);
-			webjson += info;
+			account += $("msgs",ar);
+			jsontmp += $( account["time_count"]+account["id"], account );
 		}
 	}
-	_writetext("test.json",_azv2json(webjson),"utf8");
+	for ( int i=0; i<_dicvn(jsontmp); i++ ) {
+		webjson += jsontmp[_dickeyget(jsontmp)[i]];
+	}
+	_writetext("localweb\\html\\res\\data.json",_azv2json(webjson),"utf8");
 	return;
 }
 
@@ -308,7 +315,7 @@ RefreshFmo()
 	// 現在のfmoを取得
 	array raw_fmo = _getfmo();
 
-	if ( FmoCache == raw_fmo ) {
+	if ( _arystr(FmoCache) == _arystr(raw_fmo) ) {
 		// 前回と変化が無かったので関数を終了
 		return;
 	}
@@ -461,23 +468,6 @@ string CopyImage( string original, string sender )
 //----------------------------------------------------------------
 array AsortEx( array ar )
 {
-	// if ( _aryvn(ar0) > 0 ) {
-	// 	array ar1;
-	// 	for ( int i=0; i<_aryvn(ar0); i++ ) {
-	// 		if ( i > 0 ) { ar1 += ","; }
-	// 		ar1 += ar0[i];
-	// 	}
-	// 	dict d = _saorirequest( "yaya", "ASORTEX", option, _arystr(ar1) );
-	// 	array ar2;
-	// 	for ( int i=0; i<100; i++ ) {
-	// 		// 何もかもすべて文字列として帰ってくる
-	// 		if ( _gettype(d["Value"+i]) != "string" ) { break; }
-	// 		ar2 += d["Value"+i];
-	// 	}
-	// 	if ( _aryvn(ar2) > 0 ) { return ar2; }
-	// }
-	// return;
-
 	// まず辞書に入れる
 	dict d;
 	for ( int i=0; i<_aryvn(ar); i++ ) {

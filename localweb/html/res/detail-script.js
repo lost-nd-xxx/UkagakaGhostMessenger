@@ -4,17 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const getQueryParams = () => {
     const params = new URLSearchParams(window.location.search);
     return {
-      id: params.get('id')
+      sender: params.get('sender'),
+      sender_id: params.get('sender_id')
     };
   };
 
   const fetchData = () => {
-    fetch('data.json')
+    fetch('./res/data.json')
       .then(response => response.json())
       .then(data => {
         if (JSON.stringify(data) !== JSON.stringify(previousData)) {
           const params = getQueryParams();
-          const item = data.find(i => i.id === params.id);
+          const item = data.filter(i => i.sender === params.sender).find(i => i.SenderId === params.sender_id);
           if (item) {
             // ログ保存用の名前をグローバル変数に入れる
             SenderName = item.SenderName;
@@ -69,21 +70,29 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementsByTagName('html')[0] = doc;
             // 前回との比較用データを更新
             previousData = data;
-            
-            return 1;
+            // 既読情報をプラグインに送る
+            (async () => {
+              await new Promise(() => {
+                let fmo = jsstp.get_fmo_infos();
+              }).then((fmo) => {
+                jsstp.SEND({
+                  "ID": fmo.keys[0],
+                  "Script": "\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead," + item.sender + "," + item.SenderId + "]\\e"
+                });
+              });
+            });
           } else {
             // 見つからなかった場合
             // ページタイトル
             document.getElementsByTagName('title')[0].innerText = 'UkagakaGhostMessenger エラー';
-            // 中身 どシンプル
+            // 中身 シンプル
             document.getElementsByTagName('body')[0].innerHTML = `
             <h1>アカウントを見つけられませんでした</h1>
-            <p style="text-align:center;"><a href="./index.html">
-              前の頁に戻る場合、この文字列をクリックしてください。
-            </a></p>
+            <div class="center_text"><p><a href="./index.html">
+              前の頁に戻る際は、この文字列をクリックしてください。
+            </a></p></div>
             <div class="footer"><div class="footerContainer"><p>UkagakaGhostMessenger</p></div></div>
             `;
-            return 0;
           }
         }
       })
@@ -91,23 +100,26 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const updateHtml = async () => {
-
     await new Promise((resolve) => {
-      resolve(fetchData());
-    });
-
-    await new Promise((resolve) => {
+      fetchData();
+      resolve();
+    }).then(() => {
       let fuwaimg = document.createElement('script');
       fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
+      fuwaimg.setAttribute('id', 'fuwaimg_js');
       document.getElementById('js_module').appendChild(fuwaimg);
-      resolve(1);
-    });
+    }).then(() => {
+      // ちょっと待ってから最下部へスクロール
+      setTimeout(function() {
+        window.scrollBy(0, window.innerHeight);
+      },500);
 
+    });
   };
 
   // 初回データ取得
   updateHtml();
-  
+
   // 定期的にデータを再取得（2秒ごとに）
   setInterval(fetchData(), 2000);
 });
@@ -191,30 +203,34 @@ document.getElementById('downloadLink').addEventListener('click', function (even
   }
 
   function inlineScripts(doc) {
-    const scriptElements = doc.querySelectorAll('script[src]');
+    const scriptElements = doc.querySelectorAll('#fuwaimg_js');
     const promises = [];
 
     scriptElements.forEach(script => {
-        const src = script.src;
-        promises.push(fetch(src).then(response => response.text()).then(scriptText => {
-            const inlineScript = doc.createElement('script');
-            inlineScript.textContent = scriptText;
-            script.replaceWith(inlineScript);
-        }));
+      const src = script.src;
+      promises.push(fetch(src).then(response => response.text()).then(scriptText => {
+        const inlineScript = doc.createElement('script');
+        inlineScript.textContent = scriptText;
+        script.replaceWith(inlineScript);
+      }));
     });
 
     return Promise.all(promises);
-}
+  }
 
   // 現在のHTMLを取得し、DOMパーサーで解析
   var parser = new DOMParser();
   var doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
   // 保存用HTMLから要素を削除
-  let elementToRemove = doc.getElementsByClassName('sidebar')[0];
+  let elementToRemove = doc.querySelector('sidebar');
   if (elementToRemove) {
     elementToRemove.remove();
   }
   elementToRemove = doc.getElementById('fetchJs');
+  if (elementToRemove) {
+    elementToRemove.remove();
+  }
+  elementToRemove = doc.getElementById('jsstp_mjs');
   if (elementToRemove) {
     elementToRemove.remove();
   }
@@ -253,3 +269,31 @@ document.getElementById('downloadLink').addEventListener('click', function (even
     URL.revokeObjectURL(url);
   });
 });
+
+document.getElementById('settings').addEventListener('click', function (event) {
+  event.preventDefault(); // デフォルトのリンク動作を防止
+  // はいどあんどしーく
+  const visible = document.querySelectorAll('.sidebar .h_n_s.visible');
+  if (visible.length > 0) {
+    visible.forEach(visible => {
+      visible.setAttribute('class', 'h_n_s');
+    });
+    document.querySelector('#settings img').setAttribute('src','./res/svg/settings.svg');
+    document.querySelector('#settings p').innerText = '管理・設定';
+  } else {
+    const hidden = document.querySelectorAll('.sidebar .h_n_s');
+    hidden.forEach(hidden => {
+      hidden.setAttribute('class', 'h_n_s visible');
+    });
+    document.querySelector('#settings img').setAttribute('src','./res/svg/collapse_all.svg');
+    document.querySelector('#settings p').innerText = 'たたむ';
+  }
+
+});
+
+document.getElementById('setting_mute').addEventListener('click', function (event) {
+  event.preventDefault(); // デフォルトのリンク動作を防止
+
+});
+
+

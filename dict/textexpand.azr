@@ -39,7 +39,7 @@ array GenerateReceivedLogText(string text, string sender)
       html += "\"";
     }
     html += " src=\"";
-    html += "./res/stamp/stamp";
+    html += "./res/stamp/manpu";
     html += search[1];
     html += ".png\">";
     result_text = _strreplace( result_text, search[0], html );

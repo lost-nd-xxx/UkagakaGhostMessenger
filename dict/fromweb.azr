@@ -1,0 +1,114 @@
+// ウェブから来るイベント
+
+//----------------------------------------------------------------
+// 既読を付ける
+// 引数：　ゴースト名、送信者識別子
+// 返値：　なし
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_MarkAsRead(dict ref)
+{
+  string r0 = ref["Reference0"];
+  string r1 = ref["Reference1"];
+  int epoch_sec = GetEpochSec();
+  SaveData_Received[r0][r1]["read_time"] = nil;
+  SaveData_Received[r0][r1] += $("read_time", epoch_sec);
+  array asread_msgs = _dickeyget(SaveData_Received[r0][r1]["msgs"]);
+
+  // 格納用の変数
+	array result;
+
+	array ghosts = _dickeyget(SaveData_Reserved);
+	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
+		string ghost = ghosts[i0];
+		array charas = _dickeyget(SaveData_Reserved[ghost]);
+
+		for ( int i1=0; i1<_aryvn(charas); i1++ ) {
+			string chara = charas[i1];
+			array msg_ids = _dickeyget(SaveData_Reserved[ghost][chara]);
+
+			for ( int i2=0; i2<_aryvn(msg_ids); i2++ ) {
+				string msg_id = msg_ids[i2];
+	  		array conds = SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Message_Read"];
+        int time_count = 0;
+				int read_time = 0;
+        if ( _aryvn(conds)==3 && conds[0]==r0 && conds[1]==r1 ) {
+          array ar = SaveData_Received[ghost][chara]["msgs"][conds[2]];
+          time_count = ar[_aryvn(ar)-1]["time_count"];
+					read_time = SaveData_Received[ghost][chara]["read_time"];
+        }
+        if ( read_time>=time_count && read_time>0 ) {
+          result += ${
+            $( "sender", ghost ),
+            $( "SenderId", chara ),
+            $( "MessageId", msg_id )
+          };
+        }
+			}
+		}
+	}
+
+	if ( _aryvn(result)>0 ) {
+		// Message_Read以外の条件を満たしているか調べる
+		result = CheckMessageCondition("Message_Read",result);
+	}
+
+	if ( _aryvn(result)>0 ) {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(result);
+	}
+}
+
+//----------------------------------------------------------------
+// web頁から色々する
+// 引数：　操作の名前、ゴースト名、送信者識別子
+// 返値：　なし
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
+{
+  string key = ref["Reference0"];
+  string ghost = ref["Reference1"];
+  string chara = ref["Reference2"];
+
+	if ( _gettype(SaveData_Received[ghost][chara])=="nil" ) {
+		// 操作する必要がない
+		return;
+	}
+	
+	if ( key == "block" ) {
+		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
+			if ( _gettype(SaveData_Received[ghost][chara]["block_flag"])!="nil" ) {
+				SaveData_Received[ghost][chara]["block_flag"] = 1;
+			} else {
+				SaveData_Received[ghost][chara] += $("block_flag",1);
+			}
+		}
+	} else if ( key == "mute" ) {
+		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
+			if ( _gettype(SaveData_Received[ghost][chara]["mute_flag"])!="nil" ) {
+				SaveData_Received[ghost][chara]["mute_flag"] = 1;
+			} else {
+				SaveData_Received[ghost][chara] += $("mute_flag",1);
+			}
+		}
+	} else if ( key == "log_delete" ) {
+		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
+			if ( _gettype(SaveData_Received[ghost][chara]["msgs"])!="nil" ) {
+				SaveData_Received[ghost][chara]["msgs"] = nil;
+				// [WIP]画像も消すかどうか考える
+			}
+		}
+	} else if ( key == "address_delete" ) {
+		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
+			SaveData_Received[ghost][chara] = nil;
+			// [WIP]画像も消すかどうか考える
+		}
+	} else {
+		// 指示がおかしかったかもしれない
+		return;
+	}
+	// web用の情報を更新
+	UpdateWebJson();
+	SaveVar();
+}
+
+

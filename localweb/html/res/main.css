@@ -115,7 +115,7 @@ h1 {
   height: 200px;
   overflow-y: auto;
   display: flex;
-  align-items: top;
+  align-items: center;
   margin: 0;
   padding: 0;
 }
@@ -161,6 +161,10 @@ h1 {
 }
 
 /*-------------------------------- コンテンツ --------------------------------*/
+
+.center_text {
+  text-align: center;
+}
 
 .kiritoriLine {
   display: flex;
@@ -359,6 +363,17 @@ hr {
   margin: 10px;
 }
 
+.sidebar .h_n_s {
+  visibility: hidden;
+  opacity: 0;
+  transition: .3s;
+}
+
+.sidebar .h_n_s.visible {
+  visibility: visible;
+  opacity: 1;
+}
+
 /*-------------------------------- ナビ --------------------------------*/
 
 .nav-content hr {
@@ -389,11 +404,12 @@ hr {
   background-color: color-mix(in srgb, var(--color-nav-background) 30%, transparent);
   height: 64px;
   border-radius: 10px;
+  transition: .3s;
 }
 
 .nav-content ul li a:hover {
   background-color: var(--color-nav-background);
-  transition: .3s
+  /* transition: .3s */
 }
 
 .nav-content ul li a .navIcon {
@@ -420,7 +436,7 @@ hr {
 
 /*-------------------------------- 出し入れ --------------------------------*/
 
-.hidden_box {
+/* .hidden_box {
   margin: 1em 0 0 0;
   padding: 0;
   color: #fff;
@@ -468,7 +484,7 @@ hr {
   height: auto;
   opacity: 1;
   font-weight: normal;
-}
+} */
 
 #fuwaimg_caption_text {
   color: black;

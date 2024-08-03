@@ -23,7 +23,6 @@ dic, dict/ayasaori.aym, UTF-8
 // 文SAORIインターフェイスモジュール
 dic, dict/builtins.aym, UTF-8
 // ビルトイン関数モジュール
-dic, dict/functions.aym, UTF-8
 
 //---- 実行ログ -------------------------------------------------------------------------
 // log, ayasaori.log
