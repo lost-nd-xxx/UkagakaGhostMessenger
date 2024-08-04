@@ -3,59 +3,41 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>UkagakaGhostMessenger トーク一覧</title>
+  <title>UkagakaGhostMessenger 連絡先一覧</title>
   <link rel="stylesheet" href="./res/main.css">
   <link rel="stylesheet" href="./res/fuwaimg/css/fuwaimg.css">
 </head>
 
 <body>
 
-  <!-- 
   <div class="sidebar">
     <div class="nav-content">
       <ul>
         <li>
-          <a href="#" onclick="window.location.reload();">
-            <img src="./res/svg/refresh.svg" alt="再読み込み" class="icon">
-            <p class="navItemText">再読み込み</p>
+          <a id="list_type_change" href="#" class="list_default">
+            <img src="./res/svg/filter_alt.svg" alt="表示条件変更" class="navIcon">
+            <p class="navItemText">表示条件：通常</p>
           </a>
         </li>
         <li>
-          <a href="./ugm_information.html">
-            <img src="./res/svg/help.svg" alt="取扱説明" class="icon">
-            <p class="navItemText">取扱説明</p>
+          <a id="oyasumi_toggle" href="#" class="hns_hidden">
+            <img src="./res/svg/notifications_active.svg" alt="おやすみモード" class="navIcon">
+            <p class="navItemText">おやすみモード無効化</p>
           </a>
         </li>
       </ul>
     </div>
   </div>
-   -->
 
   <div class="main">
 
     <div class="header">
       <div class="headerContainer">
-        <h1>UkagakaGhostMessenger トーク一覧</h1>
+        <h1>UkagakaGhostMessenger 連絡先一覧</h1>
       </div>
     </div>
 
-    <div class="addressContainer">
-
-    <!-- 
-      <a class="personLink" href="./person.html?sender=hoge&sender_id=fuga">
-        <div class="personContainer">
-          <img class="personIcon" alt="うめちゃん" src="./res/image/うめちゃん/umechan_icon.png">
-          <div class="personText">
-            <p class="personName">うめちゃん＠UGM</p>
-            <p class="personMessage">おなかがぺこちゃんだよぉ～</p>
-          </div>
-          <p class="personTime">2024/06/23 16:00</p>
-        </div>
-      </a>
-
-      <hr>
-     -->
-
+    <div id="addressContainer" class="hns_hidden">
     </div>
     <!-- addressContainer閉じ -->
 
@@ -69,7 +51,10 @@
   </div>
 
   <!-- jsここから -->
-  <script src="./res/fuwaimg/js/fuwaimg.js"></script>
+  <div id="js_module">
+    <script id="fetchJs" src="./res/index-script.js"></script>
+    <script id="jsstp_mjs" src="./res/jsstp.min.js"></script>
+  </div>
   <!-- jsここまで -->
 
 </body>

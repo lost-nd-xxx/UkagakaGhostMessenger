@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="./res/fuwaimg/css/fuwaimg.css">
   </head>
 
-  <body>
+  <body class="hns_hidden">
 
     <div class="sidebar">
       <div class="nav-content">
@@ -32,25 +32,25 @@
             </a>
           </li>
           <li>
-            <a href="#" id="setting_mute" class="h_n_s">
-              <img src="./res/svg/volume_off.svg" alt="通知オフ" class="navIcon">
-              <p class="navItemText">通知オフ</p>
+            <a href="#" id="setting_mute" class="setting_btn hns_hidden">
+              <img src="./res/svg/volume_up.svg" alt="通知オフにする" class="navIcon">
+              <p class="navItemText">通知オフにする</p>
             </a>
           </li>
           <li>
-            <a href="#" id="setting_block" class="h_n_s">
-              <img src="./res/svg/block.svg" alt="ブロック" class="navIcon">
-              <p class="navItemText">ブロック</p>
+            <a href="#" id="setting_block" class="setting_btn hns_hidden">
+              <img src="./res/svg/account_circle.svg" alt="ブロックする" class="navIcon">
+              <p class="navItemText">ブロックする</p>
             </a>
           </li>
           <li>
-            <a href="#" id="setting_log_delete" class="h_n_s">
+            <a href="#" id="setting_log_delete" class="setting_btn hns_hidden">
               <img src="./res/svg/delete_forever.svg" alt="履歴削除" class="navIcon">
               <p class="navItemText">履歴削除</p>
             </a>
           </li>
           <li>
-            <a href="#" id="setting_address_delete" class="h_n_s">
+            <a href="#" id="setting_address_delete" class="setting_btn hns_hidden">
               <img src="./res/svg/bomb.svg" alt="連絡先削除" class="navIcon">
               <p class="navItemText">連絡先削除</p>
             </a>
@@ -90,6 +90,20 @@
 
     </div>
     <!-- main閉じ -->
+
+    <!-- モーダルここから -->
+    <div id="modal_container" class="hns_hidden" onclick="">
+      <div id="modal_window">
+        <div id="modal_explanation">
+          <p>モーダル説明文</p>
+        </div>
+        <div id="modal_btns">
+          <a id="modal_exec" href="#">する</a>
+          <a id="modal_exit" href="#">しない</a>
+        </div>
+      </div>
+    </div>
+    <!-- モーダルここまで -->
 
     <!-- jsここから -->
     <div id="js_module">

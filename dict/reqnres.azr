@@ -45,7 +45,7 @@ OnUkagakaGhostMessenger_Request(dict res)
 
     int read_time = SaveData_Received[sender][SenderId]["msgs"][MessageId][cnt]["read_time"];
     time_str = "0";
-    if ( read_time > 0 ) {
+    if ( read_time > time_count ) {
       dict t = GetTimeByEpochSec(read_time);
       time_str = _sprintf( "%04d/%02d/%02d %02d:%02d:%02d", t["年"], t["月"], t["日"], t["時"], t["分"], t["秒"] );
     }

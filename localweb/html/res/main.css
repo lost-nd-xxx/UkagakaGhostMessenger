@@ -59,6 +59,7 @@ body {
   background-color: var(--color-page-background);
   font-family: sans-serif;
   margin: 0;
+  overflow-x: hidden;
 }
 
 /*-------------------------------- ヘッダー --------------------------------*/
@@ -185,14 +186,14 @@ div.kiritoriLine p {
   margin: 0 1em;
 }
 
-.contentContainer, .addressContainer {
+.contentContainer, #addressContainer {
   background-color: var(--color-main-background);
   border-radius: 8px;
   width: 900px;
   max-width: 100%;
 }
 
-.addressContainer {
+#addressContainer {
   margin-top: 53px;
 }
 
@@ -363,15 +364,76 @@ hr {
   margin: 10px;
 }
 
-.sidebar .h_n_s {
+/*-------------------------------- かくれんぼ --------------------------------*/
+
+.hns_hidden {
   visibility: hidden;
   opacity: 0;
   transition: .3s;
 }
 
-.sidebar .h_n_s.visible {
+.hns_visible {
   visibility: visible;
   opacity: 1;
+  transition: .3s;
+}
+
+/*-------------------------------- 機能ボタン用モーダルなど --------------------------------*/
+.modal_body {
+  z-index: 0;
+}
+
+#modal_container {
+  z-index: 100;
+  width: 100vw;
+  height: 100vh;
+  background-color: color-mix(in srgb, var(--color-main-background) 50%, transparent);
+  transition: .3s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+}
+
+#modal_window {
+  width: 500px;
+  padding: 1em;
+  background-color: color-mix(in srgb, #fff 90%, var(--color-accent) );
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 10px;
+}
+
+#modal_btns {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+#modal_btns>a {
+  background-color: #808080;
+  color: #fff;
+  padding: .5em;
+  border-radius: 5px;
+  border: 1px solid black;
+}
+
+#modal_btns>a:hover {
+  background-color: #404040;
+  color: #fff;
+  padding: .5em;
+  border-radius: 5px;
+  transition: .3s;
+}
+
+#modal_container .hns_hidden {
+  display: none;
+}
+
+#modal_container.hns_hidden {
+  transition: 0s;
 }
 
 /*-------------------------------- ナビ --------------------------------*/
@@ -409,7 +471,6 @@ hr {
 
 .nav-content ul li a:hover {
   background-color: var(--color-nav-background);
-  /* transition: .3s */
 }
 
 .nav-content ul li a .navIcon {

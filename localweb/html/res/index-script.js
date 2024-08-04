@@ -1,345 +1,289 @@
-document.addEventListener('DOMContentLoaded', () => {
-  let previousData = {};
+// 更新されたかの比較用
+let previousData;
 
-  // const getQueryParams = () => {
-  //   const params = new URLSearchParams(window.location.search);
-  //   return {
-  //     sender: params.get('sender'),
-  //     sender_id: params.get('sender_id')
-  //   };
-  // };
-
-// <a class="personLink" href="./person.html?sender=hoge&sender_id=fuga">
-//   <div class="personContainer">
-//     <img class="personIcon" alt="うめちゃん" src="./res/image/うめちゃん/umechan_icon.png">
-//     <div class="personText">
-//       <p class="personName">うめちゃん＠UGM</p>
-//       <p class="personMessage">おなかがぺこちゃんだよぉ～</p>
-//     </div>
-//     <p class="personTime">2024/06/23 16:00</p>
-//   </div>
-// </a>
-// <hr>
-
-  const fetchData = () => {
-    fetch('./res/data.json')
-      .then(response => response.json())
-      .then(item => {
-        if (JSON.stringify(item) !== JSON.stringify(previousData)) {
-          if (item.length > 0) {
-            // 後でまとめて差し替える
-            const doc = document.documentElement;
-            // ブロック状態
-            const normal_accounts = item.filter(i => i.block_flag === 0);
-            const muted_accounts = item.filter(i => i.mute_flag != 0 );
-            const blocked_accounts = item.filter(i => i.block_flag != 0 );
-            // ぶん回す
-            normal_accounts.forEach(acct => {
-              let elem = document.createElement('a');
-              elem.querySelector('a').setAttribute('class','personLink');
-              elem.querySelector('a').setAttribute('href','./person.html?sender='+acct.sender+'&sender_id='+acct.SenderId);
-
-              elem.querySelector('a').appendChild(document.createElement('div'));
-              elem.querySelector('a>div').setAttribute('class','personContainer');
-
-              elem.querySelector('a>div').appendChild(document.createElement('img'));
-              elem.querySelector('a>div>img').setAttribute('class','personIcon');
-              elem.querySelector('a>div>img').setAttribute('alt',acct.SenderName);
-              elem.querySelector('a>div>img').setAttribute('src',acct.SenderIcon);
-
-              elem.querySelector('a>div').appendChild(document.createElement('div'));
-              elem.querySelector('a>div>div').setAttribute('class','personText');
-              
-              elem.querySelector('a>div>div').appendChild(document.createElement('p'));
-              elem.querySelector('a>div>div>p').setAttribute('class','personName');
-              elem.querySelector('a>div>div>p').innerText = acct.SenderName;
-              
-              elem.querySelector('a>div>div').appendChild(document.createElement('p'));
-              elem.querySelector('a>div>div>p:nth-child(2)').setAttribute('class','personMessage');
-              let newer_msg = acct.msgs.at(-1).innerHTML;
-              if ( newer_msg.length<= 0 ) {
-                newer_msg =  acct.msgs.at(-1).alt;
-              } else {
-                newer_msg = newer_msg.replaceAll( /\<.*?alt\=\"(.*?)\".*?\>/g, ':$1:' );
-                newer_msg = newer_msg.replaceAll( /\<.*?\>/g, '' );
-              }
-              elem.querySelector('a>div>div>p:nth-child(2)').innerText = newer_msg;
-              
-
-
-            });
-
-
-            // アイコンのimgタグ
-            doc.querySelector('.profileIcon').setAttribute('alt', item.SenderName);
-            doc.querySelector('.profileIcon').setAttribute('src', item.SenderIcon);
-            // プロフィールの名前欄
-            doc.querySelector('.profileName').innerText = item.SenderName;
-            doc.querySelector('.profileIcon').setAttribute('alt', item.SenderName);
-            // プロフィールの文章欄
-            doc.querySelector('.profileText').innerHTML = `<p>${item.SenderProfile}</p>`;
-            // メッセージを並べていく
-            var msgs = document.createElement('div');
-            let arr = item.msgs;
-            arr.forEach((element) => {
-              switch (element.type) {
-                case 'kiritori':
-                  let kiritori = document.createElement('div');
-                  kiritori.setAttribute('class', 'kiritoriLine');
-                  kiritori.innerHTML = `<p>${element.time}</p>`;
-                  msgs.appendChild(kiritori);
-                  break;
-                case 'stamp':
-                  let stamp = document.createElement('div');
-                  stamp.setAttribute('class', 'messageContainer');
-                  stamp.innerHTML = `
-                    <img class="messageIcon" alt="${item.SenderName}" src="${item.SenderIcon}">
-                    <img class="stamp" alt="${element.alt}" src="${element.src}">
-                    <p class="messageTime">${element.time}</p>
-                  `;
-                  msgs.appendChild(stamp);
-                  break;
-                default:
-                  let bubble = document.createElement('div');
-                  bubble.setAttribute('class', 'messageContainer');
-                  bubble.innerHTML = `
-                    <img class="messageIcon" alt="${item.SenderName}" src="${item.SenderIcon}">
-                    <div class="messageBubble"><p>${element.innerHTML}</p></div>
-                    <p class="messageTime">${element.time}</p>
-                  `;
-                  msgs.appendChild(bubble);
-                  break;
-              }
-            });
-            doc.getElementsByClassName('contentContainer')[0].innerHTML = msgs.innerHTML;
-            // 書き換えたものをまとめて差し替え
-            document.getElementsByTagName('html')[0] = doc;
-            // 前回との比較用データを更新
-            previousData = data;
-            // 既読情報をプラグインに送る
-            (async () => {
-              await new Promise(() => {
-                let fmo = jsstp.get_fmo_infos();
-              }).then((fmo) => {
-                jsstp.SEND({
-                  "ID": fmo.keys[0],
-                  "Script": "\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead," + item.sender + "," + item.SenderId + "]\\e"
-                });
-              });
-            });
-          } else {
-            // 見つからなかった場合
-            // ページタイトル
-            document.getElementsByTagName('title')[0].innerText = 'UkagakaGhostMessenger エラー';
-            // 中身 シンプル
-            document.getElementsByTagName('body')[0].innerHTML = `
-            <h1>アカウントを見つけられませんでした</h1>
-            <div class="center_text"><p><a href="./index.html">
-              前の頁に戻る際は、この文字列をクリックしてください。
-            </a></p></div>
-            <div class="footer"><div class="footerContainer"><p>UkagakaGhostMessenger</p></div></div>
-            `;
-          }
+function rewriteHtml(item) {
+  // おやすみボタンを状態に応じて変える
+  let oyasumi_btn = document.querySelector('#oyasumi_toggle');
+  let oyasumi = item.filter(i => 'oyasumi_flag' in i)[0];
+  if ( oyasumi.oyasumi_flag === 1 ) {
+    oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_paused.svg');
+    oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
+  } else {
+    oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_active.svg');
+    oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
+  }
+  document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
+  // リストを表示状態に応じて変える
+  let list_btn = document.querySelector('#list_type_change').className.substring(5);
+  let account_list = item;
+  account_list = account_list.filter(i => 'sender' in i);
+  switch (list_btn) {
+    case 'block':
+      account_list = account_list.filter(i => i.block_flag !== 0);
+      break;
+    case 'mute':
+      account_list = account_list.filter(i => i.mute_flag !== 0);
+      break;
+    case 'all':
+      // 全部なので絞り込み不要
+      break;
+    case 'default':
+      account_list = account_list.filter(i => i.block_flag === 0);
+      break;
+    default:
+      account_list = account_list.filter(i => i.block_flag === 0);
+      break;
+  }
+  // 入れ物用の空要素を作っておく
+  let elem = document.createElement('div');
+  elem.setAttribute('id', 'addressContainer');
+  if (item.length === 0) {
+    // かたまり
+    let child = document.createElement('div');
+    child.setAttribute('class', 'personLink');
+    elem.appendChild(child);
+    // 表示名
+    child = document.createElement('p');
+    child.setAttribute('class', 'center_text');
+    child.textContent = '何も記録されていません';
+    elem.querySelector('.personLink').appendChild(child);
+  } else if (account_list.length === 0) {
+    // かたまり
+    let child = document.createElement('div');
+    child.setAttribute('class', 'personLink');
+    elem.appendChild(child);
+    // 表示名
+    child = document.createElement('p');
+    child.setAttribute('class', 'center_text');
+    child.textContent = '該当する項目がありませんでした';
+    elem.querySelector('.personLink').appendChild(child);
+  } else {
+    account_list.forEach((acct, index, array) => {
+      // 最初以外ならhrを入れる
+      if (index > 0) { elem.appendChild(document.createElement('hr')); }
+      if (array.length === 0) {
+      } else {
+        // リンクのかたまり
+        let child = document.createElement('a');
+        child.setAttribute('class', 'personLink');
+        child.setAttribute('href', './person.html?sender=' + acct.sender + '&sender_id=' + acct.SenderId);
+        elem.appendChild(child);
+        // div
+        child = document.createElement('div');
+        child.setAttribute('class', 'personContainer');
+        elem.querySelector('.personLink:last-child').appendChild(child);
+        // アイコン
+        child = document.createElement('img');
+        child.setAttribute('class', 'personIcon');
+        child.setAttribute('alt', acct.SenderName);
+        child.setAttribute('src', acct.SenderIcon);
+        elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
+        // div
+        child = document.createElement('div');
+        child.setAttribute('class', 'personText');
+        elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
+        // 表示名
+        child = document.createElement('p');
+        child.setAttribute('class', 'personName');
+        child.textContent = acct.SenderName;
+        elem.querySelector('.personLink:last-child .personText').appendChild(child);
+        // メッセージのプレビュー　略される
+        child = document.createElement('p');
+        child.setAttribute('class', 'personMessage');
+        let latest_msg = [];
+        if (acct.msgs.length>0) {
+          latest_msg = acct.msgs.at(-1);
         }
-      })
-      .catch(error => console.error('Error loading JSON data:', error));
-  };
-
-  const updateHtml = async () => {
-    await new Promise((resolve) => {
-      fetchData();
-      resolve();
-    }).then(() => {
-      let fuwaimg = document.createElement('script');
-      fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
-      fuwaimg.setAttribute('id', 'fuwaimg_js');
-      document.getElementById('js_module').appendChild(fuwaimg);
-    }).then(() => {
-      // ちょっと待ってから最下部へスクロール
-      setTimeout(function () {
-        window.scrollBy(0, window.innerHeight);
-      }, 500);
-
+        if ('text' in latest_msg) {
+          latest_msg = latest_msg.text;
+        } else if ('alt' in latest_msg) {
+          latest_msg = latest_msg.alt;
+        } else {
+          latest_msg = '';
+        }
+        child.innerText = latest_msg;
+        elem.querySelector('.personLink:last-child .personText').appendChild(child);
+        // 時刻
+        child = document.createElement('p');
+        child.setAttribute('class', 'personTime');
+        const date = new Date(acct.time_count * 1000);
+        const year = date.getFullYear().toString().padStart(4, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hour = date.getHours().toString().padStart(2, '0');
+        const minute = date.getMinutes().toString().padStart(2, '0');
+        const dateText = `${year}/${month}/${day} ${hour}:${minute}`;
+        child.innerText = dateText;
+        elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
+      }
     });
-  };
+  }
+  // 出力
+  document.querySelector('#addressContainer').replaceWith(elem);
+}
 
+function fetchData() {
+  fetch('./res/data.json', { cache: "no-store" })
+    .then(response => response.json())
+    .then(data => {
+      if (JSON.stringify(data) !== JSON.stringify(previousData)) {
+        rewriteHtml(data);
+        // 前回との比較用データを更新
+        previousData = data;
+        return 1;
+      } else {
+        return 0;
+      }
+    })
+    .catch(error => {
+      errorHtml();
+      console.error('fetchData:失敗', error);
+      return -1;
+    });
+}
+
+function errorHtml() {
+  // ページタイトル
+  document.querySelector('title').textContent = 'UkagakaGhostMessenger エラー';
+  // 中身
+  let bodyhtml = document.createElement('body');
+  bodyhtml.appendChild(document.createElement('h1'));
+  bodyhtml.querySelector('h1').textContent = 'データを見つけられませんでした';
+  bodyhtml.appendChild(document.createElement('p'));
+  bodyhtml.querySelector('p').setAttribute('class', 'center_text');
+  bodyhtml.querySelector('p').textContent = 'このページを閉じて、ベースウェア本体からプラグインを操作しなおしてください。';
+  bodyhtml.appendChild(document.createElement('div'));
+  bodyhtml.querySelector('div').setAttribute('class', 'footer');
+  bodyhtml.querySelector('.footer').appendChild(document.createElement('div'));
+  bodyhtml.querySelector('.footer>div').setAttribute('class', 'footerContainer');
+  bodyhtml.querySelector('.footer>.footerContainer').appendChild(document.createElement('p'));
+  bodyhtml.querySelector('.footer>.footerContainer>p').textContent = 'UkagakaGhostMessenger';
+  document.querySelector('body').replaceWith(bodyhtml);
+};
+
+// 繰り返し設定用の変数定義
+let check_update;
+function updateHtml() {
+  try {
+    fetchData();
+    document.querySelector('#oyasumi_toggle').setAttribute('class', 'hns_visible');
+    document.querySelector('#addressContainer').setAttribute('class', 'hns_visible');
+    let fuwaimg = document.createElement('script');
+    fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
+    fuwaimg.setAttribute('id', 'fuwaimg_js');
+    document.querySelector('#js_module').appendChild(fuwaimg);
+    // 定期的にデータを再取得
+    if (!check_update) {
+      check_update = setInterval(() => {
+        fetchData();
+      }, 10000);
+    }
+  } catch (error) {
+    console.error('updateHtml:失敗', error);
+    errorHtml();
+    clearInterval(check_update);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
   // 初回データ取得
   updateHtml();
-
-  // 定期的にデータを再取得（2秒ごとに）
-  setInterval(fetchData(), 2000);
 });
 
-document.getElementById('downloadLink').addEventListener('click', function (event) {
-  event.preventDefault(); // デフォルトのリンク動作を防止
-
-  // 画像をBase64データURLに変換する関数
-  function fetchImageAsBase64(url) {
-    return fetch(url).then(response => response.blob()).then(blob => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function () {
-          resolve(reader.result);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    });
+document.querySelector('#list_type_change').addEventListener('click', (event) => {
+  // デフォルトのリンク動作を防止
+  event.preventDefault();
+  try {
+    // リスト切り替えの文字を状態に応じて差し替え
+    const list_type = document.querySelector('#list_type_change').className.substring(5);
+    let list_btn = document.querySelector('#list_type_change');
+    switch (list_type) {
+      case 'block':
+        list_btn.setAttribute('class', 'list_mute');
+        list_btn.querySelector('.navItemText').textContent = '表示条件：ミュート中';
+        break;
+      case 'mute':
+        list_btn.setAttribute('class', 'list_all');
+        list_btn.querySelector('.navItemText').textContent = '表示条件：全て';
+        break;
+      case 'all':
+        list_btn.setAttribute('class', 'list_default');
+        list_btn.querySelector('.navItemText').textContent = '表示条件：通常';
+        break;
+      case 'default':
+        list_btn.setAttribute('class', 'list_block');
+        list_btn.querySelector('.navItemText').textContent = '表示条件：ブロック中';
+        break;
+      default:
+        list_btn.setAttribute('class', 'list_default');
+        list_btn.querySelector('.navItemText').textContent = '表示条件：通常';
+        break;
+    }
+    document.querySelector('#list_type_change').replaceWith(list_btn);
+    rewriteHtml(previousData);
+  } catch (error) {
+    console.error('list_type_change:失敗', error);
   }
-
-  function inlineImageLinks(doc) {
-    const imageLinkElements = doc.querySelectorAll('a[class="fuwaimg"]');
-    const promises = [];
-
-    imageLinkElements.forEach(a => {
-      promises.push(fetchImageAsBase64(a.href).then(dataUrl => {
-        a.href = dataUrl;
-      }));
-    });
-
-    return Promise.all(promises);
-  }
-
-  function inlineImages(doc) {
-    const imageElements = doc.querySelectorAll('img[src]');
-    const promises = [];
-
-    // 画像をBase64データURLとしてインライン化
-    imageElements.forEach(img => {
-      promises.push(fetchImageAsBase64(img.src).then(dataUrl => {
-        img.src = dataUrl;
-      }));
-    });
-
-    return Promise.all(promises);
-  }
-
-  function inlineCSS(doc) {
-    const linkElements = doc.querySelectorAll('link[rel="stylesheet"]');
-    const promises = [];
-
-    linkElements.forEach(link => {
-      const href = link.href;
-      promises.push(fetch(href).then(response => response.text()).then(cssText => {
-        const urlRegex = /url\(([^)]+)\)/g;
-        const matches = cssText.matchAll(urlRegex);
-        const urlPromises = [];
-
-        for (const match of matches) {
-          let url = match[1].replace(/["']/g, ''); // 引用符を削除
-          if (url.startsWith('./')) {
-            url = new URL(url, href).href;
-          }
-          urlPromises.push(
-            fetchImageAsBase64(url).then(dataUrl => {
-              cssText = cssText.replace(match[1], `"${dataUrl}"`);
-            })
-          );
-        }
-
-        return Promise.all(urlPromises).then(() => {
-          const style = doc.createElement('style');
-          style.textContent = cssText;
-          link.replaceWith(style);
-        });
-      }));
-    });
-
-    return Promise.all(promises);
-  }
-
-  function inlineScripts(doc) {
-    const scriptElements = doc.querySelectorAll('#fuwaimg_js');
-    const promises = [];
-
-    scriptElements.forEach(script => {
-      const src = script.src;
-      promises.push(fetch(src).then(response => response.text()).then(scriptText => {
-        const inlineScript = doc.createElement('script');
-        inlineScript.textContent = scriptText;
-        script.replaceWith(inlineScript);
-      }));
-    });
-
-    return Promise.all(promises);
-  }
-
-  // 現在のHTMLを取得し、DOMパーサーで解析
-  var parser = new DOMParser();
-  var doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
-  // 保存用HTMLから要素を削除
-  let elementToRemove = doc.querySelector('sidebar');
-  if (elementToRemove) {
-    elementToRemove.remove();
-  }
-  elementToRemove = doc.getElementById('fetchJs');
-  if (elementToRemove) {
-    elementToRemove.remove();
-  }
-  elementToRemove = doc.getElementById('jsstp_mjs');
-  if (elementToRemove) {
-    elementToRemove.remove();
-  }
-
-  // 画像、CSS、スクリプトをインライン化して保存
-  inlineImages(doc).then(() => {
-    return inlineImageLinks(doc);
-  }).then(() => {
-    return inlineCSS(doc);
-  }).then(() => {
-    return inlineScripts(doc);
-  }).then(() => {
-
-    // 修正されたHTMLを文字列として取得
-    var modifiedHtml = doc.documentElement.outerHTML;
-
-    // Blobオブジェクトを作成し、HTMLファイルとして保存
-    let blob = new Blob([modifiedHtml], { type: 'text/html' });
-    let url = URL.createObjectURL(blob);
-    let a = document.createElement('a');
-    a.href = url;
-    let date = new Date();
-    let year = date.getFullYear().toString().padStart(4, '0');
-    let month = (date.getMonth() + 1).toString().padStart(2, '0');
-    let day = date.getDate().toString().padStart(2, '0');
-    let hour = date.getHours().toString().padStart(2, '0');
-    let minute = date.getMinutes().toString().padStart(2, '0');
-    let second = date.getSeconds().toString().padStart(2, '0');
-    let dateText = year + month + day + hour + minute + second;
-    a.download = SenderName + dateText + '.html';
-    document.body.appendChild(a);
-    a.click();
-
-    // リンクを削除
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
 });
 
-document.getElementById('settings').addEventListener('click', function (event) {
-  event.preventDefault(); // デフォルトのリンク動作を防止
-  // はいどあんどしーく
-  const visible = document.querySelectorAll('.sidebar .h_n_s.visible');
-  if (visible.length > 0) {
-    visible.forEach(visible => {
-      visible.setAttribute('class', 'h_n_s');
-    });
-    document.querySelectorAll('#settings img')[0].setAttribute('src', './res/svg/settings.svg');
-    document.querySelectorAll('#settings p')[0].innerText = '管理・設定';
-  } else {
-    const hidden = document.querySelectorAll('.sidebar .h_n_s');
-    hidden.forEach(hidden => {
-      hidden.setAttribute('class', 'h_n_s visible');
-    });
-    document.querySelectorAll('#settings img')[0].setAttribute('src', './res/svg/collapse_all.svg');
-    document.querySelectorAll('#settings p')[0].innerText = 'たたむ';
+document.querySelector('#oyasumi_toggle').addEventListener('click', (event) => {
+  // デフォルトのリンク動作を防止
+  event.preventDefault();
+  // スクリプトを定義
+  const send_script = `\\![raiseplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,oyasumi_toggle]\\e`
+  // 情報を送信
+  async function send_exec() {
+    let send_result = await send_jsstp(send_script);
+    if (send_result===1) {
+      // おやすみボタンも状態に応じて変える
+      let oyasumi_btn = document.querySelector('#oyasumi_toggle');
+      let oyasumi = document.querySelector('#oyasumi_toggle .navItemText').textContent;
+      if ( oyasumi === 'おやすみモード有効化' ) {
+        oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_paused.svg');
+        oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
+      } else {
+        oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_active.svg');
+        oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
+      }
+      document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
+    }
+  }
+  send_exec();
+});
+
+async function send_jsstp(script) {
+  // jsstpが使えるかどうか
+  const jsstp_avaiable = await jsstp.available();
+  if (jsstp_avaiable === false) {
+    return 0;
   }
 
-});
+  // fmoが使えるかどうか
+  const fmo = await jsstp.get_fmo_infos();
+  if (fmo.avaiable === false) {
+    return 0;
+  }
 
-document.getElementById('setting_mute').addEventListener('click', function (event) {
-  event.preventDefault(); // デフォルトのリンク動作を防止
+  // 送信データを定義
+  const send_data = { "ID": fmo.keys[0], "Script": script };
 
-});
+  // 送信
+  const result = await jsstp.SEND(send_data);
 
-
+  console.log('jsstp_log: ' + result.head);
+  switch (result.status_code) {
+    case 200:
+      return 1;
+    case 204:
+      return 1;
+    case 400:
+      return 0;
+    case 500:
+      return 0;
+    case 512:
+      // 最小化中
+      return 0;
+    default:
+      return result.status_code;
+  }
+}

@@ -30,9 +30,6 @@ array SaveData_Waiting;
 // 受信済み
 dict SaveData_Received;
 
-// ログ
-array TestLog;
-
 SaveVar()
 {
 	dictSaveData = ${
@@ -145,7 +142,7 @@ UpdateWebJson()
 							// ふきだし
 							d += $("type","bubble");
 							d += $("time",msg_minute);
-							d += $("innerHTML",msg_txt[i4]);
+							d += $("text",msg_txt[i4]);
 						}
 						messages_to_sort[msg_day][msg_time_cnt] += d;
 					}
@@ -171,9 +168,11 @@ UpdateWebJson()
 			jsontmp += $( account["time_count"]+account["id"], account );
 		}
 	}
+	webjson += $("oyasumi_flag",oyasumi_flag);
 	for ( int i=0; i<_dicvn(jsontmp); i++ ) {
 		webjson += jsontmp[_dickeyget(jsontmp)[i]];
 	}
+	
 	_writetext("localweb\\html\\res\\data.json",_azv2json(webjson),"utf8");
 	return;
 }
@@ -198,12 +197,12 @@ int GetEpochSec(dict ref)
 	else {
 		// 省略されていたら現在の値を入れる
 		array arg;
-		if (_gettype(ref["年"]) == "long") {arg += ref["年"];}; else {arg += t["年"];};
-		if (_gettype(ref["月"]) == "long") {arg += ref["月"];}; else {arg += t["月"];};
-		if (_gettype(ref["日"]) == "long") {arg += ref["日"];}; else {arg += t["日"];};
-		if (_gettype(ref["時"]) == "long") {arg += ref["時"];}; else {arg += t["時"];};
-		if (_gettype(ref["分"]) == "long") {arg += ref["分"];}; else {arg += t["分"];};
-		if (_gettype(ref["秒"]) == "long") {arg += ref["秒"];}; else {arg += t["秒"];};
+		if (_gettype(ref["年"]) == "long") {arg += ref["年"];} else {arg += t["年"];}
+		if (_gettype(ref["月"]) == "long") {arg += ref["月"];} else {arg += t["月"];}
+		if (_gettype(ref["日"]) == "long") {arg += ref["日"];} else {arg += t["日"];}
+		if (_gettype(ref["時"]) == "long") {arg += ref["時"];} else {arg += t["時"];}
+		if (_gettype(ref["分"]) == "long") {arg += ref["分"];} else {arg += t["分"];}
+		if (_gettype(ref["秒"]) == "long") {arg += ref["秒"];} else {arg += t["秒"];}
 
 		result = _etime( arg[0], arg[1], arg[2], arg[3], arg[4], arg[5] );
 	}
@@ -463,8 +462,8 @@ string CopyImage( string original, string sender )
 
 //----------------------------------------------------------------
 // 配列をソートする
-// 引数：　対象の配列
-// 返値：　並べ替え後の配列　失敗時は無
+// 引数：　対象の配列（1次元）
+// 返値：　並べ替え後の配列　要素は文字列になっている　失敗時は無
 //----------------------------------------------------------------
 array AsortEx( array ar )
 {
@@ -474,7 +473,7 @@ array AsortEx( array ar )
 		d += $( ar[i], ar[i] );
 	}
 
-	// 辞書から取り出す　たぶん文字コード順
+	// 辞書から取り出す　文字コード順
 	array result;
 	for ( int i=0; i<_aryvn(ar); i++ ) {
 		result += _dickeyget(d)[i];

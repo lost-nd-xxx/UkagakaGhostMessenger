@@ -71,21 +71,15 @@ OnUkagakaGhostMessenger_Send(dict req)
 	//----------------------------------------------------------------
 	// ゴーストのフルパス
 	string ghostpath = GetFmoInfo({sender,{"ghostpath"}})["ghostpath"];
-
-	if ( _strlen(ghostpath) <= 0 ) {
-		// パスがわからない
-		ErrorResponse_Send({sender,"ゴーストのフォルダを認識できませんでした","",""});
-		return;
-	}
 	//----------------------------------------------------------------
 	// 省略時の値や初期値を入れる
 	string MessageId;
 	int Enable = 1;
 	string SenderId = sender;
-	string SenderName = sender;
-	string SenderIcon = "default";
-	string SenderProfile = "";
-	string Text = "";
+	string SenderName;
+	string SenderIcon;
+	string SenderProfile;
+	string Text;
 	array EventReference;
 	int RunCount = 1;
 	array Late = { 0 };
@@ -158,6 +152,11 @@ OnUkagakaGhostMessenger_Send(dict req)
 		}
 		// 画像添付があったらコピーするか判断していく
 		if ( _aryvn(images) > 0 ) {
+			if ( _strlen(ghostpath) <= 0 ) {
+				// パスがわからない
+				ErrorResponse_Send({sender,"ゴーストのフォルダを認識できませんでした","",""});
+				return;
+			}
 			for (int i=0; _aryvn(images)>i; i++) {
 				// ゴースト側の画像の絶対パス
 				string original_path = ghostpath + "ghost\\master\\" + images[i];

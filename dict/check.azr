@@ -15,10 +15,18 @@ string ShowMessage(dict ref)
 	dict received_msg;
 
 	int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
-	if ( block_flag!=0 ) {
-		// ブロックされているので処理しない
+	if ( block_flag==1 ) {
+		// ブロックされている
 		// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
-		// SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		int RunCount = reserved["RunCount"];
+		int ExecutedCount = reserved["ExecutedCount"];
+		ExecutedCount++;
+		// 予約情報の実行済み回数を更新する
+		SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
+		// 残り回数がないなら予約を消す
+		if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
+			SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		}
 		return;
 	}
 
@@ -42,17 +50,45 @@ string ShowMessage(dict ref)
 		SaveData_Received[sender][SenderId]["mute_flag"] = 0;
 	}
 
-	SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderIcon", reserved["SenderIcon"] );
+	// アイコン
+	if ( _strlen(reserved["SenderIcon"])>0 ) {
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderIcon"])!="nil" ) {
+			SaveData_Received[sender][SenderId]["SenderIcon"] = nil;
+		}
+		SaveData_Received[sender][SenderId] += $( "SenderIcon", reserved["SenderIcon"] );
+	} else {
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderIcon"])=="nil" ) {
+			SaveData_Received[sender][SenderId] += $( "SenderIcon", "default" );
+		}
+	}
 
-	SaveData_Received[sender][SenderId]["SenderName"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderName", reserved["SenderName"] );
+	// 表示名
+	if ( _strlen(reserved["SenderName"])>0 ) {
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderName"])!="nil" ) {
+			SaveData_Received[sender][SenderId]["SenderName"] = nil;
+		}
+		SaveData_Received[sender][SenderId] += $( "SenderName", reserved["SenderName"] );
+	} else {
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderName"])=="nil" ) {
+			SaveData_Received[sender][SenderId] += $( "SenderName", sender );
+		}
+	}
 
-	string SenderProfile = TransformTextExpand(reserved["SenderProfile"])[0];
-	SenderProfile = _strreplace( SenderProfile, ":nl:", "<br>" );
-	SaveData_Received[sender][SenderId]["SenderProfile"] = nil;
-	SaveData_Received[sender][SenderId] += $( "SenderProfile", SenderProfile );
+	// プロフィール文
+	if ( _strlen(reserved["SenderProfile"])>0 ) {
+		string SenderProfile = TransformTextExpand(reserved["SenderProfile"])[0];
+		SenderProfile = _strreplace( SenderProfile, ":nl:", "<br>" );
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderProfile"])!="nil" ) {
+			SaveData_Received[sender][SenderId]["SenderProfile"] = nil;
+		}
+		SaveData_Received[sender][SenderId] += $( "SenderProfile", SenderProfile );
+	} else {
+		if ( _gettype(SaveData_Received[sender][SenderId]["SenderProfile"])=="nil" ) {
+			SaveData_Received[sender][SenderId] += $( "SenderProfile", "" );
+		}
+	}
 
+	// 受信時刻
 	int time_count = GetEpochSec();
 	received_msg += $( "time_count", time_count );
 	SaveData_Received[sender][SenderId]["time_count"] = nil;
@@ -62,6 +98,7 @@ string ShowMessage(dict ref)
 	dict t = _gettime();
 	received_msg += $( "time_text", { _sprintf("%04d/%02d/%02d",t["年"],t["月"],t["日"]), _sprintf("%02d:%02d",t["時"],t["分"]) } );
 
+	// 実行回数
 	int RunCount = reserved["RunCount"];
 	int ExecutedCount = reserved["ExecutedCount"];
 	ExecutedCount++;
@@ -69,9 +106,10 @@ string ShowMessage(dict ref)
 	// 予約情報の実行済み回数も更新する
 	SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
 
+	// 本文
 	string Text = reserved["Text"];
-	// テキスト加工を入れる ランダム選択の結果も入れる //
 	string script;
+	// テキスト加工とランダム選択の結果を入れる
 	if ( _strlen(Text) > 0 ) {
 		array a = TransformTextExpand(Text);
 		Text = a[0];
@@ -101,14 +139,15 @@ string ShowMessage(dict ref)
 		}
 	}
 	else {
+		// テキストが無い場合、通知も鳴らないのでRingingしない
 		Waiting_Ringing = {};
 	}
 
 	// 残り回数がないなら予約を消す
+	// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
 	if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
 		SaveData_Reserved[sender][SenderId][MessageId] = nil;
 	}
-	// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
 
 	// Message_Runを満たしたメッセージ
 	array msg = PickUpMessageByCondition("Message_Run",{sender,SenderId,MessageId});
@@ -123,7 +162,7 @@ string ShowMessage(dict ref)
 	UpdateWebJson();
 
 	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
-	else if ( mute_flag==0 && oyasumi_flag==0 ) {
+	else if ( mute_flag!=1 && oyasumi_flag!=1 ) {
 		// ミュートされていない ＆ おやすみモードでなければ通知を出す
 		return script;
 	}
@@ -415,9 +454,9 @@ array CheckMessagePassiveCondition(array ref)
 		int bingo = 0;
 		for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
 			int match = 0;
-			if ( SaveData_Waiting[i]["sender"] == sender ) { match++; };
-			if ( SaveData_Waiting[i]["SenderId"] == SenderId ) { match++; };
-			if ( SaveData_Waiting[i]["MessageId"] == MessageId ) { match++; };
+			if ( SaveData_Waiting[i]["sender"] == sender ) { match++; }
+			if ( SaveData_Waiting[i]["SenderId"] == SenderId ) { match++; }
+			if ( SaveData_Waiting[i]["MessageId"] == MessageId ) { match++; }
 			if ( match >= 3 ) {
 				// ドンピシャのやつがあった
 				bingo = 1;
@@ -603,7 +642,7 @@ array CheckMessagePassiveCondition(array ref)
 				string s0 = split[0];
 				string s1 = split[1];
 				string s2 = split[2];
-				if ( _gettype(SaveData_Received[s0][s1][s2]) != "nil" ) {
+				if ( _gettype(SaveData_Received[s0][s1]["msgs"][s2]) != "nil" ) {
 					match++;
 					continue;
 				}
@@ -624,7 +663,7 @@ array CheckMessagePassiveCondition(array ref)
 				string s0 = split[0];
 				string s1 = split[1];
 				string s2 = split[2];
-				if ( _gettype(SaveData_Received[s0][s1][s2]) != "nil" ) {
+				if ( _gettype(SaveData_Received[s0][s1]["msgs"][s2]) != "nil" ) {
 					match++;
 					continue;
 				}
@@ -645,7 +684,8 @@ array CheckMessagePassiveCondition(array ref)
 				string s0 = split[0];
 				string s1 = split[1];
 				string s2 = split[2];
-				if ( SaveData_Received[s0][s1][s2]["read_flag"] > 0 ) {
+				array isread_msgs = SaveData_Received[s0][s1]["msgs"][s2];
+				if ( isread_msgs[]["read_time"] > 0 ) {
 					match++;
 					continue;
 				}
@@ -706,7 +746,7 @@ array PickUpMessageByCondition(string cond, array vals)
 	array result;
 
 	// 2つ以上なら並べ替えておく
-	if ( _aryvn(vals) >= 2 ) { vals = AsortEx("string,ascending",vals); }
+	if ( _aryvn(vals) >= 2 ) { vals = AsortEx(vals); }
 
 	array ghosts = _dickeyget(SaveData_Reserved);
 	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
