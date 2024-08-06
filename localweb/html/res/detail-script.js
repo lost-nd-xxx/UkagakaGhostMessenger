@@ -161,9 +161,12 @@ function updateHtml() {
     fuwaimg.setAttribute('id', 'fuwaimg_js');
     document.querySelector('#js_module').appendChild(fuwaimg);
     // ちょっと待ってから最下部へスクロール
-    setTimeout(function() {
-      window.scrollBy(0, window.innerHeight);
-    },500);
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "instant"
+      });
+    }, 100);
     // 定期的にデータを再取得
     if (!check_update) {
       check_update = setInterval(() => {

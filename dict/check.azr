@@ -490,7 +490,9 @@ array CheckMessagePassiveCondition(array ref)
 
 		// Time_DayOfWeek
 		if ( _gettype( message["Condition"]["Time_DayOfWeek"][0] ) == "string" ) {
-			string cond_day = message["Condition"]["Time_DayOfWeek"][0];
+			int cond = message["Condition"]["Time_DayOfWeek"][0];
+			array dayofweek = {"変","日","月","火","水","木","金","土"};
+			string cond_day = dayofweek[cond];
 			if ( time["週"]!=cond_day ) {
 				// 条件不達成
 				result += 0;
