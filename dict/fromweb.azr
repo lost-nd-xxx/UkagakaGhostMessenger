@@ -5,7 +5,7 @@
 // 引数：　ゴースト名、送信者識別子
 // 返値：　なし
 //----------------------------------------------------------------
-string OnUkagakaGhostMessenger_MarkAsRead(dict ref)
+OnUkagakaGhostMessenger_MarkAsRead(dict ref)
 {
 	// 引数を整理
 	string r0 = ref["Reference0"];
@@ -72,7 +72,7 @@ string OnUkagakaGhostMessenger_MarkAsRead(dict ref)
 // 引数：　操作の名前、ゴースト名、送信者識別子
 // 返値：　なし
 //----------------------------------------------------------------
-string OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
+OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 {
   string key = ref["Reference0"];
   string ghost = ref["Reference1"];
@@ -127,5 +127,6 @@ string OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 	UpdateWebJson();
 	SaveVar();
 
-	return "\\qsetting done: "+key;
+	// return "\\qsetting done: "+key;
+	return;
 }

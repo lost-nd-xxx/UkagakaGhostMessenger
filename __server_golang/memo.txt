@@ -1,2 +1,0 @@
-ビルドコマンド
-go build -ldflags="-s -w -H windowsgui" -trimpath -o server.exe main.go

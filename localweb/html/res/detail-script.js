@@ -146,6 +146,8 @@ function errorHtml() {
   document.querySelector('body').replaceWith(bodyhtml);
   // 一瞬デフォルトが見えてしまうので最初は非表示
   document.querySelector('body').setAttribute('class', 'hns_visible');
+  // 繰り返し取得を解除
+  clearInterval(check_update);
 };
 
 // 繰り返し設定用の変数定義
@@ -158,6 +160,10 @@ function updateHtml() {
     fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
     fuwaimg.setAttribute('id', 'fuwaimg_js');
     document.querySelector('#js_module').appendChild(fuwaimg);
+    // ちょっと待ってから最下部へスクロール
+    setTimeout(function() {
+      window.scrollBy(0, window.innerHeight);
+    },500);
     // 定期的にデータを再取得
     if (!check_update) {
       check_update = setInterval(() => {
@@ -167,7 +173,6 @@ function updateHtml() {
   } catch (error) {
     console.error('updateHtml:失敗', error);
     errorHtml();
-    clearInterval(check_update);
   }
 };
 

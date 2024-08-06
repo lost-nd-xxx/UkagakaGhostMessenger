@@ -389,7 +389,7 @@ hr {
   height: 100vh;
   background-color: color-mix(in srgb, var(--color-main-background) 50%, transparent);
   transition: .3s;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   display: flex;

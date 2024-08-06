@@ -21,27 +21,30 @@ string version()
 // セーブデータを分配
 // 引数・返値：　なし
 //----------------------------------------------------------------
-// おやすみモードのフラグ　セーブファイルに保存しない
-int oyasumi_flag;
 // 予約中
 dict SaveData_Reserved;
 // 条件を満たして受信待機中
 array SaveData_Waiting;
 // 受信済み
 dict SaveData_Received;
+// おやすみモードのフラグ
+int oyasumi_flag;
+// 送信した通知の履歴　セーブファイルに保存しない
+array notify_log;
 
 SaveVar()
 {
 	dictSaveData = ${
 		$("SaveData_Reserved",SaveData_Reserved),
 		$("SaveData_Waiting",SaveData_Waiting),
-		$("SaveData_Received",SaveData_Received)
+		$("SaveData_Received",SaveData_Received),
+		$("oyasumi_flag",oyasumi_flag)
 	};
 
 	_vsave("savedata", dictSaveData);
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 RestoreVar()
@@ -50,27 +53,17 @@ RestoreVar()
 	SaveData_Reserved = dictSaveData["SaveData_Reserved"];
 	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
 	SaveData_Received = dictSaveData["SaveData_Received"];
+	oyasumi_flag = dictSaveData["oyasumi_flag"];
 
 	// web用jsonを出力する
 	UpdateWebJson();
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 //----------------------------------------------------------------
-// OnMenuExec
-// 動作テストに使っているが、最終的には何らかの操作を置く
-//----------------------------------------------------------------
-string OnMenuExec(dict ref)
-{
-	UpdateWebJson();
-	
-	return 1;
-}
-
-//----------------------------------------------------------------
-// web用jsonを出力する [WIP]
+// web用jsonを出力する
 //----------------------------------------------------------------
 UpdateWebJson()
 {

@@ -14,22 +14,6 @@ string ShowMessage(dict ref)
 	dict reserved = SaveData_Reserved[sender][SenderId][MessageId];
 	dict received_msg;
 
-	int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
-	if ( block_flag==1 ) {
-		// ブロックされている
-		// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
-		int RunCount = reserved["RunCount"];
-		int ExecutedCount = reserved["ExecutedCount"];
-		ExecutedCount++;
-		// 予約情報の実行済み回数を更新する
-		SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
-		// 残り回数がないなら予約を消す
-		if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
-			SaveData_Reserved[sender][SenderId][MessageId] = nil;
-		}
-		return;
-	}
-
 	// 受信済みセーブデータの欄が無だったら空や初期値を入れておく
 	if ( _gettype(SaveData_Received[sender]) == "nil" ) {
 		SaveData_Received += $( sender, $() );
@@ -44,10 +28,26 @@ string ShowMessage(dict ref)
 		SaveData_Received[sender][SenderId]["msgs"] += $( MessageId, {} );
 	}
 	if ( _gettype(SaveData_Received[sender][SenderId]["block_flag"]) == "nil" ) {
-		SaveData_Received[sender][SenderId]["block_flag"] = 0;
+		SaveData_Received[sender][SenderId] += $("block_flag",0);
 	}
 	if ( _gettype(SaveData_Received[sender][SenderId]["mute_flag"]) == "nil" ) {
-		SaveData_Received[sender][SenderId]["mute_flag"] = 0;
+		SaveData_Received[sender][SenderId] += $("mute_flag",0);
+	}
+
+	int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
+	if ( block_flag==1 ) {
+		// ブロックされている
+		// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
+		int RunCount = reserved["RunCount"];
+		int ExecutedCount = reserved["ExecutedCount"];
+		ExecutedCount++;
+		// 予約情報の実行済み回数を更新する
+		SaveData_Reserved[sender][SenderId][MessageId]["ExecutedCount"] = ExecutedCount;
+		// 残り回数がないなら予約を消す
+		if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
+			SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		}
+		return;
 	}
 
 	// アイコン
@@ -118,9 +118,9 @@ string ShowMessage(dict ref)
 			received_msg += $( "RandomResult", a[1] );
 		}
 
-		// 通知用スクリプトを作る
-		script += "\\![set,trayballoon,--icon=none,--title=";
-		script += reserved["SenderName"];
+		// 通知用スクリプトと通知ログを作る
+		script += "\\C\\![set,trayballoon,--icon=none,--title=";
+		script += SaveData_Received[sender][SenderId]["SenderName"];
 		script += GenerateTrayBalloonScript(Text);
 		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]\\e";
 
@@ -162,8 +162,9 @@ string ShowMessage(dict ref)
 	UpdateWebJson();
 
 	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
-	else if ( mute_flag!=1 && oyasumi_flag!=1 ) {
+	if ( mute_flag!=1 && oyasumi_flag!=1 ) {
 		// ミュートされていない ＆ おやすみモードでなければ通知を出す
+		notify_log += { script, sender, SenderId };
 		return script;
 	}
 	else {
@@ -229,6 +230,21 @@ AddMessageWaitingList(array msg)
 		string ghost = curt["sender"];
 		string chara = curt["SenderId"];
 		string msg_id = curt["MessageId"];
+
+		int block_flag = SaveData_Received[ghost][chara]["block_flag"];
+		if ( block_flag==1 ) {
+			// ブロックされている
+			int RunCount = SaveData_Reserved[ghost][chara][msg_id]["RunCount"];
+			int ExecutedCount = SaveData_Reserved[ghost][chara][msg_id]["ExecutedCount"];
+			ExecutedCount++;
+			// 予約情報の実行済み回数を更新する
+			SaveData_Reserved[ghost][chara][msg_id]["ExecutedCount"] = ExecutedCount;
+			// 残り回数がないなら予約を消す
+			if ( SaveData_Reserved[ghost][chara][msg_id]["RunCount"] <= ExecutedCount && SaveData_Reserved[ghost][chara][msg_id]["RunCount"] > 0 ) {
+				SaveData_Reserved[ghost][chara][msg_id] = nil;
+			}
+			continue;
+		}
 
 		if ( _dicvn(SaveData_Reserved[ghost][chara][msg_id]) <= 0 ) {
 			// メッセージが予約に見つからなかったので飛ばす
@@ -429,13 +445,6 @@ array CheckMessagePassiveCondition(array ref)
 		string sender = ref[i0]["sender"];
 		string SenderId = ref[i0]["SenderId"];
 		string MessageId = ref[i0]["MessageId"];
-
-		int block_flag = SaveData_Received[sender][SenderId]["block_flag"];
-		if ( block_flag != 0 ) {
-			// ブロック中なので条件を達成しない
-			result += 0;
-			continue;
-		}
 		
 		// 指定されたメッセージの中身を格納したい
 		dict message;
@@ -473,6 +482,16 @@ array CheckMessagePassiveCondition(array ref)
 		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) == "string" ) {
 			int cond_time = message["Condition"]["Time_Seconds"][0];
 			if ( ( message["SentTime"] + cond_time ) > EpochSec ) {
+				// 条件不達成
+				result += 0;
+				continue;
+			}
+		}
+
+		// Time_DayOfWeek
+		if ( _gettype( message["Condition"]["Time_DayOfWeek"][0] ) == "string" ) {
+			string cond_day = message["Condition"]["Time_DayOfWeek"][0];
+			if ( time["週"]!=cond_day ) {
 				// 条件不達成
 				result += 0;
 				continue;
@@ -685,7 +704,7 @@ array CheckMessagePassiveCondition(array ref)
 				string s1 = split[1];
 				string s2 = split[2];
 				array isread_msgs = SaveData_Received[s0][s1]["msgs"][s2];
-				if ( isread_msgs[]["read_time"] > 0 ) {
+				if ( isread_msgs["read_time"] > 0 ) {
 					match++;
 					continue;
 				}

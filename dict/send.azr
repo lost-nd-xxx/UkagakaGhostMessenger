@@ -99,6 +99,14 @@ OnUkagakaGhostMessenger_Send(dict req)
 		SenderId = ref["SenderId"];
 	}
 	//----------------------------------------------------------------
+	// そもそもブロックされていたら受け付けない
+	//----------------------------------------------------------------
+	// _writetext("test.json",_azv2json({sender,SenderId}),"utf8");
+	if (SaveData_Received[sender][SenderId]["block_flag"]==1) {
+		ErrorResponse_Send({sender,"ブロックされています",MessageId,SenderId});
+		return;
+	}
+	//----------------------------------------------------------------
 	// 有効にするかどうか
 	if ( ref["Enable"] != "1" ) {
 		// 無効にして保存する

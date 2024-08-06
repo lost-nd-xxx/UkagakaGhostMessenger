@@ -96,6 +96,7 @@ function rewriteHtml(item) {
         }
         if ('text' in latest_msg) {
           latest_msg = latest_msg.text;
+          latest_msg = latest_msg.replace(/<("[^"]*"|'[^']*'|[^'">])*>/g,'');
         } else if ('alt' in latest_msg) {
           latest_msg = latest_msg.alt;
         } else {
@@ -159,6 +160,8 @@ function errorHtml() {
   bodyhtml.querySelector('.footer>.footerContainer').appendChild(document.createElement('p'));
   bodyhtml.querySelector('.footer>.footerContainer>p').textContent = 'UkagakaGhostMessenger';
   document.querySelector('body').replaceWith(bodyhtml);
+  // 繰り返し取得を解除
+  clearInterval(check_update);
 };
 
 // 繰り返し設定用の変数定義
@@ -181,7 +184,6 @@ function updateHtml() {
   } catch (error) {
     console.error('updateHtml:失敗', error);
     errorHtml();
-    clearInterval(check_update);
   }
 };
 
