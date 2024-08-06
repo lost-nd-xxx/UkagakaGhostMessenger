@@ -1,0 +1,9 @@
+.git/,nonar,noupdate
+.gitignore,nonar,noupdate
+__akari_tester/,nonar,noupdate
+__memo/,nonar,noupdate
+developer_options.txt,nonar,noupdate
+localweb/__server_golang/,nonar,noupdate
+localweb/shutdown.signal,nonar,noupdate
+profile/,nonar,noupdate
+savedata.adb,nonar,noupdate

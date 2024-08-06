@@ -171,10 +171,6 @@ function updateHtml() {
     fetchData();
     document.querySelector('#oyasumi_toggle').setAttribute('class', 'hns_visible');
     document.querySelector('#addressContainer').setAttribute('class', 'hns_visible');
-    let fuwaimg = document.createElement('script');
-    fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
-    fuwaimg.setAttribute('id', 'fuwaimg_js');
-    document.querySelector('#js_module').appendChild(fuwaimg);
     // 定期的にデータを再取得
     if (!check_update) {
       check_update = setInterval(() => {

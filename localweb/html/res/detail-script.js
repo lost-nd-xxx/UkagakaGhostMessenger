@@ -1,3 +1,5 @@
+import {fuwaimg_export} from "./fuwaimg/js/fuwaimg_export.js";
+
 // 更新されたかの比較用
 let previousData;
 // 情報格納用
@@ -103,6 +105,7 @@ function rewriteHtml(data) {
     const send_script = `\\![raiseplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]\\e`
     // 既読情報を送信
     send_jsstp(send_script);
+    return 1;
   } else {
     errorHtml();
     console.error('rewriteHtml:失敗');
@@ -113,10 +116,18 @@ function fetchData() {
   fetch('./res/data.json', { cache: "no-store" })
     .then(response => response.json())
     .then(data => {
+      let rewrited = 0;
       if (JSON.stringify(data) !== JSON.stringify(previousData)) {
-        rewriteHtml(data);
+        rewrited = rewriteHtml(data);
         // 前回との比較用データを更新
         previousData = data;
+      }
+      return rewrited;
+    })
+    .then((rewrited) => {
+      if (rewrited===1) {
+        // fuwaimgを適用する
+        fuwaimg_export();
       }
     })
     .catch(error => {
@@ -152,14 +163,10 @@ function errorHtml() {
 
 // 繰り返し設定用の変数定義
 let check_update;
-function updateHtml() {
+async function updateHtml() {
   try {
     fetchData();
     document.querySelector('body').setAttribute('class', 'hns_visible');
-    let fuwaimg = document.createElement('script');
-    fuwaimg.setAttribute('src', './res/fuwaimg/js/fuwaimg.js');
-    fuwaimg.setAttribute('id', 'fuwaimg_js');
-    document.querySelector('#js_module').appendChild(fuwaimg);
     // ちょっと待ってから最下部へスクロール
     setTimeout(() => {
       window.scrollTo({
@@ -264,17 +271,17 @@ document.getElementById('downloadLink').addEventListener('click', function (even
   }
 
   function inlineScripts(doc) {
-    const scriptElements = doc.querySelectorAll('#fuwaimg_js');
     const promises = [];
 
-    scriptElements.forEach(script => {
-      const src = script.src;
-      promises.push(fetch(src).then(response => response.text()).then(scriptText => {
+    const src = './res/fuwaimg/js/fuwaimg_inline.js'
+    promises.push(fetch(src)
+      .then(response => response.text())
+      .then(scriptText => {
         const inlineScript = doc.createElement('script');
+        inlineScript.setAttribute('id','fuwaimg_js');
         inlineScript.textContent = scriptText;
-        script.replaceWith(inlineScript);
-      }));
-    });
+        doc.querySelector('#js_module').appendChild(inlineScript);
+    }));
 
     return Promise.all(promises);
   }
@@ -293,14 +300,18 @@ document.getElementById('downloadLink').addEventListener('click', function (even
       elem.remove();
     })
   }
+  elementToRemove = doc.querySelector('link[rel="icon"]');
+  if (elementToRemove) {
+    elementToRemove.remove();
+  }
 
   // 画像、CSS、スクリプトをインライン化して保存
   inlineImages(doc).then(() => {
-    return inlineImageLinks(doc);
-  }).then(() => {
     return inlineCSS(doc);
   }).then(() => {
     return inlineScripts(doc);
+  }).then(() => {
+    return inlineImageLinks(doc);
   }).then(() => {
 
     // 修正されたHTMLを文字列として取得

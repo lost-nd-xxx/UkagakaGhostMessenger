@@ -14,6 +14,12 @@
 // -----------------------------------------------------
 
 {
+  // -----------------------------------------------------
+  // svgをデータURI化
+  // -----------------------------------------------------
+  const zoomin_svg = 'data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%0D%0A%3C!--%20Generator%3A%20Adobe%20Illustrator%2016.0.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%206.00%20Build%200)%20%20--%3E%0D%0A%3C!DOCTYPE%20svg%20PUBLIC%20%22-%2F%2FW3C%2F%2FDTD%20SVG%201.1%2F%2FEN%22%20%22http%3A%2F%2Fwww.w3.org%2FGraphics%2FSVG%2F1.1%2FDTD%2Fsvg11.dtd%22%3E%0D%0A%3Csvg%20version%3D%221.1%22%20id%3D%22%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC_1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20x%3D%220px%22%0D%0A%09%20y%3D%220px%22%20width%3D%22100px%22%20height%3D%22100px%22%20viewBox%3D%220%200%20100%20100%22%20style%3D%22enable-background%3Anew%200%200%20100%20100%3B%22%20xml%3Aspace%3D%22preserve%22%3E%0D%0A%3Cstyle%20type%3D%22text%2Fcss%22%3E%0D%0A%3C!%5BCDATA%5B%0D%0A%09.st0%7Bfill%3A%23231815%3B%7D%0D%0A%09.st1%7Bfill%3Anone%3Bstroke%3A%23231815%3Bstroke-width%3A8%3Bstroke-miterlimit%3A10%3B%7D%0D%0A%09.st2%7Bfill%3A%23FFFFFF%3Bstroke%3A%23231815%3Bstroke-width%3A10%3Bstroke-miterlimit%3A10%3B%7D%0D%0A%5D%5D%3E%0D%0A%3C%2Fstyle%3E%0D%0A%3Ccircle%20class%3D%22st2%22%20cx%3D%2240.215%22%20cy%3D%2239.324%22%20r%3D%2231.025%22%2F%3E%0D%0A%3Cpath%20class%3D%22st0%22%20d%3D%22M59%2C64.5c3.464%2C12.696%2C18.364%2C42.099%2C30.959%2C30.431C104.86%2C81.126%2C62.642%2C60.627%2C63.75%2C61.25%0D%0A%09C60.945%2C61.072%2C59%2C64.5%2C59%2C64.5z%22%2F%3E%0D%0A%3Cline%20class%3D%22st1%22%20x1%3D%2224%22%20y1%3D%2239.324%22%20x2%3D%2256.035%22%20y2%3D%2239.324%22%2F%3E%0D%0A%3Cline%20class%3D%22st1%22%20x1%3D%2240.018%22%20y1%3D%2223.306%22%20x2%3D%2240.018%22%20y2%3D%2255.342%22%2F%3E%0D%0A%3C%2Fsvg%3E%0D%0A';
+
+  const zoomout_svg = 'data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%0D%0A%3C!--%20Generator%3A%20Adobe%20Illustrator%2016.0.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%206.00%20Build%200)%20%20--%3E%0D%0A%3C!DOCTYPE%20svg%20PUBLIC%20%22-%2F%2FW3C%2F%2FDTD%20SVG%201.1%2F%2FEN%22%20%22http%3A%2F%2Fwww.w3.org%2FGraphics%2FSVG%2F1.1%2FDTD%2Fsvg11.dtd%22%3E%0D%0A%3Csvg%20version%3D%221.1%22%20id%3D%22%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC_1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20x%3D%220px%22%0D%0A%09%20y%3D%220px%22%20width%3D%22100px%22%20height%3D%22100px%22%20viewBox%3D%220%200%20100%20100%22%20style%3D%22enable-background%3Anew%200%200%20100%20100%3B%22%20xml%3Aspace%3D%22preserve%22%3E%0D%0A%3Cstyle%20type%3D%22text%2Fcss%22%3E%0D%0A%3C!%5BCDATA%5B%0D%0A%09.st0%7Bfill%3A%23231815%3B%7D%0D%0A%09.st1%7Bfill%3Anone%3Bstroke%3A%23231815%3Bstroke-width%3A8%3Bstroke-miterlimit%3A10%3B%7D%0D%0A%09.st2%7Bfill%3A%23FFFFFF%3Bstroke%3A%23231815%3Bstroke-width%3A10%3Bstroke-miterlimit%3A10%3B%7D%0D%0A%5D%5D%3E%0D%0A%3C%2Fstyle%3E%0D%0A%3Ccircle%20class%3D%22st2%22%20cx%3D%2240.215%22%20cy%3D%2239.324%22%20r%3D%2231.025%22%2F%3E%0D%0A%3Cpath%20class%3D%22st0%22%20d%3D%22M59%2C64.5c3.464%2C12.696%2C18.364%2C42.099%2C30.959%2C30.431C104.86%2C81.126%2C62.642%2C60.627%2C63.75%2C61.25%0D%0A%09C60.945%2C61.072%2C59%2C64.5%2C59%2C64.5z%22%2F%3E%0D%0A%3Cline%20class%3D%22st1%22%20x1%3D%2224%22%20y1%3D%2239.324%22%20x2%3D%2256.035%22%20y2%3D%2239.324%22%2F%3E%0D%0A%3C%2Fsvg%3E%0D%0A';
 
   // -----------------------------------------------------
 
@@ -21,18 +27,16 @@
 
   // -----------------------------------------------------
 
-  // var root;
-  // var scripts = document.getElementsByTagName("script");
-  // var i = scripts.length;
-  // while (i--) {
-  //     var match = scripts[i].src.match(/(^|.*\/)fuwaimg\.js$/);
-  //     if (match) {
-  //         root = match[1];
-  //         break;
-  //     }
-  // }
-
-  var root = 'http://localhost:8000/res/fuwaimg/js/';
+  var root;
+  var scripts = document.getElementsByTagName("script");
+  var i = scripts.length;
+  while (i--) {
+      var match = scripts[i].src.match(/(^|.*\/)fuwaimg\.js$/);
+      if (match) {
+          root = match[1];
+          break;
+      }
+  }
 
   // -----------------------------------------------------
 
@@ -113,7 +117,7 @@
   var parent5 = document.getElementById('fuwaimg_zoom');
   var newFuwaZoomBtnIcon = document.createElement('img');
   newFuwaZoomBtnIcon.setAttribute('id','fuwaimg_zoomimg');
-  newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomin.svg');
+  newFuwaZoomBtnIcon.setAttribute('src',zoomin_svg);
   parent5.insertBefore(newFuwaZoomBtnIcon, parent5.firstChild);
 
   var close = document.getElementById('fuwaimg_close');
@@ -125,7 +129,6 @@
   // モーダルウインドウを表示するリンクを取得
 
   // -----------------------------------------------------
-
   const links = document.getElementsByClassName('fuwaimg');
   const linkarray = Array.from(links);
   var link = [];
@@ -268,7 +271,7 @@
     if(mode != true) {
       setWindowWidth(smallImgWidth);
     }
-    newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomin.svg');
+    newFuwaZoomBtnIcon.setAttribute('src',zoomin_svg);
     parent3.classList.remove('zoom_in');
     parent5.classList.remove('active');
     prevbtn.style.opacity = '1';
@@ -307,11 +310,11 @@
       prevbtn.style.pointerEvents = 'none';
       nextbtn.style.opacity = '0';
       nextbtn.style.pointerEvents = 'none';
-      newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomout.svg');
+      newFuwaZoomBtnIcon.setAttribute('src',zoomout_svg);
     } else {
       setWindowWidth(smallImgWidth);
       // setScrollBooster();
-      newFuwaZoomBtnIcon.setAttribute('src',root+'../img/zoomin.svg');
+      newFuwaZoomBtnIcon.setAttribute('src',zoomin_svg);
       prevbtn.style.opacity = '1';
       prevbtn.style.pointerEvents = 'all';
       nextbtn.style.opacity = '1';
@@ -404,20 +407,4 @@
     }
     setSwipe('#fuwaimg_img');
 
-    // // scrollboosterの設定
-    
-    // function setScrollBooster() {
-    //   var scrollEl = document.querySelector("#fuwaimg_imginner");
-    //   var scr = new ScrollBooster({
-    //     viewport: document.querySelector("#fuwaimg_img"),
-    //     // content: scrollEl,
-    //     emulateScroll: true,
-    //     bounce: false,
-    //     onUpdate: function(data) {
-    //       scrollEl.style.transform =
-    //         "translate(" + -data.position.x + "px, " + -data.position.y + "px)";
-    //     }
-    //   });
-    // };
-    
 }
