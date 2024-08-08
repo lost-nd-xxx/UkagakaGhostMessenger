@@ -43,6 +43,9 @@ SaveVar()
 
 	_vsave("savedata", dictSaveData);
 
+	// web用jsonを出力する
+	UpdateWebJson();
+
 	// テスト用に出力しておく
 	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
@@ -111,15 +114,15 @@ UpdateWebJson()
 					string msg_day = msg_id_msgs[i3]["time_text"][0];
 					string msg_minute = msg_id_msgs[i3]["time_text"][1];
 					int msg_time_cnt = msg_id_msgs[i3]["time_count"];
-					// 切り取り線（日付）を入れる
+					// 変数が無なら空を入れておく
 					if ( _gettype( messages_to_sort[msg_day] )=="nil" ) {
 						messages_to_sort += $( msg_day, $() );
 					}
-					// 時計ずれなどによる時間被り対策のため配列とする
+					// 変数が無なら空を入れておく
 					if ( _gettype( messages_to_sort[msg_day][msg_time_cnt] )=="nil" ) {
 						messages_to_sort[msg_day] += $( msg_time_cnt, {} );
 					}
-					// 配列に入れていく
+					// 時計ずれなどによる時間被り対策のため配列とする
 					for ( int i4=0; i4<_aryvn(msg_txt); i4++ ) {
 						dict d = $();
 						if ( _strstr(msg_txt[i4],"class=\"stamp\"",0)!=-1 ) {
@@ -141,8 +144,7 @@ UpdateWebJson()
 					}
 				}
 			}
-
-			array ar;
+			array ar = {};
 			for ( int i2=0; i2<_dicvn(messages_to_sort); i2++ ) {
 				string day = _dickeyget(messages_to_sort)[i2];
 				// 1次元目は日付なのでまず切り取り線を入れる
@@ -158,14 +160,15 @@ UpdateWebJson()
 				}
 			}
 			account += $("msgs",ar);
-			jsontmp += $( account["time_count"]+account["id"], account );
+			string sort_id = account["time_count"];
+			sort_id += ghost + chara;
+			jsontmp += $( sort_id, account );
 		}
 	}
 	webjson += $("oyasumi_flag",oyasumi_flag);
 	for ( int i=0; i<_dicvn(jsontmp); i++ ) {
 		webjson += jsontmp[_dickeyget(jsontmp)[i]];
 	}
-	
 	_writetext("localweb\\html\\res\\data.json",_azv2json(webjson),"utf8");
 	return;
 }
