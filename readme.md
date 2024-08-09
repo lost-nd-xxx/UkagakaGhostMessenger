@@ -1,6 +1,6 @@
 # UkagakaGhostMessenger
 制作者: ろすえん(lost_nd_xxx)\
-連絡先: http://lnx.flop.jp/\
+連絡先: http://lnx.flop.jp/
 
 ------------------------
 ## 使用モジュール等のライセンス
