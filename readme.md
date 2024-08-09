@@ -26,7 +26,7 @@
 
 ### うめちゃんのイラスト
 * [にじジャーニーにより生成](https://nijijourney.com/ja/)
-  * [https://docs.midjourney.com/docs/terms-of-service]
+  * [にじジャーニー利用規約](https://docs.midjourney.com/docs/terms-of-service)
 
 ------------------------
 ## 更新履歴
