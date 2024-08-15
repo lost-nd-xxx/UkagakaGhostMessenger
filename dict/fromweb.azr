@@ -37,20 +37,23 @@ OnUkagakaGhostMessenger_MarkAsRead(dict ref)
 			for ( int i2=0; i2<_aryvn(msg_ids); i2++ ) {
 				string msg_id = msg_ids[i2];
 	  		array conds = SaveData_Reserved[ghost][chara][msg_id]["Condition"]["Message_Read"];
-        int time_count = 0;
-				int read_time = 0;
-        if ( _aryvn(conds)==3 && conds[0]==r0 && conds[1]==r1 ) {
-          array ar = SaveData_Received[ghost][chara]["msgs"][conds[2]];
-          time_count = ar[_aryvn(ar)-1]["time_count"];
-					read_time = ar[_aryvn(ar)-1]["read_time"];
-        }
-        if ( read_time>time_count ) {
-          result += ${
-            $( "sender", ghost ),
-            $( "SenderId", chara ),
-            $( "MessageId", msg_id )
-          };
-        }
+
+				for ( int i3=0; i3<_aryvn(conds); i3++ ) {
+					int time_count = 0;
+					int read_time = 0;
+					if ( conds[i3][0]==r0 && conds[i3][1]==r1 ) {
+						array ar = SaveData_Received[ghost][chara]["msgs"][conds[i3][2]];
+						time_count = ar[_aryvn(ar)-1]["time_count"];
+						read_time = ar[_aryvn(ar)-1]["read_time"];
+					}
+					if ( read_time!=0 && read_time>=time_count ) {
+						result += ${
+							$( "sender", ghost ),
+							$( "SenderId", chara ),
+							$( "MessageId", msg_id )
+						};
+					}
+				}
 			}
 		}
 	}

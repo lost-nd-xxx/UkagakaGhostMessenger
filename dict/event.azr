@@ -97,7 +97,7 @@ OnGhostBoot(dict ref)
 	string ghostname = TranslateSystemChar(ref["Reference1"]);
 
 	// Ghost_Bootedを満たしたメッセージ
-	array msg = PickUpMessageByCondition("Ghost_Booted",{ghostname});
+	array msg = PickUpMessageByCondition("Ghost_Booted",{{ghostname}});
 
 	if ( _aryvn(msg)>0 ) {
 		// Ghost_Booted以外の条件を満たしているか調べる
@@ -119,7 +119,7 @@ OnGhostExit(dict ref)
 	string ghostname = TranslateSystemChar(ref["Reference1"]);
 
 	// Ghost_Closedを満たしたメッセージ
-	array msg = PickUpMessageByCondition("Ghost_Closed",{ghostname});
+	array msg = PickUpMessageByCondition("Ghost_Closed",{{ghostname}});
 
 	if ( _aryvn(msg)>0 ) {
 		// Ghost_Closed以外の条件を満たしているか調べる

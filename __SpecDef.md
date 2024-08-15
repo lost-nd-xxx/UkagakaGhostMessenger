@@ -3,9 +3,6 @@
 - [このプラグインが起こすイベント](#このプラグインが起こすイベント)
   - [OnUkagakaGhostMessenger_Ringing](#OnUkagakaGhostMessenger_Ringing)
   - [OnUkagakaGhostMessenger_Response](#OnUkagakaGhostMessenger_Response)
-  - [OnUkagakaGhostMessenger_TriggerFailure](#OnUkagakaGhostMessenger_TriggerFailure)
-  - [OnUkagakaGhostMessenger_RequestFailure](#OnUkagakaGhostMessenger_RequestFailure)
-  - [OnUkagakaGhostMessenger_CancelFailure](#OnUkagakaGhostMessenger_CancelFailure)
   - [OnUkagakaGhostMessenger_SendComplete](#OnUkagakaGhostMessenger_SendComplete)
   - [OnUkagakaGhostMessenger_SendFailure](#OnUkagakaGhostMessenger_SendFailure)
 - [このプラグインに起こせるイベント](#このプラグインに起こせるイベント)
@@ -24,10 +21,10 @@
     - [RunCount](#RunCount)
     - [Late](#Late)
     - [Condition](#Condition)
-      - [Time_After:年4桁_月2桁_日2桁_時2桁_分2桁](#Time_After年4桁_月2桁_日2桁_時2桁_分2桁)
+      - [Time_After:年4桁/月2桁/日2桁/時2桁/分2桁](#Time_After年4桁月2桁日2桁時2桁分2桁)
       - [Time_Seconds:秒数](#Time_Seconds秒数)
-      - [Time_DayOfWeek:曜日の一文字](#Time_DayOfWeek曜日の一文字)
-      - [Time_During:数字4桁_数字4桁](#Time_During数字4桁_数字4桁)
+      - [Time_DayOfWeek:数字](#Time_DayOfWeek数字)
+      - [Time_During:数字4桁/数字4桁](#Time_During数字4桁数字4桁)
       - [Ghost_Booted:ゴースト名](#Ghost_Bootedゴースト名)
       - [Ghost_Closed:ゴースト名](#Ghost_Closedゴースト名)
       - [Ghost_IsBooting:ゴースト名](#Ghost_IsBootingゴースト名)
@@ -35,17 +32,19 @@
       - [Ghost_Exists:ゴースト名](#Ghost_Existsゴースト名)
       - [Ghost_NotExists:ゴースト名](#Ghost_NotExistsゴースト名)
       - [Ghost_IsInAddressBook:ゴースト名](#Ghost_IsInAddressBookゴースト名)
-      - [Ghost_Triggered:イベント識別子:トリガーを立ててきたゴースト名](#Ghost_Triggeredイベント識別子トリガーを立ててきたゴースト名)
-      - [Message_Run:ゴースト名:送信者識別子:メッセージ識別子](#Message_Runゴースト名送信者識別子メッセージ識別子)
-      - [Message_IsRun:ゴースト名:送信者識別子:メッセージ識別子](#Message_IsRunゴースト名送信者識別子メッセージ識別子)
-      - [Message_IsNotRun:ゴースト名:送信者識別子:メッセージ識別子](#Message_IsNotRunゴースト名送信者識別子メッセージ識別子)
-      - [Message_Read:ゴースト名:送信者識別子:メッセージ識別子](#Message_Readゴースト名送信者識別子メッセージ識別子)
-      - [Message_IsRead:ゴースト名:送信者識別子:メッセージ識別子](#Message_IsReadゴースト名送信者識別子メッセージ識別子)
-      - [Message_IsNotRead:ゴースト名:送信者識別子:メッセージ識別子](#Message_IsNotReadゴースト名送信者識別子メッセージ識別子)
+      - [Ghost_Triggered:イベント識別子/トリガーを立ててきたゴースト名](#Ghost_Triggeredイベント識別子トリガーを立ててきたゴースト名)
+      - [Message_Run:ゴースト名/送信者識別子/メッセージ識別子](#Message_Runゴースト名送信者識別子メッセージ識別子)
+      - [Message_IsRun:ゴースト名/送信者識別子/メッセージ識別子](#Message_IsRunゴースト名送信者識別子メッセージ識別子)
+      - [Message_IsNotRun:ゴースト名/送信者識別子/メッセージ識別子](#Message_IsNotRunゴースト名送信者識別子メッセージ識別子)
+      - [Message_Read:ゴースト名/送信者識別子/メッセージ識別子](#Message_Readゴースト名送信者識別子メッセージ識別子)
+      - [Message_IsRead:ゴースト名/送信者識別子/メッセージ識別子](#Message_IsReadゴースト名送信者識別子メッセージ識別子)
+      - [Message_IsNotRead:ゴースト名/送信者識別子/メッセージ識別子](#Message_IsNotReadゴースト名送信者識別子メッセージ識別子)
 - [プラグイン独自の記法](#プラグイン独自の記法)
   - [メッセージ任意改行](#メッセージ任意改行)
+  - [文字列ランダム選択](#文字列ランダム選択)
   - [条件達成時の時間類](#条件達成時の時間類)
   - [画像貼り付け](#画像貼り付け)
+  - [スタンプとしての画像貼り付け](#スタンプとしての画像貼り付け)
   - [スタンプ貼り付け](#スタンプ貼り付け)
 - [プラグイン独自の仕様](#プラグイン独自の仕様)
   - [差し替え対象のシステム予約字](#差し替え対象のシステム予約字)
@@ -194,7 +193,7 @@ Referenceは順不同\
 [Late](#Late)の指定がない場合、条件達成後に即時メッセージ表示される\
 以下、`--Condition=Time_Seconds:1800,--Condition=Ghost_IsBooting:Emily_Phase4`などの形で指定
 
-##### Time_After:年4桁:月2桁:日2桁:時2桁:分2桁
+##### Time_After:年4桁/月2桁/日2桁/時2桁/分2桁
 指定時刻以降\
 年〜時は左から順に省略可\
 省略した場合、毎年の6月、など繰り返し使われる\
@@ -214,10 +213,10 @@ Referenceは順不同\
 6 = 金\
 7 = 土
 
-##### Time_During:数字4桁_数字4桁
+##### Time_During:数字4桁/数字4桁
 0時0分〜23時59分を数字4桁_数字4桁で指定する\
 `2200_0300`などの0時またぎも設定可能\
-複数設定時は`0600_0800:1200_1300:1800_1900`などのように:で区切る
+複数設定時は`0600/0800:1200/1300:1800/1900`などのように:で区切る
 
 ##### Ghost_Booted:ゴースト名
 特定ゴーストが起動された瞬間
@@ -227,65 +226,65 @@ Referenceは順不同\
 
 ##### Ghost_IsBooting:ゴースト名
 特定ゴーストが起動している時\
-複数体指定する時は`Ghost_IsBooting:ゴースト名１:ゴースト名２`のようにする
+複数体指定する時は`Ghost_IsBooting:ゴースト名１:ゴースト名２:...`のようにする
 
 ##### Ghost_IsNotBooting:ゴースト名
 特定ゴーストが起動していない時\
-複数体指定する時は`Ghost_IsNotBooting:ゴースト名１:ゴースト名２`のようにする
+複数体指定する時は`Ghost_IsNotBooting:ゴースト名１:ゴースト名２:...`のようにする
 
 ##### Ghost_Exists:ゴースト名
 特定ゴーストがインストールされている\
-複数体指定する時は`Ghost_Exists:ゴースト名１:ゴースト名２`のようにする
+複数体指定する時は`Ghost_Exists:ゴースト名１:ゴースト名２:...`のようにする
 
 ##### Ghost_NotExists:ゴースト名
 特定ゴーストがインストールされていない\
-複数体指定する時は`Ghost_NotExists:ゴースト名１:ゴースト名２`のようにする
+複数体指定する時は`Ghost_NotExists:ゴースト名１:ゴースト名２:...`のようにする
 
 ##### Ghost_IsInAddressBook:ゴースト名
 特定ゴーストがアドレス帳に登録されている\
-複数体指定する時は`Ghost_InAddressBook:ゴースト名１/送信者識別子１:ゴースト名２/送信者識別子２`のようにする
+複数体指定する時は`Ghost_InAddressBook:ゴースト名１/送信者識別子１:ゴースト名２/送信者識別子２:...`のようにする
 
-##### Ghost_Triggered:イベント識別子:トリガーを立ててきたゴースト名
+##### Ghost_Triggered:イベント識別子/トリガーを立ててきたゴースト名
 [OnUkagakaGhostMessenger_Trigger](#OnUkagakaGhostMessenger_Trigger)で、\
 起動中ゴーストが特定のイベント識別子を指定した時\
 ゴースト名は省略可能\
 その場合`Ghost_Triggered:イベント識別子`となる
 
-##### Message_Run:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_Run:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが発生した瞬間\
 （既読の状況は問わず）\
 他ゴーストのメッセージ識別子も指定可
 
-##### Message_IsRun:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_IsRun:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが発生済み\
 （既読の状況は問わず）\
 他ゴーストのメッセージ識別子も指定可\
 複数件指定する時は以下のようにする\
-`--Condition=Message_IsRun:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２`
+`--Condition=Message_IsRun:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２:...`
 
-##### Message_IsNotRun:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_IsNotRun:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが未発生\
 （予約の状況は問わず）\
 他ゴーストのメッセージ識別子も指定可\
 複数件指定する時は以下のようにする\
-`--Condition=Message_IsNotRun:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２`
+`--Condition=Message_IsNotRun:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２:...`
 
-##### Message_Read:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_Read:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが既読になった瞬間\
 他ゴーストのメッセージ識別子も指定可
 
-##### Message_IsRead:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_IsRead:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが既読である\
 他ゴーストのメッセージ識別子も指定可\
 複数件指定する時は以下のようにする\
-`--Condition=Message_IsRead:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２`
+`--Condition=Message_IsRead:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２:...`
 
-##### Message_IsNotRead:ゴースト名:送信者識別子:メッセージ識別子
+##### Message_IsNotRead:ゴースト名/送信者識別子/メッセージ識別子
 指定した識別子のメッセージが未読\
 （予約および発生の状況は問わず）\
 他ゴーストのメッセージ識別子も指定可\
 複数件指定する時は以下のようにする\
-`--Condition=Message_IsNotRead:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２`
+`--Condition=Message_IsNotRead:ゴースト名１/送信者識別子１/メッセージ識別子１:ゴースト名２/送信者識別子２/メッセージ識別子２:...`
 
 ## プラグイン独自の記法
 タグの中にタグを含めることはできない\

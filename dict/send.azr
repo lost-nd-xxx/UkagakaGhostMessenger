@@ -53,8 +53,9 @@ OnUkagakaGhostMessenger_Send(dict req)
 			if ( _gettype(ref["Condition"][key]) == "nil" ) {
 				ref["Condition"] += $(key,{});
 			}
-			if ( _aryvn(a) >= 2 && key == "Time_During" ) { a = AsortEx(a); }
-			ref["Condition"][key] = a;
+			for (int i=0; i<_aryvn(a); i++) {
+				ref["Condition"][key] += _strsplit(a[i],"/");
+			}
 		}
 		else if ( _strstr( text, "--Text=", 0 )==0 ) {
 			ref += $("Text",text);

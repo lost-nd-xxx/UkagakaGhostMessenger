@@ -150,7 +150,7 @@ string ShowMessage(dict ref)
 	}
 
 	// Message_Runを満たしたメッセージ
-	array msg = PickUpMessageByCondition("Message_Run",{sender,SenderId,MessageId});
+	array msg = PickUpMessageByCondition("Message_Run",{{sender,SenderId,MessageId}});
 	// Message_Run以外の条件を満たしているか調べる
 	msg = CheckMessageCondition("Message_Run",msg);
 	if ( _aryvn(msg)>0 ) {
@@ -479,7 +479,7 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Time_Seconds
-		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Time_Seconds"][0] ) != "nil" ) {
 			int cond_time = message["Condition"]["Time_Seconds"][0];
 			if ( ( message["SentTime"] + cond_time ) > EpochSec ) {
 				// 条件不達成
@@ -489,7 +489,7 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Time_DayOfWeek
-		if ( _gettype( message["Condition"]["Time_DayOfWeek"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Time_DayOfWeek"][0] ) != "nil" ) {
 			int cond = message["Condition"]["Time_DayOfWeek"][0];
 			array dayofweek = {"変","日","月","火","水","木","金","土"};
 			string cond_day = dayofweek[cond];
@@ -501,12 +501,12 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Time_During
-		if ( _gettype( message["Condition"]["Time_During"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Time_During"][0] ) != "nil" ) {
 			array a = message["Condition"]["Time_During"];
 			int match = 0;
 			
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array cond_time = _strsplit( a[i1], "_" );
+				array cond_time = a[i1];
 				int start = cond_time[0];
 				int end = cond_time[1];
 				int now = _substr( time["時"], 0, 2 ) + _substr( time["分"], 0, 2 );
@@ -536,8 +536,8 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Time_After
-		if ( _gettype( message["Condition"]["Time_After"][0] ) == "string" ) {
-			array tmp_time = message["Condition"]["Time_After"];
+		if ( _gettype( message["Condition"]["Time_After"][0] ) != "nil" ) {
+			array tmp_time = message["Condition"]["Time_After"][0];
 			dict cond;
 			array key = { "分", "時", "日", "月", "年" };
 			
@@ -569,11 +569,11 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Ghost_IsBooting
-		if ( _gettype( message["Condition"]["Ghost_IsBooting"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Ghost_IsBooting"][0] ) != "nil" ) {
 			array a = message["Condition"]["Ghost_IsBooting"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				string curt_ghost = a[i1];
+				string curt_ghost = a[i1][0];
 				if ( GetFmoInfo({curt_ghost,{"fullname"}})["fullname"] == curt_ghost ) {
 					match++;
 				}
@@ -586,11 +586,11 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Ghost_IsNotBooting
-		if ( _gettype( message["Condition"]["Ghost_IsNotBooting"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Ghost_IsNotBooting"][0] ) != "nil" ) {
 			array a = message["Condition"]["Ghost_IsNotBooting"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				string curt_ghost = a[i1];
+				string curt_ghost = a[i1][0];
 				if ( GetFmoInfo({curt_ghost,{"fullname"}})["fullname"] == curt_ghost ) {
 					match++;
 				}
@@ -603,13 +603,16 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Ghost_Exists
-		if ( _gettype( message["Condition"]["Ghost_Exists"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Ghost_Exists"][0] ) != "nil" ) {
 			if ( _aryvn(InstalledGhostNameList)==0 ) {
 				// インストール済みゴーストのリストが未構築or構築失敗
 				result += -1;
 				continue;
 			}
-			array a = message["Condition"]["Ghost_Exists"];
+			array a;
+			for (int i1=0; i1<_aryvn(message["Condition"]["Ghost_Exists"]); i1++) {
+				a += message["Condition"]["Ghost_Exists"][i1][0];
+			}
 			string result = _arystr( IsGhostNameInstalled(a) );
 			if ( _regex_match( result, "1*" ) == 0 ) {
 				// 条件不達成
@@ -619,13 +622,16 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Ghost_NotExists
-		if ( _gettype( message["Condition"]["Ghost_NotExists"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Ghost_NotExists"][0] ) != "nil" ) {
 			if ( _aryvn(InstalledGhostNameList)==0 ) {
 				// インストール済みゴーストのリストが未構築or構築失敗
 				result += -1;
 				continue;
 			}
-			array a = message["Condition"]["Ghost_NotExists"];
+			array a;
+			for (int i1=0; i1<_aryvn(message["Condition"]["Ghost_NotExists"]); i1++) {
+				a += message["Condition"]["Ghost_NotExists"][i1][0];
+			}
 			string result = _arystr( IsGhostNameInstalled(a) );
 			if ( _regex_match( result, "0*" ) == 0 ) {
 				// 条件不達成
@@ -635,13 +641,12 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Ghost_IsInAddressBook
-		if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Ghost_IsInAddressBook"][0] ) != "nil" ) {
 			array a = message["Condition"]["Ghost_IsInAddressBook"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array split = _strsplit(a[i1],"/");
-				string s0 = split[0];
-				string s1 = split[1];
+				string s0 = a[i1][0];
+				string s1 = a[i1][1];
 				if ( _gettype(SaveData_Received[s0][s1]) != "nil" ) {
 					match++;
 					continue;
@@ -655,14 +660,13 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Message_IsRun
-		if ( _gettype( message["Condition"]["Message_IsRun"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Message_IsRun"][0] ) != "nil" ) {
 			array a = message["Condition"]["Message_IsRun"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array split = _strsplit(a[i1],"/");
-				string s0 = split[0];
-				string s1 = split[1];
-				string s2 = split[2];
+				string s0 = a[i1][0];
+				string s1 = a[i1][1];
+				string s2 = a[i1][2];
 				if ( _gettype(SaveData_Received[s0][s1]["msgs"][s2]) != "nil" ) {
 					match++;
 					continue;
@@ -676,14 +680,13 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Message_IsNotRun
-		if ( _gettype( message["Condition"]["Message_IsNotRun"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Message_IsNotRun"][0] ) != "nil" ) {
 			array a = message["Condition"]["Message_IsNotRun"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array split = _strsplit(a[i1],"/");
-				string s0 = split[0];
-				string s1 = split[1];
-				string s2 = split[2];
+				string s0 = a[i1][0];
+				string s1 = a[i1][1];
+				string s2 = a[i1][2];
 				if ( _gettype(SaveData_Received[s0][s1]["msgs"][s2]) != "nil" ) {
 					match++;
 					continue;
@@ -697,16 +700,16 @@ array CheckMessagePassiveCondition(array ref)
 		}
 
 		// Message_IsRead
-		if ( _gettype( message["Condition"]["Message_IsRead"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Message_IsRead"][0] ) != "nil" ) {
 			array a = message["Condition"]["Message_IsRead"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array split = _strsplit(a[i1],"/");
-				string s0 = split[0];
-				string s1 = split[1];
-				string s2 = split[2];
+				string s0 = a[i1][0];
+				string s1 = a[i1][1];
+				string s2 = a[i1][2];
 				array isread_msgs = SaveData_Received[s0][s1]["msgs"][s2];
-				if ( isread_msgs["read_time"] > 0 ) {
+				int readtime = isread_msgs["read_time"]
+				if ( readtime>0 ) {
 					match++;
 					continue;
 				}
@@ -719,19 +722,20 @@ array CheckMessagePassiveCondition(array ref)
 		}
 		
 		// Message_IsNotRead
-		if ( _gettype( message["Condition"]["Message_IsNotRead"][0] ) == "string" ) {
+		if ( _gettype( message["Condition"]["Message_IsNotRead"][0] ) != "nil" ) {
 			array a = message["Condition"]["Message_IsNotRead"];
 			int match = 0;
 			for ( int i1=0; i1<_aryvn(a); i1++ ) {
-				array split = _strsplit(a[i1],"/");
-				string s0 = split[0];
-				string s1 = split[1];
-				if ( SaveData_Received[s0][s1][s2]["read_flag"] > 0 ) {
+				string s0 = a[i1][0];
+				string s1 = a[i1][1];
+				string s2 = a[i1][2];
+				array isread_msgs = SaveData_Received[s0][s1]["msgs"][s2];
+				if ( isread_msgs["read_time"] > 0 ) {
 					match++;
 					continue;
 				}
 			}
-			if ( match>0 ) {
+			if ( match>_aryvn(a) ) {
 				// 条件不達成
 				result += 0;
 				continue;

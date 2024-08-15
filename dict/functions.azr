@@ -14,7 +14,7 @@ string pluginname()
 
 string version()
 {
-	return "UGM/0.00";
+	return "UGM/0.0.0";
 }
 
 //----------------------------------------------------------------
