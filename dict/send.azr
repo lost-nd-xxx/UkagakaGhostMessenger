@@ -104,7 +104,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 	//----------------------------------------------------------------
 	// _writetext("test.json",_azv2json({sender,SenderId}),"utf8");
 	if (SaveData_Received[sender][SenderId]["block_flag"]==1) {
-		ErrorResponse_Send({sender,"ブロックされています",MessageId,SenderId});
+		ErrorResponse_Send({sender,"ブロックされています",SenderId,MessageId});
 		return;
 	}
 	//----------------------------------------------------------------
@@ -114,7 +114,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 		SaveData_Reserved[sender][SenderId][MessageId] = nil;
 		
 		// 完了イベントを実行
-		CompleteResponse_Send({sender,"cancel",MessageId,SenderId});
+		CompleteResponse_Send({sender,"cancel",SenderId,MessageId});
 		return;
 	}
 	//----------------------------------------------------------------
@@ -136,7 +136,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 			string original_path = ghostpath + "ghost\\master\\" + SenderIcon;
 			string result = CopyImage(original_path,sender);
 			if ( _strlen(result) == 0 ) {
-				ErrorResponse_Send({sender,"SenderIconをコピーできませんでした",MessageId,SenderId});
+				ErrorResponse_Send({sender,"SenderIconをコピーできませんでした",SenderId,MessageId});
 				return;
 			}
 			else {
@@ -171,7 +171,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 				string original_path = ghostpath + "ghost\\master\\" + images[i];
 				string result = CopyImage(original_path,sender);
 				if (  _strlen(result) == 0 ) {
-					ErrorResponse_Send({sender,"Textに添付された画像をコピーできませんでした",MessageId,SenderId});
+					ErrorResponse_Send({sender,"Textに添付された画像をコピーできませんでした",SenderId,MessageId});
 					return;
 				}
 			}
@@ -283,7 +283,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 	SaveData_Reserved[sender][SenderId][MessageId] += $("SentTime",senttime);
 	//----------------------------------------------------------------
 	// 完了イベントを実行
-	CompleteResponse_Send({sender,"send",MessageId,SenderId});
+	CompleteResponse_Send({sender,"send",SenderId,MessageId});
 }
 
 //----------------------------------------------------------------
