@@ -11,13 +11,10 @@ OnUkagakaGhostMessenger_Cancel(dict req)
 	//----------------------------------------------------------------
   // 送信者識別子
   string SenderId = req["Reference0"];
-  if ( _strlen(SenderId) == 0 ) {
-    SenderId = sender;
-  }
 	//----------------------------------------------------------------
   if ( _gettype(SaveData_Reserved[sender][SenderId] != "nil") ) {
-    SaveData_Reserved[sender][SenderId] = nil;
-  }
+		SaveData_Reserved[sender][SenderId] = nil;
+	}
 }
 
 //----------------------------------------------------------------
@@ -88,14 +85,6 @@ OnUkagakaGhostMessenger_Send(dict req)
 	//----------------------------------------------------------------
 	// ここから実際の値を確かめていく
 	//----------------------------------------------------------------
-	if ( _strlen(ref["MessageId"]) > 0 ) {
-		MessageId = ref["MessageId"];
-	}
-	else {
-		// プロフィール更新のみでメッセージ識別子が無い場合
-		MessageId = GetEpochSec();
-	}
-	//----------------------------------------------------------------
 	if ( _strlen(ref["SenderId"]) > 0 ) {
 		SenderId = ref["SenderId"];
 	}
@@ -115,6 +104,13 @@ OnUkagakaGhostMessenger_Send(dict req)
 		
 		// 完了イベントを実行
 		CompleteResponse_Send({sender,"cancel",SenderId,MessageId});
+		return;
+	}
+	//----------------------------------------------------------------
+	// ブロックされていたら受け付けない
+	//----------------------------------------------------------------
+	if (SaveData_Received[sender][SenderId]["block_flag"]==1) {
+		ErrorResponse_Send({sender,"ブロックされています",SenderId,MessageId});
 		return;
 	}
 	//----------------------------------------------------------------
