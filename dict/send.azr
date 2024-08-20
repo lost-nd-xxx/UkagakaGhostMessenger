@@ -89,12 +89,12 @@ OnUkagakaGhostMessenger_Send(dict req)
 		SenderId = ref["SenderId"];
 	}
 	//----------------------------------------------------------------
-	// そもそもブロックされていたら受け付けない
-	//----------------------------------------------------------------
-	// _writetext("test.json",_azv2json({sender,SenderId}),"utf8");
-	if (SaveData_Received[sender][SenderId]["block_flag"]==1) {
-		ErrorResponse_Send({sender,"ブロックされています",SenderId,MessageId});
-		return;
+	if ( _strlen(ref["MessageId"]) > 0 ) {
+		MessageId = ref["MessageId"];
+	}
+	else {
+		// メッセージ識別子が無い場合
+		ErrorResponse_Send({sender,"メッセージ識別子を認識できませんでした",SenderId,""});
 	}
 	//----------------------------------------------------------------
 	// 有効にするかどうか
