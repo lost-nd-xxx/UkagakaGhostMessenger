@@ -97,6 +97,8 @@ string ShowMessage(dict ref)
 	// セーブデータ容量は増えるが、メッセージごとに数文字なのでたぶん大丈夫
 	dict t = _gettime();
 	received_msg += $( "time_text", { _sprintf("%04d/%02d/%02d",t["年"],t["月"],t["日"]), _sprintf("%02d:%02d",t["時"],t["分"]) } );
+	// 予約情報の送信時刻を更新する（次回発動の基準時間）残り回数が尽きた場合の処理はもう少し下にある
+	SaveData_Reserved[sender][SenderId][MessageId]["SentTime"] = time_count;
 
 	// 実行回数
 	int RunCount = reserved["RunCount"];
