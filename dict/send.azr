@@ -12,7 +12,11 @@ OnUkagakaGhostMessenger_Cancel(dict req)
   // 送信者識別子
   string SenderId = req["Reference0"];
 	//----------------------------------------------------------------
-  if ( _gettype(SaveData_Reserved[sender][SenderId] != "nil") ) {
+  if ( _strlen(SenderId) <= 0 ) {
+    // 送信者識別子が未指定なので、ゴーストに属する全ての予約を消す
+		SaveData_Reserved[sender] = nil;
+  } else {
+    // 送信者識別子が指定されていた
 		SaveData_Reserved[sender][SenderId] = nil;
 	}
 }
