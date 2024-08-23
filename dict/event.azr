@@ -5,6 +5,12 @@
 //----------------------------------------------------------------
 string OnSecondChange(dict ref)
 {
+	int now = GetEpochSec();
+	if ( now > (Fake_DataLimit_LastTime+60) ) {
+		// Fake_DataLimit_Countのカウントをゼロに戻す
+		Fake_DataLimit_Count = 0;
+	}
+	
 	// 表示待ちを処理
   string script = CheckWaitingList();
 

@@ -5,11 +5,11 @@ function rewriteHtml(item) {
   // おやすみボタンを状態に応じて変える
   let oyasumi_btn = document.querySelector('#oyasumi_toggle');
   let oyasumi = item.filter(i => 'oyasumi_flag' in i)[0];
-  if ( oyasumi.oyasumi_flag === 1 ) {
-    oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_paused.svg');
+  if (oyasumi.oyasumi_flag === 1) {
+    oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_paused.svg');
     oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
   } else {
-    oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_active.svg');
+    oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_active.svg');
     oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
   }
   document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
@@ -58,7 +58,7 @@ function rewriteHtml(item) {
     child.textContent = '該当する項目がありませんでした';
     elem.querySelector('.personLink').appendChild(child);
   } else {
-    account_list.forEach((acct, index, array) => {
+    [...account_list].reverse().forEach((acct, index, array) => {
       // 最初以外ならhrを入れる
       if (index > 0) { elem.appendChild(document.createElement('hr')); }
       if (array.length === 0) {
@@ -73,10 +73,16 @@ function rewriteHtml(item) {
         child.setAttribute('class', 'personContainer');
         elem.querySelector('.personLink:last-child').appendChild(child);
         // アイコン
-        child = document.createElement('img');
-        child.setAttribute('class', 'personIcon');
-        child.setAttribute('alt', acct.SenderName);
-        child.setAttribute('src', acct.SenderIcon);
+        child = document.createElement('div');
+        child.setAttribute('class', 'personIconContainer');
+        if (1 == 1) {
+          // 未読の新着がある
+          child.setAttribute('class', 'personIconContainer iconNewArrival');
+        }
+        child.appendChild(document.createElement('img'));
+        child.querySelector('img').setAttribute('class', 'personIcon');
+        child.querySelector('img').setAttribute('alt', acct.SenderName);
+        child.querySelector('img').setAttribute('src', acct.SenderIcon);
         elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
         // div
         child = document.createElement('div');
@@ -91,12 +97,12 @@ function rewriteHtml(item) {
         child = document.createElement('p');
         child.setAttribute('class', 'personMessage');
         let latest_msg = [];
-        if (acct.msgs.length>0) {
+        if (acct.msgs.length > 0) {
           latest_msg = acct.msgs.at(-1);
         }
         if ('text' in latest_msg) {
           latest_msg = latest_msg.text;
-          latest_msg = latest_msg.replace(/<("[^"]*"|'[^']*'|[^'">])*>/g,'');
+          latest_msg = latest_msg.replace(/<("[^"]*"|'[^']*'|[^'">])*>/g, '');
         } else if ('alt' in latest_msg) {
           latest_msg = latest_msg.alt;
         } else {
@@ -105,8 +111,10 @@ function rewriteHtml(item) {
         child.innerText = latest_msg;
         elem.querySelector('.personLink:last-child .personText').appendChild(child);
         // 時刻
-        child = document.createElement('p');
-        child.setAttribute('class', 'personTime');
+        child = document.createElement('div');
+        child.setAttribute('class', 'personTimeContainer');
+        child.appendChild(document.createElement('p'));
+        child.querySelector('p').setAttribute('class','personTime');
         const date = new Date(acct.time_count * 1000);
         const year = date.getFullYear().toString().padStart(4, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -114,7 +122,12 @@ function rewriteHtml(item) {
         const hour = date.getHours().toString().padStart(2, '0');
         const minute = date.getMinutes().toString().padStart(2, '0');
         const dateText = `${year}/${month}/${day} ${hour}:${minute}`;
-        child.innerText = dateText;
+        child.querySelector('.personTime').innerText = dateText;
+        child.appendChild(document.createElement('p'));
+        child.querySelector('p:last-child').setAttribute('class','personNewArrivals');
+        if (1==1) {
+          child.querySelector('.personNewArrivals').innerText = '新着 10件';
+        }
         elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
       }
     });
@@ -232,15 +245,15 @@ document.querySelector('#oyasumi_toggle').addEventListener('click', (event) => {
   // 情報を送信
   async function send_exec() {
     let send_result = await send_jsstp(send_script);
-    if (send_result===1) {
+    if (send_result === 1) {
       // おやすみボタンも状態に応じて変える
       let oyasumi_btn = document.querySelector('#oyasumi_toggle');
       let oyasumi = document.querySelector('#oyasumi_toggle .navItemText').textContent;
-      if ( oyasumi === 'おやすみモード有効化' ) {
-        oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_paused.svg');
+      if (oyasumi === 'おやすみモード有効化') {
+        oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_paused.svg');
         oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
       } else {
-        oyasumi_btn.querySelector('.navIcon').setAttribute('src','./res/svg/notifications_active.svg');
+        oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_active.svg');
         oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
       }
       document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);

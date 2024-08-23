@@ -1,5 +1,3 @@
-import {fuwaimg_export} from "./fuwaimg/js/fuwaimg_export.js";
-
 // 更新されたかの比較用
 let previousData;
 // 情報格納用
@@ -15,11 +13,13 @@ function getQueryParams() {
 
 function rewriteHtml(data) {
   const params = getQueryParams();
+  // 後でまとめて差し替える
+  let doc = document.querySelector('html');
+  // 新着があったら
+
   // 情報を探して変数に入れる
   item = data.filter(i => i.sender === params.sender).find(i => i.SenderId === params.sender_id);
-  if (item) {
-    // 後でまとめて差し替える
-    let doc = document.querySelector('html');
+  if (Object.keys(item).length > 0) {
     // ページタイトル
     let title = 'UkagakaGhostMessenger ' + item.SenderName + 'とのトーク履歴';
     doc.querySelector('title').textContent = title;
@@ -125,9 +125,9 @@ function fetchData() {
       return rewrited;
     })
     .then((rewrited) => {
-      if (rewrited===1) {
+      if (rewrited === 1) {
         // fuwaimgを適用する
-        fuwaimg_export();
+        loadFuwaimg();
       }
     })
     .catch(error => {
@@ -142,7 +142,7 @@ function errorHtml() {
   // 中身 シンプル
   let bodyhtml = document.createElement('body');
   bodyhtml.appendChild(document.createElement('h1'));
-  bodyhtml.querySelector('h1').textContent = 'アカウントを見つけられませんでした';
+  bodyhtml.querySelector('h1').textContent = 'エラーが発生しました';
   bodyhtml.appendChild(document.createElement('p'));
   bodyhtml.querySelector('p').setAttribute('class', 'center_text');
   bodyhtml.querySelector('.center_text').appendChild(document.createElement('a'));
@@ -159,6 +159,15 @@ function errorHtml() {
   document.querySelector('body').setAttribute('class', 'hns_visible');
   // 繰り返し取得を解除
   clearInterval(check_update);
+};
+
+async function loadFuwaimg() {
+  try {
+    const timestamp = new Date().getTime();
+    await import(`./fuwaimg/js/fuwaimg.js?timestamp=${timestamp}`);
+  } catch (error) {
+    console.error('fuwaimgのインポートに失敗しました:', error);
+  }
 };
 
 // 繰り返し設定用の変数定義
@@ -273,15 +282,15 @@ document.getElementById('downloadLink').addEventListener('click', function (even
   function inlineScripts(doc) {
     const promises = [];
 
-    const src = './res/fuwaimg/js/fuwaimg_inline.js'
+    const src = './res/fuwaimg/js/fuwaimg.js'
     promises.push(fetch(src)
       .then(response => response.text())
       .then(scriptText => {
         const inlineScript = doc.createElement('script');
-        inlineScript.setAttribute('id','fuwaimg_js');
+        inlineScript.setAttribute('id', 'fuwaimg_js');
         inlineScript.textContent = scriptText;
         doc.querySelector('#js_module').appendChild(inlineScript);
-    }));
+      }));
 
     return Promise.all(promises);
   }
@@ -470,16 +479,18 @@ document.querySelector('#modal_exit').addEventListener('click', (event) => {
   document.querySelector('#modal_container').setAttribute('class', 'hns_hidden');
   document.querySelector('body').setAttribute('class', 'hns_visible');
 
-  if ( key.includes('address_delete') && success==='success' ) {
+  if (key.includes('address_delete') && success === 'success') {
     const a = document.createElement('a');
     a.href = './index.html';
     a.id = 'redirect';
     document.querySelector('body').appendChild(a);
     document.querySelector('#redirect').click();
   } else if (btn_label !== 'しない' || success === 'success') {
-    // データが書き換わっているかもなので再取得
-    fetchData();
-  }
+    // データが書き換わっているかもなので、ちょっと待ってから再描画
+    setTimeout(() => {
+      fetchData();
+    }, 100);
+  };
 });
 
 async function send_jsstp(script) {
@@ -563,7 +574,7 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
       modal_window.querySelector('#modal_explanation>p').setAttribute('class', 'center_text');
       modal_window.querySelector('#modal_explanation>p').textContent = '通信中です...';
       modal_window.querySelector('#modal_explanation>ul').setAttribute('class', 'hns_hidden');
-      modal_window.querySelector('#modal_exec').setAttribute('class', document.querySelector('#modal_exec').getAttribute('class')+' hns_hidden');
+      modal_window.querySelector('#modal_exec').setAttribute('class', document.querySelector('#modal_exec').getAttribute('class') + ' hns_hidden');
       modal_window.querySelector('#modal_exit').textContent = '中止';
       document.querySelector('#modal_window').replaceWith(modal_window);
 

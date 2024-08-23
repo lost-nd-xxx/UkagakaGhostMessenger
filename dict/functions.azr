@@ -29,8 +29,13 @@ array SaveData_Waiting;
 dict SaveData_Received;
 // おやすみモードのフラグ
 int oyasumi_flag;
-// 送信した通知の履歴　セーブファイルに保存しない
+// 送信した通知の履歴
+// セーブファイルに保存しない
 array notify_log;
+// 一定時間内に多量のメッセージが来たら一時停止する
+// セーブファイルに保存しない
+int Fake_DataLimit_Count;
+int Fake_DataLimit_LastTime;
 
 SaveVar()
 {
@@ -47,7 +52,7 @@ SaveVar()
 	UpdateWebJson();
 
 	// テスト用に出力しておく
-	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 RestoreVar()
@@ -62,7 +67,7 @@ RestoreVar()
 	UpdateWebJson();
 
 	// テスト用に出力しておく
-	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 //----------------------------------------------------------------

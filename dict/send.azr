@@ -93,12 +93,13 @@ OnUkagakaGhostMessenger_Send(dict req)
 		SenderId = ref["SenderId"];
 	}
 	//----------------------------------------------------------------
-	if ( _strlen(ref["MessageId"]) > 0 ) {
+	if ( _strlen(ref["MessageId"]) > 0 && _gettype(ref["MessageId"])!="nil" ) {
 		MessageId = ref["MessageId"];
 	}
 	else {
 		// メッセージ識別子が無い場合
 		ErrorResponse_Send({sender,"メッセージ識別子を認識できませんでした",SenderId,""});
+		return;
 	}
 	//----------------------------------------------------------------
 	// 有効にするかどうか
