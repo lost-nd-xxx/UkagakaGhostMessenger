@@ -75,10 +75,12 @@ RestoreVar()
 //----------------------------------------------------------------
 UpdateWebJson()
 {
-	array webjson;
-	dict jsontmp;
+	array testlog = {};
+	array webjson = {};
+	dict jsontmp = $();
 
 	array ghosts = _dickeyget(SaveData_Received);
+	int unread_count_all = 0;
 	for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
 		string ghost = ghosts[i0];
 		array charas = _dickeyget(SaveData_Received[ghost]);
@@ -107,7 +109,9 @@ UpdateWebJson()
 			account += $("SenderProfile",SaveData_Received[ghost][chara]["SenderProfile"]);
 			// アカウント更新時間比較用の数値
 			account += $("time_count",SaveData_Received[ghost][chara]["time_count"]);
-			// メッセージを追加していく
+			// 新着確認用の数値
+			int unread_count = 0;
+			// メッセージ識別子の配列
 			array msg_ids = _dickeyget(SaveData_Received[ghost][chara]["msgs"]);
 			// メッセージを日付ごとにわけ、時間順に並べ替える
 			dict messages_to_sort = $();
@@ -119,6 +123,12 @@ UpdateWebJson()
 					string msg_day = msg_id_msgs[i3]["time_text"][0];
 					string msg_minute = msg_id_msgs[i3]["time_text"][1];
 					int msg_time_cnt = msg_id_msgs[i3]["time_count"];
+					int msg_read_cnt = msg_id_msgs[i3]["read_time"];
+					// 未読なら未読カウントを足す
+					if (msg_time_cnt>msg_read_cnt) {
+						unread_count++;
+						unread_count_all++;
+					}
 					// 変数が無なら空を入れておく
 					if ( _gettype( messages_to_sort[msg_day] )=="nil" ) {
 						messages_to_sort += $( msg_day, $() );
@@ -149,6 +159,9 @@ UpdateWebJson()
 					}
 				}
 			}
+			// 送信者ごとの未読数
+			account += $("unread_count",unread_count);
+			// メッセージを並べ替える
 			array ar = {};
 			for ( int i2=0; i2<_dicvn(messages_to_sort); i2++ ) {
 				string day = _dickeyget(messages_to_sort)[i2];
@@ -164,13 +177,17 @@ UpdateWebJson()
 					}
 				}
 			}
+			// 並べ替えたメッセージを配列に入れる
 			account += $("msgs",ar);
 			string sort_id = account["time_count"];
 			sort_id += ghost + chara;
 			jsontmp += $( sort_id, account );
 		}
 	}
-	webjson += $("oyasumi_flag",oyasumi_flag);
+	webjson += ${
+		$("unread_count_all",unread_count_all),
+		$("oyasumi_flag",oyasumi_flag)
+	};
 	for ( int i=0; i<_dicvn(jsontmp); i++ ) {
 		webjson += jsontmp[_dickeyget(jsontmp)[i]];
 	}

@@ -44,6 +44,14 @@
   button#fuwaimg_close:before, button#fuwaimg_close:after {
     background: white !important;
   }
+
+  .iconNewArrival::before {
+    background-image: url("./image/newer_dark.svg") !important;
+  }
+
+  .navNewArrival::before {
+    background-image: url("./image/newer_dark.svg") !important;
+  }
 }
 
 html {
@@ -241,15 +249,14 @@ div.kiritoriLine p {
   display: flex;
 }
 
-.iconNewArrival::before {
+.iconNewArrival::after {
   position: absolute;
-  background-image: url("./image/newer_ume.svg");
-  filter: invert(35%) sepia(95%) saturate(6638%) hue-rotate(317deg) brightness(105%) contrast(102%) !important;
-  width: 24px;
-  height:24px;
-  content: "";
-  top: -6px;
-  right: 9px;
+  content: "●";
+  color: deeppink;
+  font-size: 1.5em;
+  top: -.2em;
+  right: .2em;
+  -webkit-text-stroke: .2em var(--color-main-background);
 }
 
 .personTimeContainer {
@@ -315,6 +322,11 @@ a {
 
 a .personContainer:hover {
   background-color: color-mix(in srgb, var(--color-message-bubble) 50%, transparent);
+  transition: .3s;
+}
+
+a .personContainer:hover .iconNewArrival::after {
+  -webkit-text-stroke: .2em color-mix(in srgb, var(--color-main-background) 50%, var(--color-message-bubble));
   transition: .3s;
 }
 
@@ -529,16 +541,24 @@ hr {
   padding: 0;
 }
 
-.nav-content ul li:first-child a::before {
+#unreadCount {
+  color: white;
+  font-size: .75em;
+  line-height: 24px;
+  margin: 0;
+}
+
+#unreadBadge {
+  background-color: deeppink;
+  border-radius: 100%;
+  z-index: 30;
+  position: absolute;
   width: 24px;
   height: 24px;
-  content: "";
-  position: absolute !important;
-  z-index: 200;
-  right: 4px;
-  top: 4px;
-  background-image: url(./image/newer_ume.svg);
-  filter: invert(35%) sepia(95%) saturate(6638%) hue-rotate(317deg) brightness(105%) contrast(102%) !important;
+  top: -.25em;
+  right: -.25em;
+  display: flex;
+  justify-content: center;
 }
 
 /*-------------------------------- フッター --------------------------------*/

@@ -75,7 +75,7 @@ function rewriteHtml(item) {
         // アイコン
         child = document.createElement('div');
         child.setAttribute('class', 'personIconContainer');
-        if (1 == 1) {
+        if (acct.unread_count>0) {
           // 未読の新着がある
           child.setAttribute('class', 'personIconContainer iconNewArrival');
         }
@@ -106,7 +106,7 @@ function rewriteHtml(item) {
         } else if ('alt' in latest_msg) {
           latest_msg = latest_msg.alt;
         } else {
-          latest_msg = '';
+          latest_msg = ' ';
         }
         child.innerText = latest_msg;
         elem.querySelector('.personLink:last-child .personText').appendChild(child);
@@ -125,8 +125,10 @@ function rewriteHtml(item) {
         child.querySelector('.personTime').innerText = dateText;
         child.appendChild(document.createElement('p'));
         child.querySelector('p:last-child').setAttribute('class','personNewArrivals');
-        if (1==1) {
-          child.querySelector('.personNewArrivals').innerText = '新着 10件';
+        if (acct.unread_count>0) {
+          child.querySelector('.personNewArrivals').innerText = `新着 ${acct.unread_count}件`;
+        } else {
+          child.querySelector('.personNewArrivals').innerText = ' ';
         }
         elem.querySelector('.personLink:last-child .personContainer').appendChild(child);
       }

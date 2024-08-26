@@ -65,7 +65,8 @@ OnUkagakaGhostMessenger_MarkAsRead(dict ref)
 	if ( _aryvn(result)>0 ) {
 		AddMessageWaitingList(result);
 	}
-
+	// web用の情報を更新
+	UpdateWebJson();
 	SaveVar();
 	return;
 }
@@ -113,14 +114,12 @@ OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 	} else if ( key == "log_delete" ) {
 		if ( _gettype(SaveData_Received[ghost][chara]["msgs"])!="nil" ) {
 			SaveData_Received[ghost][chara]["msgs"] = nil;
-			// [WIP]画像も消すかどうか考える
-			// 予約時にのみ画像をコピーしているので、予約も消さないとログの画像が豆腐になる
+			// 画像は消していない
 		}
 	} else if ( key == "address_delete" ) {
 		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
 			SaveData_Received[ghost][chara] = nil;
-			// [WIP]画像も消すかどうか考える
-			// 予約時にのみ画像をコピーしているので、予約も消さないとログの画像が豆腐になる
+			// 画像は消していない
 		}
 	} else {
 		// 指示がおかしかったかもしれない
@@ -129,7 +128,5 @@ OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 	// web用の情報を更新
 	UpdateWebJson();
 	SaveVar();
-
-	// return "\\qsetting done: "+key;
 	return;
 }

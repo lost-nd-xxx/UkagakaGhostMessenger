@@ -15,8 +15,19 @@ function rewriteHtml(data) {
   const params = getQueryParams();
   // 後でまとめて差し替える
   let doc = document.querySelector('html');
-  // 新着があったら
-
+  if (data.at(0).unread_count_all > 99) {
+    // 新着がいっぱいある
+    doc.querySelector('#unreadBadge').removeAttribute('class');
+    doc.querySelector('#unreadCount').innerText = '99+';
+  } else if (data.at(0).unread_count_all > 0) {
+    // 新着がある
+    doc.querySelector('#unreadBadge').removeAttribute('class');
+    doc.querySelector('#unreadCount').innerText = data.at(0).unread_count_all;
+  } else {
+    // 新着が無い
+    doc.querySelector('#unreadBadge').setAttribute('class', 'hns_hidden');
+    doc.querySelector('#unreadCount').innerText = '';
+  }
   // 情報を探して変数に入れる
   item = data.filter(i => i.sender === params.sender).find(i => i.SenderId === params.sender_id);
   if (Object.keys(item).length > 0) {
@@ -171,28 +182,28 @@ async function loadFuwaimg() {
 };
 
 // 繰り返し設定用の変数定義
-let check_update;
 async function updateHtml() {
   try {
     fetchData();
-    document.querySelector('body').setAttribute('class', 'hns_visible');
+    setTimeout(() => {
+      fetchData();
+    }, 100);
     // ちょっと待ってから最下部へスクロール
     setTimeout(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
         behavior: "instant"
       });
-    }, 100);
+    }, 200);
     // 定期的にデータを再取得
-    if (!check_update) {
-      check_update = setInterval(() => {
-        fetchData();
-      }, 10000);
-    }
-  } catch (error) {
-    console.error('updateHtml:失敗', error);
-    errorHtml();
+    check_update = setInterval(() => {
+      fetchData();
+    }, 10000);
   }
+  catch (error) {
+    errorHtml();
+    console.error('updateHtml:失敗', error);
+  };
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -353,7 +364,7 @@ document.getElementById('settings').addEventListener('click', (event) => {
   // デフォルトのリンク動作を防止
   event.preventDefault();
   // はいどあんどしーく
-  const visible = document.querySelectorAll('.sidebar .hns_visible');
+  const visible = document.querySelectorAll('.setting_btn.hns_visible');
   if (visible.length > 0) {
     visible.forEach(visible => {
       visible.setAttribute('class', 'setting_btn hns_hidden');
@@ -361,7 +372,7 @@ document.getElementById('settings').addEventListener('click', (event) => {
     document.querySelector('#settings img').setAttribute('src', './res/svg/settings.svg');
     document.querySelector('#settings p').innerText = '管理・設定';
   } else {
-    const hidden = document.querySelectorAll('.sidebar .hns_hidden');
+    const hidden = document.querySelectorAll('.setting_btn.hns_hidden');
     hidden.forEach(hidden => {
       hidden.setAttribute('class', 'setting_btn hns_visible');
     });
@@ -473,8 +484,6 @@ document.querySelector('#modal_exit').addEventListener('click', (event) => {
   const key = document.querySelector('#modal_exec').getAttribute('class');
   // 成功したかどうか
   const success = document.querySelector('#modal_exit').className;
-  // ボタンのラベル
-  const btn_label = document.querySelector('#modal_exit').textContent;
   // モーダルを隠す
   document.querySelector('#modal_container').setAttribute('class', 'hns_hidden');
   document.querySelector('body').setAttribute('class', 'hns_visible');
@@ -485,7 +494,7 @@ document.querySelector('#modal_exit').addEventListener('click', (event) => {
     a.id = 'redirect';
     document.querySelector('body').appendChild(a);
     document.querySelector('#redirect').click();
-  } else if (btn_label !== 'しない' || success === 'success') {
+  } else if (success === 'success') {
     // データが書き換わっているかもなので、ちょっと待ってから再描画
     setTimeout(() => {
       fetchData();
@@ -554,7 +563,7 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
   // 通信成功時の変更を定義
   const send_success = () => {
     clearTimeout(timeout);
-    modal_window.querySelector('#modal_explanation>p').textContent = '設定変更が完了しました。';
+    modal_window.querySelector('#modal_explanation>p').textContent = '操作を完了しました。';
     modal_window.querySelector('#modal_exit').setAttribute('class', 'success');
     modal_window.querySelector('#modal_exit').textContent = '戻る';
     document.querySelector('#modal_window').replaceWith(modal_window);
@@ -563,7 +572,7 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
   const send_unknown = (result) => {
     clearTimeout(timeout);
     console.info('modal_exec:通信返答が' + result + '/' + clicked);
-    modal_window.querySelector('#modal_explanation>p').innerText = '応答は' + result + 'でした。\n設定変更は未完了の可能性があります。';
+    modal_window.querySelector('#modal_explanation>p').innerText = '応答は' + result + 'でした。\n操作は未完了の可能性があります。';
     modal_window.querySelector('#modal_exit').textContent = '戻る';
     document.querySelector('#modal_window').replaceWith(modal_window);
   };
@@ -607,4 +616,21 @@ document.querySelector('#modal_container').addEventListener('click', (event) => 
   // モーダルを隠す
   document.querySelector('#modal_container').setAttribute('class', 'hns_hidden');
   document.querySelector('body').setAttribute('class', 'hns_visible');
+  // 実行したかもしれないイベント  
+  const key = document.querySelector('#modal_exec').getAttribute('class');
+  // 成功したかどうか
+  const success = document.querySelector('#modal_exit').className;
+
+  if (key.includes('address_delete') && success === 'success') {
+    const a = document.createElement('a');
+    a.href = './index.html';
+    a.id = 'redirect';
+    document.querySelector('body').appendChild(a);
+    document.querySelector('#redirect').click();
+  } else if (success === 'success') {
+    // データが書き換わっているかもなので、ちょっと待ってから再描画
+    setTimeout(() => {
+      fetchData();
+    }, 100);
+  };
 });
