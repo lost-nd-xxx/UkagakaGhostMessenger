@@ -113,7 +113,7 @@ function rewriteHtml(data) {
     // 書き換えたものをまとめて差し替え
     document.querySelector('html').replaceWith(doc);
     // 既読用スクリプトを定義
-    const send_script = `\\![raiseplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]\\e`
+    const send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]\\e`
     // 既読情報を送信
     send_jsstp(send_script);
     return 1;
@@ -587,7 +587,7 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
       modal_window.querySelector('#modal_exit').textContent = '中止';
       document.querySelector('#modal_window').replaceWith(modal_window);
 
-      const send_script = `\\![raiseplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]\\e`
+      const send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]\\e`
       const result = await send_jsstp(send_script);
       switch (result) {
         case 1:
