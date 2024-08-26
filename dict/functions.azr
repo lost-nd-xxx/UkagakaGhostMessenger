@@ -90,10 +90,10 @@ UpdateWebJson()
 			dict account = $();
 			account += $("sender",ghost);
 			account += $("SenderId",chara);
-			int flag = SaveData_Received[ghost][chara]["block_flag"];
-			account += $("block_flag",flag);
-			flag = SaveData_Received[ghost][chara]["mute_flag"];
-			account += $("mute_flag",flag);
+			int block_flag = SaveData_Received[ghost][chara]["block_flag"];
+			account += $("block_flag",block_flag);
+			int mute_flag = SaveData_Received[ghost][chara]["mute_flag"];
+			account += $("mute_flag",mute_flag);
 			// アイコン
 			if ( SaveData_Received[ghost][chara]["SenderIcon"] == "default" ) {
 				// デフォルト
@@ -125,7 +125,7 @@ UpdateWebJson()
 					int msg_time_cnt = msg_id_msgs[i3]["time_count"];
 					int msg_read_cnt = msg_id_msgs[i3]["read_time"];
 					// 未読なら未読カウントを足す
-					if (msg_time_cnt>msg_read_cnt) {
+					if (msg_time_cnt>msg_read_cnt&&block_flag!=1) {
 						unread_count++;
 						unread_count_all++;
 					}
