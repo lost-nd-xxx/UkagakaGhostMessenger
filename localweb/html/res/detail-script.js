@@ -185,16 +185,16 @@ async function loadFuwaimg() {
 async function updateHtml() {
   try {
     fetchData();
-    setTimeout(() => {
-      fetchData();
-    }, 100);
     // ちょっと待ってから最下部へスクロール
     setTimeout(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
         behavior: "instant"
       });
-    }, 200);
+    }, 100);
+    setTimeout(() => {
+      fetchData();
+    }, 1000);
     // 定期的にデータを再取得
     check_update = setInterval(() => {
       fetchData();
