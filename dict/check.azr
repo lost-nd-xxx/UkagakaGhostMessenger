@@ -124,7 +124,7 @@ string ShowMessage(dict ref)
 		script += "\\C\\![set,trayballoon,--icon=none,--title=";
 		script += SaveData_Received[sender][SenderId]["SenderName"];
 		script += GenerateTrayBalloonScript(Text);
-		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]\\e";
+		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
 
 		array text_array = GenerateReceivedLogText(Text,sender);
 
@@ -204,7 +204,7 @@ string CheckWaitingList()
 {
 	if ( Fake_DataLimit_Count >= 20 ) {
 		// Fake_DataLimit_Countの上限に達していた
-		script = "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=メッセージの連続表示上限に達しました。1分間、受信が一時停止されます]\\e";
+		script = "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=メッセージの連続表示上限に達しました。1分間、受信が一時停止されます]";
 		return script;
 	}
 	
@@ -721,7 +721,7 @@ array CheckMessagePassiveCondition(array ref)
 				string s1 = a[i1][1];
 				string s2 = a[i1][2];
 				array isread_msgs = SaveData_Received[s0][s1]["msgs"][s2];
-				int readtime = isread_msgs["read_time"]
+				int readtime = isread_msgs[0]["read_time"];
 				if ( readtime>0 ) {
 					match++;
 					continue;
