@@ -77,9 +77,13 @@ string OnTrayBalloonClick(dict ref)
 	string output;
 	// ブラウザを開く
 	if (result==-1) {
-		output = "\\C\\![open,browser,http://localhost:8000/]";
+		output = "\\C\\![open,browser,http://localhost:";
+		output += localhost_number;
+		output += "/]";
 	} else {
-		output = "\\C\\![open,browser,http://localhost:8000/person.html?sender=";
+		output = "\\C\\![open,browser,http://localhost:";
+		output += localhost_number;
+		output += "/person.html?sender=";
 		output += _urlencode( notify_log[result][1], "utf8" );
 		output += "&sender_id=";
 		output += _urlencode( notify_log[result][2], "utf8" );
@@ -98,7 +102,10 @@ string OnTrayBalloonClick(dict ref)
 string OnMenuExec(dict ref)
 {
 	// スクリプトを作る
-	string script = "\\C\\![open,browser,http://localhost:8000/index.html]";
+	string script = "";
+	script += "\\C\\![open,browser,http://localhost:";
+	script += localhost_number;
+	script += "/]";
 
 	// 結果を送信
 	dictOptionalHeader["marker"] = version();

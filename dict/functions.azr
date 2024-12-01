@@ -36,6 +36,9 @@ array notify_log;
 // セーブファイルに保存しない
 int Fake_DataLimit_Count;
 int Fake_DataLimit_LastTime;
+// ローカルホストのポート番号
+// セーブファイルに保存しない
+int localhost_number;
 
 SaveVar()
 {
@@ -43,7 +46,8 @@ SaveVar()
 		$("SaveData_Reserved",SaveData_Reserved),
 		$("SaveData_Waiting",SaveData_Waiting),
 		$("SaveData_Received",SaveData_Received),
-		$("oyasumi_flag",oyasumi_flag)
+		$("oyasumi_flag",oyasumi_flag),
+		$("localhost_number",localhost_number)
 	};
 
 	_vsave("savedata", dictSaveData);
@@ -52,7 +56,7 @@ SaveVar()
 	UpdateWebJson();
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 RestoreVar()
@@ -63,11 +67,28 @@ RestoreVar()
 	SaveData_Received = dictSaveData["SaveData_Received"];
 	oyasumi_flag = dictSaveData["oyasumi_flag"];
 
+	// config.txtを読む
+	array config_txt = {};
+	config_txt = _readtext( "localweb\\config.txt", "utf8", "crlf" );
+
+	localhost_number = -1;
+	for ( int i=0; i<_aryvn(config_txt); i++ ) {
+		if ( _regex_match( config_txt[i], "localhost_number,\d+" )==1 ) {
+			localhost_number = _regex_search( config_txt[i], "localhost_number,(\d+)" )[1];
+			break;
+		}
+	}
+
+	// 変な数値だったら8000に固定
+	if ( localhost_number<1024 || localhost_number>65535 ) {
+		localhost_number = 8000;
+	}
+
 	// web用jsonを出力する
 	UpdateWebJson();
 
 	// テスト用に出力しておく
-	_writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
 }
 
 //----------------------------------------------------------------
