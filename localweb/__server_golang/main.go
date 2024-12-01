@@ -82,7 +82,12 @@ func readConfig(filename string) (string, error) {
 		line := scanner.Text()
 		parts := strings.Split(line, ",")
 		if len(parts) == 2 && strings.TrimSpace(parts[0]) == "localhost_number" {
-			return ":" + strings.TrimSpace(parts[1]), nil
+			port := strings.TrimSpace(parts[1])
+			// ポート番号が9801の場合はデフォルトの8000に切り替え
+			if port == "9801" {
+				return ":8000", nil
+			}
+			return ":" + port, nil
 		}
 	}
 	if err := scanner.Err(); err != nil {
