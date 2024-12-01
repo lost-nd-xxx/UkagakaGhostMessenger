@@ -7,10 +7,13 @@ function rewriteHtml(item) {
   let oyasumi = item.filter(i => 'oyasumi_flag' in i)[0];
   if (oyasumi.oyasumi_flag === 1) {
     oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_paused.svg');
-    oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
+    oyasumi_btn.querySelector('.navItemText').textContent = '通知:一時停止';
+  } else if (oyasumi.oyasumi_flag === 2) {
+    oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_off.svg');
+    oyasumi_btn.querySelector('.navItemText').textContent = '通知:停止';
   } else {
     oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_active.svg');
-    oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
+    oyasumi_btn.querySelector('.navItemText').textContent = '通知:通常';
   }
   document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
   // リストを表示状態に応じて変える
@@ -251,12 +254,15 @@ document.querySelector('#oyasumi_toggle').addEventListener('click', (event) => {
       // おやすみボタンも状態に応じて変える
       let oyasumi_btn = document.querySelector('#oyasumi_toggle');
       let oyasumi = document.querySelector('#oyasumi_toggle .navItemText').textContent;
-      if (oyasumi === 'おやすみモード有効化') {
+      if (oyasumi === '通知:通常') {
         oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_paused.svg');
-        oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード無効化';
+        oyasumi_btn.querySelector('.navItemText').textContent = '通知:一時停止';
+      } else if (oyasumi === '通知:一時停止') {
+        oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_off.svg');
+        oyasumi_btn.querySelector('.navItemText').textContent = '通知:停止';
       } else {
         oyasumi_btn.querySelector('.navIcon').setAttribute('src', './res/svg/notifications_active.svg');
-        oyasumi_btn.querySelector('.navItemText').textContent = 'おやすみモード有効化';
+        oyasumi_btn.querySelector('.navItemText').textContent = '通知:通常';
       }
       document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
     }

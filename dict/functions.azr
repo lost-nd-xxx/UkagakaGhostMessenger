@@ -67,6 +67,11 @@ RestoreVar()
 	SaveData_Received = dictSaveData["SaveData_Received"];
 	oyasumi_flag = dictSaveData["oyasumi_flag"];
 
+	// おやすみモードが一時停止なら解除する
+	if ( oyasumi_flag == 1 ) {
+		oyasumi_flag = 0;
+	}
+
 	// config.txtを読む
 	array config_txt = {};
 	config_txt = _readtext( "localweb\\config.txt", "utf8", "crlf" );
