@@ -72,6 +72,10 @@ RestoreVar()
 		oyasumi_flag = 0;
 	}
 
+	if ( _isfile( "localweb\\config.txt" )==0 ) {
+		_writetext( "localweb\\config.txt", {"localhost_number,8000",""}, "utf8", "crlf" );
+	}
+
 	// config.txtを読む
 	array config_txt = {};
 	config_txt = _readtext( "localweb\\config.txt", "utf8", "crlf" );
@@ -85,7 +89,7 @@ RestoreVar()
 	}
 
 	// 変な数値だったら8000に固定
-	if ( localhost_number<1024 || localhost_number>65535 ) {
+	if ( localhost_number<1024 || localhost_number>65535 || localhost_number==9801 ) {
 		localhost_number = 8000;
 	}
 

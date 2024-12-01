@@ -164,7 +164,7 @@ string ShowMessage(dict ref)
 	UpdateWebJson();
 
 	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
-	if ( mute_flag!=1 && oyasumi_flag>0 ) {
+	if ( mute_flag!=1 && oyasumi_flag==0 ) {
 		if (_strlen(script)>0) {
 			// 通知を出すならFake_DataLimitのカウントを進める
 			Fake_DataLimit_Count++;

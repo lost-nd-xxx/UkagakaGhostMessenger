@@ -5,5 +5,6 @@ __memo/,nonar,noupdate
 developer_options.txt,nonar,noupdate
 localweb/__server_golang/,nonar,noupdate
 localweb/shutdown.signal,nonar,noupdate
+localweb/config.txt,nonar,noupdate
 profile/,nonar,noupdate
 savedata.adb,nonar,noupdate
