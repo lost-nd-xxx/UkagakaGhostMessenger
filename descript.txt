@@ -14,5 +14,5 @@ id,6f0415e0-3c00-11ef-9a9c-0800200c9a66
 // 更新URL
 //homeurl,hogehoge
 
-readme,readme.md
+readme,readme.txt
 readme.charset,UTF-8

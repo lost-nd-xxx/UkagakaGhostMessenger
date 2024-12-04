@@ -25,6 +25,7 @@ load()
 	_saoriload( "yaya.dll", "yaya");
 	_file_execute( _abspath("localweb\\ugm_server.exe") );
 
+	readConfig();
 	RestoreVar();
 }
 

@@ -39,6 +39,9 @@ int Fake_DataLimit_LastTime;
 // ローカルホストのポート番号
 // セーブファイルに保存しない
 int localhost_number;
+// セーブデータを読めるように出力するかどうか
+// セーブファイルに保存しない
+string akari_log;
 
 SaveVar()
 {
@@ -46,8 +49,7 @@ SaveVar()
 		$("SaveData_Reserved",SaveData_Reserved),
 		$("SaveData_Waiting",SaveData_Waiting),
 		$("SaveData_Received",SaveData_Received),
-		$("oyasumi_flag",oyasumi_flag),
-		$("localhost_number",localhost_number)
+		$("oyasumi_flag",oyasumi_flag)
 	};
 
 	_vsave("savedata", dictSaveData);
@@ -55,8 +57,10 @@ SaveVar()
 	// web用jsonを出力する
 	UpdateWebJson();
 
-	// テスト用に出力しておく
-	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// セーブデータを読めるようにする
+	if ( _strlen(akari_log)>0 ) {
+		_writetext( akari_log, _azv2json( dictSaveData ), "utf8", "crlf" );
+	}
 }
 
 RestoreVar()
@@ -72,32 +76,36 @@ RestoreVar()
 		oyasumi_flag = 0;
 	}
 
-	if ( _isfile( "localweb\\config.txt" )==0 ) {
-		_writetext( "localweb\\config.txt", {"localhost_number,8000",""}, "utf8", "crlf" );
-	}
-
-	// config.txtを読む
-	array config_txt = {};
-	config_txt = _readtext( "localweb\\config.txt", "utf8", "crlf" );
-
-	localhost_number = -1;
-	for ( int i=0; i<_aryvn(config_txt); i++ ) {
-		if ( _regex_match( config_txt[i], "localhost_number,\d+" )==1 ) {
-			localhost_number = _regex_search( config_txt[i], "localhost_number,(\d+)" )[1];
-			break;
-		}
-	}
-
-	// 変な数値だったら8000に固定
-	if ( localhost_number<1024 || localhost_number>65535 || localhost_number==9801 ) {
-		localhost_number = 8000;
-	}
-
 	// web用jsonを出力する
 	UpdateWebJson();
 
-	// テスト用に出力しておく
-	// _writetext( "result.json", _azv2json( dictSaveData ), "utf8" );
+	// セーブデータを読めるようにする
+	if ( _strlen(akari_log)>0 ) {
+		_writetext( akari_log, _azv2json( dictSaveData ), "utf8", "crlf" );
+	}
+}
+
+readConfig()
+{
+	if ( _isfile( "ugm_config.txt" )==0 ) {
+		_writetext( "ugm_config.txt", {"localhost_number,8000","//server_log,server_log.txt","//akari_log,akari_log.txt",""}, "utf8", "crlf" );
+	}
+	// config.txtを読む
+	array config_txt = {};
+	config_txt = _readtext( "ugm_config.txt", "utf8", "crlf" );
+
+	localhost_number = -1;
+	for ( int i=0; i<_aryvn(config_txt); i++ ) {
+		if ( _regex_match( config_txt[i], "localhost_number,\s*\d+\s*" )==1 ) {
+			localhost_number = _regex_search( config_txt[i], "localhost_number,\s*(\d+)\s*" )[1];
+		} else if ( _regex_match( config_txt[i], "akari_log,\s*\S+\s*" )==1 ) {
+			akari_log = _regex_search( config_txt[i], "akari_log,\s*(\S+)\s*" )[1];
+		}
+	}
+	// 変だったら8000に直す
+	if ( localhost_number<1024 || localhost_number>65535 || localhost_number==9801 ) {
+		localhost_number = 8000;
+	}
 }
 
 //----------------------------------------------------------------

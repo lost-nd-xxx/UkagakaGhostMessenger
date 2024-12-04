@@ -2,7 +2,7 @@
 伺かベースウェア向けプラグインです。
 メッセージアプリ風の画面で、対応ゴーストからメッセージを受け取ることができます。
 
-制作者: ろすえん(lost_nd_xxx)\
+制作者: ろすえん(lost_nd_xxx)
 連絡先: http://lnx.flop.jp/
 
 ------------------------
@@ -13,17 +13,17 @@
 ------------------------
 ## ファイアウォールの表示が出た場合
 UGM導入後、ファイアウォールから「ugm_server.exe」の動作を許可するかどうか聞かれる場合があります。
-「ugm_server.exe」はSSPと情報をやりとりできるようにするためのアプリです。
+ugm_server.exeはSSPと情報をやりとりできるようにするためのアプリです。
 深刻な不具合などの無いように気を付けますが、何か不利益があっても補償はできない、ということをご理解の上で許可してください。
 許可しなかった場合、メッセージ受信履歴を閲覧できなくなります。
-「ugm_server.exe」を有効にしていない状態でも、プラグイン自体が有効であれば、メッセージ受信のみ動作します。
+ugm_server.exeを有効にしていない状態でも、プラグイン自体が有効であれば、メッセージ受信のみ動作します。
 
 また、UGM起動直後の数秒間だけ、マウスカーソルが砂時計状態になります。
 ugm_server.exeの起動によるもので、仕様です。
 
 ------------------------
 ## ローカルホストのポート番号の変更について
-「localweb/config.txt」の数値を書き換えることで、UGMの使用するポート番号を変更できます。
+「ugm_config.txt」の数値を書き換えることで、UGMの使用するポート番号を変更できます。
 ※プラグインを再起動するまで設定は反映されません。
 プラグインエクスプローラから、UGMを右クリックし、無効にした後有効に戻してください。
 
@@ -36,20 +36,27 @@ ugm_server.exeの起動によるもので、仕様です。
 * [akari](http://le.silk.to/akari.php)
 > このプログラムを使用したいかなる不利益も作者は責任を負いません。
 > 伺かのサブシステムとして使う場合に限り、無償で無制限に使用できます。
+
 * [うかてん](https://github.com/nikolat/ukaten)
   * main.azrを当方による改変ののちに組み込んでいます。
 > 上記以外のテキストファイル、辞書ファイルの類いは、
 > すべてpublic domainとして自由に利用できるものとします。
+
 * [YAYA as SAORI](https://github.com/YAYA-shiori/yaya-as-saori)
   * [Unlicense license](https://github.com/YAYA-shiori/yaya-as-saori/blob/main/LICENSE)
+
 * [manpu_doodle](https://github.com/lost-nd-xxx/manpu_doodle)
   * [Unlicense license](https://github.com/lost-nd-xxx/manpu_doodle/blob/main/LICENSE)
+
 * [fuwaimg](https://do.gt-gt.org/product/fuwaimg/)
   * [MITライセンス](https://licenses.opensource.jp/MIT/MIT.html)
+
 * [Material Symbols & Icons](https://fonts.google.com/icons)
   * [Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html)
+
 * [jsstp](https://github.com/ukatech/jsstp-lib)
   * [WTFPL(ライセンス)](https://github.com/ukatech/jsstp-lib/blob/master/LICENSE)
+
 * [go](https://go.dev/)
   * [三条項BSDライセンス](https://go.dev/LICENSE)
 
