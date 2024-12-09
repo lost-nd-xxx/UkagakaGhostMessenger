@@ -56,6 +56,9 @@
 
 html {
   scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+  width: 100%;
 }
 
 body {
@@ -78,6 +81,7 @@ body {
   margin: 0 0 10px 0;
   z-index: 10;
   max-height: 200px;
+  width: 100%;
 }
 
 .headerContainer {
@@ -90,7 +94,8 @@ body {
   flex-direction: row;
   justify-content: space-evenly;
   max-height: 200px;
-  width: 900px;
+  width: 100%;
+  max-width: 900px;
 }
 
 h1 {
@@ -107,6 +112,7 @@ h1 {
 
 .profileContainer {
   width: 50%;
+  max-width: 450px;
 }
 
 .profileIcon {
@@ -173,7 +179,6 @@ h1 {
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
-  align-items: center;
 }
 
 /*-------------------------------- コンテンツ --------------------------------*/
