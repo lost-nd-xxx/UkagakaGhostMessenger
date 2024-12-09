@@ -10,90 +10,95 @@
   </head>
 
   <body>
-
-    <div class="sidebar">
-      <div class="nav-content">
-        <ul>
-          <li>
-            <a href="./index.html" id="returnToIndex">
-              <div id="unreadBadge" class="hns_hidden">
-                <p id="unreadCount">000</p>
-              </div>
-              <img src="./res/svg/group.svg" alt="一覧に戻る" class="navIcon">
-              <p class="navItemText">一覧に戻る</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="downloadLink">
-              <img src="./res/svg/download.svg" alt="保存する" class="navIcon">
-              <p class="navItemText">保存する</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="settings">
-              <img src="./res/svg/settings.svg" alt="管理・設定" class="navIcon">
-              <p class="navItemText">管理・設定</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="setting_mute" class="setting_btn hns_hidden">
-              <img src="./res/svg/volume_up.svg" alt="通知オフにする" class="navIcon">
-              <p class="navItemText">通知オフにする</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="setting_block" class="setting_btn hns_hidden">
-              <img src="./res/svg/account_circle.svg" alt="ブロックする" class="navIcon">
-              <p class="navItemText">ブロックする</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="setting_log_delete" class="setting_btn hns_hidden">
-              <img src="./res/svg/delete_forever.svg" alt="履歴削除" class="navIcon">
-              <p class="navItemText">履歴削除</p>
-            </a>
-          </li>
-          <li>
-            <a href="#" id="setting_address_delete" class="setting_btn hns_hidden">
-              <img src="./res/svg/bomb.svg" alt="連絡先削除" class="navIcon">
-              <p class="navItemText">連絡先削除</p>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <!-- sidebar閉じ -->
-
-    <div class="main">
-
-      <div class="header">
-        <div class="headerContainer">
-          <div class="profileContainer">
-            <img class="profileIcon" alt="送信者アイコン" src="./res/image/icon_default.png">
-            <p class="profileName">送信者名</p>
-          </div>
-          <div class="profileContainer">
-            <div class="profileText">
-              <p>自己紹介文章</p>
-            </div>
+    
+    <div class="header">
+      <div class="headerContainer">
+        <div class="profileContainer">
+          <img class="profileIcon" alt="送信者アイコン" src="./res/image/icon_default.png">
+          <p class="profileName">送信者名</p>
+        </div>
+        <div class="profileContainer">
+          <div class="profileText">
+            <p>自己紹介文章</p>
           </div>
         </div>
       </div>
-      <!-- header閉じ -->
+    </div>
+    <!-- header閉じ -->
 
-      <div class="contentContainer">
-      </div>
-      <!-- contentContainer閉じ -->
+    <div class="main_wrapper">
 
-      <div class="footer">
-        <div class="footerContainer">
-          <p>UkagakaGhostMessenger</p>
+      <div class="sidebar">
+        <div class="nav-content">
+          <ul>
+            <li>
+              <a href="./index.html" id="returnToIndex">
+                <div id="unreadBadge" class="hns_hidden">
+                  <p id="unreadCount">000</p>
+                </div>
+                <img src="./res/svg/group.svg" alt="一覧に戻る" class="navIcon">
+                <p class="navItemText">一覧に戻る</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="settings">
+                <img src="./res/svg/settings.svg" alt="管理・設定" class="navIcon">
+                <p class="navItemText">管理・設定</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="downloadLink" class="setting_btn hns_hidden">
+                <img src="./res/svg/download.svg" alt="保存する" class="navIcon">
+                <p class="navItemText">保存する</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="setting_mute" class="setting_btn hns_hidden">
+                <img src="./res/svg/volume_up.svg" alt="通知オフにする" class="navIcon">
+                <p class="navItemText">通知オフにする</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="setting_block" class="setting_btn hns_hidden">
+                <img src="./res/svg/account_circle.svg" alt="ブロックする" class="navIcon">
+                <p class="navItemText">ブロックする</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="setting_log_delete" class="setting_btn hns_hidden">
+                <img src="./res/svg/delete_forever.svg" alt="履歴削除" class="navIcon">
+                <p class="navItemText">履歴削除</p>
+              </a>
+            </li>
+            <li>
+              <a href="#" id="setting_address_delete" class="setting_btn hns_hidden">
+                <img src="./res/svg/bomb.svg" alt="連絡先削除" class="navIcon">
+                <p class="navItemText">連絡先削除</p>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-      <!-- footer閉じ -->
+      <!-- sidebar閉じ -->
+
+      <div class="main">
+
+        <div class="contentContainer">
+        </div>
+        <!-- contentContainer閉じ -->
+
+      </div>
+      <!-- main閉じ -->
 
     </div>
-    <!-- main閉じ -->
+    <!-- main_wrapper閉じ -->
+
+    <div class="footer">
+      <div class="footerContainer">
+        <p>UkagakaGhostMessenger</p>
+      </div>
+    </div>
+    <!-- footer閉じ -->
 
     <!-- モーダルここから -->
     <div id="modal_container" class="hns_hidden" onclick="">
