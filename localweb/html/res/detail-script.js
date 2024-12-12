@@ -310,7 +310,11 @@ document.getElementById('downloadLink').addEventListener('click', function (even
   var parser = new DOMParser();
   var doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
   // 保存用HTMLから要素を削除
-  let elementToRemove = doc.querySelector('.sidebar');
+  let elementToRemove = doc.querySelector('.nav-content');
+  if (elementToRemove) {
+    elementToRemove.remove();
+  }
+  elementToRemove = doc.querySelector('.navBtnSpace');
   if (elementToRemove) {
     elementToRemove.remove();
   }
