@@ -513,25 +513,33 @@ async function send_jsstp(script) {
   if (fmo.avaiable === false) {
     return 0;
   }
-  // 送信データを定義
-  const send_data = { "ID": fmo.keys[0], "Script": script };
-  // 送信
-  const result = await jsstp.SEND(send_data);
-  console.log('jsstp_log: ' + result.head);
-  switch (result.status_code) {
-    case 200:
-      return 1;
-    case 204:
-      return 1;
-    case 400:
-      return 0;
-    case 500:
-      return 0;
-    case 512:
-      // 最小化中
-      return 0;
-    default:
-      return result.status_code;
+
+  for (let i = 0; i < fmo.keys.length; i++) {
+    // 送信データを定義
+    const send_data = { "ID": fmo.keys[i], "Script": script };
+    // 送信
+    const result = await jsstp.SEND(send_data);
+    console.log('jsstp_log: ' + result.head);
+    switch (result.status_code) {
+      case 200:
+        return 1;
+      case 204:
+        return 1;
+      case 400:
+        return 0;
+      case 500:
+        return 0;
+      case 512:
+        if (i === fmo.keys.length) {
+          // 次のゴーストがいないので最小化である旨を返す
+          return 2;
+        } else {
+          // 最小化中なので次のゴーストを試行
+          break;
+        }
+      default:
+        return result.status_code;
+    }
   }
 }
 
@@ -559,6 +567,14 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
     clearTimeout(timeout);
     console.error('modal_exec:通信に失敗/' + clicked, error);
     modal_window.querySelector('#modal_explanation>p').textContent = 'ベースウェアとの通信に失敗しました。';
+    modal_window.querySelector('#modal_exit').textContent = '戻る';
+    document.querySelector('#modal_window').replaceWith(modal_window);
+  };
+  // 最小化されていた通信失敗時の変更を定義
+  const send_invisible = (error) => {
+    clearTimeout(timeout);
+    console.error('modal_exec:通信に失敗/' + clicked, error);
+    modal_window.querySelector('#modal_explanation>p').textContent = '通信に失敗しました。ゴーストが最小化されています。';
     modal_window.querySelector('#modal_exit').textContent = '戻る';
     document.querySelector('#modal_window').replaceWith(modal_window);
   };
@@ -610,6 +626,9 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
       )
       const result = await Promise.race([send_jsstp(send_script), timeoutPromise]);
       switch (result) {
+        case 2:
+          send_invisible();
+          break;
         case 1:
           send_success();
           break;
