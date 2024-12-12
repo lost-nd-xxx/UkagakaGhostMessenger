@@ -78,7 +78,7 @@ function rewriteHtml(item) {
         // アイコン
         child = document.createElement('div');
         child.setAttribute('class', 'personIconContainer');
-        if (acct.unread_count>0) {
+        if (acct.unread_count > 0) {
           // 未読の新着がある
           child.setAttribute('class', 'personIconContainer iconNewArrival');
         }
@@ -117,7 +117,7 @@ function rewriteHtml(item) {
         child = document.createElement('div');
         child.setAttribute('class', 'personTimeContainer');
         child.appendChild(document.createElement('p'));
-        child.querySelector('p').setAttribute('class','personTime');
+        child.querySelector('p').setAttribute('class', 'personTime');
         const date = new Date(acct.time_count * 1000);
         const year = date.getFullYear().toString().padStart(4, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -127,8 +127,8 @@ function rewriteHtml(item) {
         const dateText = `${year}/${month}/${day} ${hour}:${minute}`;
         child.querySelector('.personTime').innerText = dateText;
         child.appendChild(document.createElement('p'));
-        child.querySelector('p:last-child').setAttribute('class','personNewArrivals');
-        if (acct.unread_count>0) {
+        child.querySelector('p:last-child').setAttribute('class', 'personNewArrivals');
+        if (acct.unread_count > 0) {
           child.querySelector('.personNewArrivals').innerText = `新着 ${acct.unread_count}件`;
         } else {
           child.querySelector('.personNewArrivals').innerText = ' ';
@@ -265,6 +265,22 @@ document.querySelector('#oyasumi_toggle').addEventListener('click', (event) => {
         oyasumi_btn.querySelector('.navItemText').textContent = '通知:通常';
       }
       document.querySelector('#oyasumi_toggle').replaceWith(oyasumi_btn);
+    } else if (send_result === 2) {
+      let oyasumi_before_text = document.querySelector('#oyasumi_toggle .navItemText').textContent;
+      document.querySelector('#oyasumi_toggle .navItemText').textContent = '通信失敗:最小化中';
+      document.querySelector('#oyasumi_toggle').style = 'background-color:crimson !important; transition:.1s;';
+      setTimeout(() => {
+        document.querySelector('#oyasumi_toggle .navItemText').textContent = oyasumi_before_text;
+        document.querySelector('#oyasumi_toggle').style = '';
+      }, 3000);
+    } else {
+      let oyasumi_before_text = document.querySelector('#oyasumi_toggle .navItemText').textContent;
+      document.querySelector('#oyasumi_toggle .navItemText').textContent = '通信失敗';
+      document.querySelector('#oyasumi_toggle').style = 'background-color:crimson !important; transition:.1s;';
+      setTimeout(() => {
+        document.querySelector('#oyasumi_toggle .navItemText').textContent = oyasumi_before_text;
+        document.querySelector('#oyasumi_toggle').style = '';
+      }, 3000);
     }
   }
   send_exec();
@@ -283,26 +299,31 @@ async function send_jsstp(script) {
     return 0;
   }
 
-  // 送信データを定義
-  const send_data = { "ID": fmo.keys[0], "Script": script };
-
-  // 送信
-  const result = await jsstp.SEND(send_data);
-
-  console.log('jsstp_log: ' + result.head);
-  switch (result.status_code) {
-    case 200:
-      return 1;
-    case 204:
-      return 1;
-    case 400:
-      return 0;
-    case 500:
-      return 0;
-    case 512:
-      // 最小化中
-      return 0;
-    default:
-      return result.status_code;
+  for (let i = 0; i < fmo.keys.length; i++) {
+    // 送信データを定義
+    const send_data = { "ID": fmo.keys[i], "Script": script };
+    // 送信
+    const result = await jsstp.SEND(send_data);
+    console.log('jsstp_log: ' + result.head);
+    switch (result.status_code) {
+      case 200:
+        return 1;
+      case 204:
+        return 1;
+      case 400:
+        return 0;
+      case 500:
+        return 0;
+      case 512:
+        if (i >= fmo.keys.length-1) {
+          // 次のゴーストがいないので最小化である旨を返す
+          return 2;
+        } else {
+          // 最小化中なので次のゴーストを試行
+          break;
+        }
+      default:
+        return result.status_code;
+    }
   }
 }
