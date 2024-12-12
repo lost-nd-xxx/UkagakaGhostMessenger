@@ -93,7 +93,7 @@ OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 	} else if ( _gettype(SaveData_Received[ghost][chara])=="nil" ) {
 		// 指定された組み合わせがセーブデータにない
 		return;
-	} else if ( key == "block" ) {
+	} else if ( key == "setting_block" ) {
 		if ( _gettype(SaveData_Received[ghost][chara]["block_flag"])!="nil" ) {
 			if ( SaveData_Received[ghost][chara]["block_flag"]==0 ) {
 				SaveData_Received[ghost][chara]["block_flag"] = 1;
@@ -103,7 +103,7 @@ OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 		} else {
 			SaveData_Received[ghost][chara] += $("block_flag", 1);
 		}
-	} else if ( key == "mute" ) {
+	} else if ( key == "setting_mute" ) {
 		if ( _gettype(SaveData_Received[ghost][chara]["mute_flag"])!="nil" ) {
 			if ( SaveData_Received[ghost][chara]["mute_flag"]==0 ) {
 				SaveData_Received[ghost][chara]["mute_flag"] = 1;
@@ -113,12 +113,12 @@ OnUkagakaGhostMessenger_SettingsFromWeb(dict ref)
 		} else {
 			SaveData_Received[ghost][chara] += $("mute_flag", 1);
 		}
-	} else if ( key == "log_delete" ) {
+	} else if ( key == "setting_log_delete" ) {
 		if ( _gettype(SaveData_Received[ghost][chara]["msgs"])!="nil" ) {
 			SaveData_Received[ghost][chara]["msgs"] = nil;
 			// 画像は消していない
 		}
-	} else if ( key == "address_delete" ) {
+	} else if ( key == "setting_address_delete" ) {
 		if ( _gettype(SaveData_Received[ghost][chara])!="nil" ) {
 			SaveData_Received[ghost][chara] = nil;
 			// 画像は消していない

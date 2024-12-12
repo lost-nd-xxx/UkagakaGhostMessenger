@@ -440,7 +440,6 @@ document.querySelectorAll('.setting_btn').forEach(element => {
         explanation.querySelector('p').textContent = '未定義のボタンが押されました';
         break;
     }
-
     // モーダルウィンドウを表示
     const set_modal = async () => {
       await new Promise((resolve) => {
@@ -458,6 +457,7 @@ document.querySelectorAll('.setting_btn').forEach(element => {
           doc.querySelector('#modal_exec').setAttribute('class', 'hns_hidden');
         } else {
           doc.querySelector('#modal_exec').setAttribute('class', element.id);
+          doc.querySelector('#modal_exec').textContent = 'する';
         }
         // 「しない」ボタン
         if (explanation.textContent.includes('未定義のボタンが押されました') === false) {
@@ -470,7 +470,6 @@ document.querySelectorAll('.setting_btn').forEach(element => {
         resolve();
       });
     };
-
     set_modal();
   });
 });
@@ -485,6 +484,7 @@ document.querySelector('#modal_exit').addEventListener('click', (event) => {
   // 成功したかどうか
   const success = document.querySelector('#modal_exit').className;
   // モーダルを隠す
+  document.querySelector('#modal_exec').setAttribute('class', 'hns_hidden');
   document.querySelector('#modal_container').setAttribute('class', 'hns_hidden');
   document.querySelector('body').setAttribute('class', 'hns_visible');
 
@@ -508,21 +508,16 @@ async function send_jsstp(script) {
   if (jsstp_avaiable === false) {
     return 0;
   }
-
   // fmoが使えるかどうか
   const fmo = await jsstp.get_fmo_infos();
   if (fmo.avaiable === false) {
     return 0;
   }
-
   // 送信データを定義
   const send_data = { "ID": fmo.keys[0], "Script": script };
-
   // 送信
   const result = await jsstp.SEND(send_data);
-
   console.log('jsstp_log: ' + result.head);
-  console.log(result.entries);
   switch (result.status_code) {
     case 200:
       return 1;
@@ -545,11 +540,17 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
   event.stopPropagation();
   // デフォルトのリンク動作を防止
   event.preventDefault();
+  // 現在のモーダルを取得
+  const modal_window = document.querySelector('#modal_window');
   // 送るイベント名
-  const clicked = document.querySelector('#modal_exec').getAttribute('class').substring(8);
+  const clicked = modal_window.querySelector('#modal_exec').getAttribute('class');
   // 通信時間切れを定義
   const timeout = setTimeout(() => {
-    modal_window.querySelector('#modal_explanation>p').textContent = '通信に時間がかかりすぎています。';
+    if (clicked === 'callingGhostExec') {
+      modal_window.querySelector('#modal_explanation>p').textContent = '呼び出しに時間がかかりすぎています。';
+    } else {
+      modal_window.querySelector('#modal_explanation>p').textContent = '通信に時間がかかりすぎています。';
+    }
     modal_window.querySelector('#modal_exit').textContent = '中止する';
     document.querySelector('#modal_window').replaceWith(modal_window);
   }, 10000);
@@ -564,7 +565,11 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
   // 通信成功時の変更を定義
   const send_success = () => {
     clearTimeout(timeout);
-    modal_window.querySelector('#modal_explanation>p').textContent = '操作を完了しました。';
+    if (clicked === 'callingGhostExec') {
+      modal_window.querySelector('#modal_explanation>p').textContent = '呼び出しを完了しました。';
+    } else {
+      modal_window.querySelector('#modal_explanation>p').textContent = '操作を完了しました。';
+    }
     modal_window.querySelector('#modal_exit').setAttribute('class', 'success');
     modal_window.querySelector('#modal_exit').textContent = '戻る';
     document.querySelector('#modal_window').replaceWith(modal_window);
@@ -573,38 +578,51 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
   const send_unknown = (result) => {
     clearTimeout(timeout);
     console.info('modal_exec:通信返答が' + result + '/' + clicked);
-    modal_window.querySelector('#modal_explanation>p').innerText = '応答は' + result + 'でした。\n操作は未完了の可能性があります。';
+    if (clicked === 'callingGhostExec') {
+      modal_window.querySelector('#modal_explanation>p').innerText = '応答は' + result + 'でした。\n呼び出しに失敗している可能性があります。';
+    } else {
+      modal_window.querySelector('#modal_explanation>p').innerText = '応答は' + result + 'でした。\n操作は未完了の可能性があります。';
+    }
     modal_window.querySelector('#modal_exit').textContent = '戻る';
     document.querySelector('#modal_window').replaceWith(modal_window);
   };
-  // 情報をプラグインに送る関数
+
   async function setting_exec() {
     try {
-      const modal_window = document.querySelector('#modal_window');
+      // send_script の初期化
+      let send_script = '';
       modal_window.querySelector('#modal_explanation>p').setAttribute('class', 'center_text');
       modal_window.querySelector('#modal_explanation>p').textContent = '通信中です...';
-      modal_window.querySelector('#modal_explanation>ul').setAttribute('class', 'hns_hidden');
+      if (modal_window.querySelector('#modal_explanation>ul') != null) {
+        modal_window.querySelector('#modal_explanation>ul').setAttribute('class', 'hns_hidden');
+      };
       modal_window.querySelector('#modal_exec').setAttribute('class', document.querySelector('#modal_exec').getAttribute('class') + ' hns_hidden');
       modal_window.querySelector('#modal_exit').textContent = '中止';
       document.querySelector('#modal_window').replaceWith(modal_window);
 
-      const send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]`
-      const result = await send_jsstp(send_script);
+      if (clicked === 'callingGhostExec') {
+        send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnCallingGhost]\\![call,ghost,"${item.sender}"]`;
+      } else {
+        send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]`;
+      };
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('タイムアウト')), 10000)
+      )
+      const result = await Promise.race([send_jsstp(send_script), timeoutPromise]);
       switch (result) {
         case 1:
           send_success();
-          return 1;
+          break;
         case 0:
           send_failure();
-          return 0;
+          break;
         default:
           send_unknown(result);
-          return 0;
-      };
+      }
     } catch (error) {
+      console.error('setting_execでエラー', error);
       send_failure();
-      return 0;
-    }
+    };
   };
   setting_exec();
 });
@@ -621,7 +639,6 @@ document.querySelector('#modal_container').addEventListener('click', (event) => 
   const key = document.querySelector('#modal_exec').getAttribute('class');
   // 成功したかどうか
   const success = document.querySelector('#modal_exit').className;
-
   if (key.includes('address_delete') && success === 'success') {
     const a = document.createElement('a');
     a.href = './index.html';
@@ -634,4 +651,40 @@ document.querySelector('#modal_container').addEventListener('click', (event) => 
       fetchData();
     }, 100);
   };
+});
+
+document.querySelector('#callGhost').addEventListener('click', (event) => {
+  // バブリングを停止
+  event.stopPropagation();
+  // デフォルトのリンク動作を防止
+  event.preventDefault();
+  // 説明文
+  const explanation = document.createElement('div');
+  explanation.setAttribute('id', 'modal_explanation');
+  explanation.appendChild(document.createElement('p'));
+  explanation.querySelector('p').textContent = item.sender + 'を呼び出しますか？';
+  // モーダルウィンドウを表示
+  const set_modal = async () => {
+    await new Promise((resolve) => {
+      // 全体
+      let doc = document.querySelector('#modal_container');
+      doc.setAttribute('class', 'hns_visible')
+      // 定義しておいた説明文
+      doc.querySelector('#modal_explanation').replaceWith(explanation);
+      // ボタン類が非表示になっていたら戻す
+      doc.querySelector('#modal_btns').removeAttribute('class');
+      doc.querySelector('#modal_exec').removeAttribute('class');
+      doc.querySelector('#modal_exit').removeAttribute('class');
+      // 「する」ボタン
+      doc.querySelector('#modal_exec').textContent = '呼び出す';
+      doc.querySelector('#modal_exec').setAttribute('class', 'callingGhostExec');
+      // 「しない」ボタン
+      doc.querySelector('#modal_exit').textContent = '呼び出さない';
+
+      document.querySelector('body').setAttribute('class', 'modal_body hns_visible');
+      document.querySelector('#modal_container').replaceWith(doc);
+      resolve();
+    });
+  };
+  set_modal();
 });
