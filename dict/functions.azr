@@ -88,7 +88,7 @@ RestoreVar()
 readConfig()
 {
 	if ( _isfile( "ugm_config.txt" )==0 ) {
-		_writetext( "ugm_config.txt", {"localhost_number,8000","//server_log,server_log.txt","//akari_log,akari_log.txt",""}, "utf8", "crlf" );
+		_writetext( "ugm_config.txt", {"//localhostのポート番号を指定","localhost_number,8000","","//指定されたファイル名でugm_server.exeのログを出力","//server_log,server_log.txt","","//灯のセーブデータを読める形で出力","//akari_log,akari_log.txt",""}, "utf8", "crlf" );
 	}
 	// config.txtを読む
 	array config_txt = {};
