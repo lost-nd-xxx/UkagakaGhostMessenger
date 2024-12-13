@@ -124,7 +124,7 @@ func readConfig(filename string) (string, string, error) {
 		case "localhost_number":
 			// ポート番号の検査
 			portNumber, err := strconv.Atoi(value)
-			if err != nil || portNumber < 1024 || portNumber > 65535 || portNumber == 9801 {
+			if err != nil || portNumber < 1024 || portNumber > 65535 || portNumber == 9801 || portNumber == 9821 {
 				log.Printf("指定されたポート番号 '%s' は無効または使用できません。デフォルトポート8000を使用します。\n", value)
 				port = ":8000"
 			} else {
