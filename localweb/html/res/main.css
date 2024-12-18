@@ -47,12 +47,8 @@
     background: white !important;
   }
 
-  .iconNewArrival::before {
-    background-image: url("./image/newer_dark.svg") !important;
-  }
-
-  .navNewArrival::before {
-    background-image: url("./image/newer_dark.svg") !important;
+  a[target="_blank"]::after {
+    filter: brightness(0) saturate(100%) invert(69%) sepia(0%) saturate(24%) hue-rotate(233deg) brightness(99%) contrast(83%) !important;
   }
 }
 
@@ -74,6 +70,13 @@ body {
   margin: 0;
   word-wrap: break-word;
   word-break: break-all;
+}
+
+p {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+  margin-inline-start: 0 !important;
+  margin-inline-end: 0 !important;
 }
 
 /*-------------------------------- ヘッダー --------------------------------*/
@@ -213,10 +216,11 @@ h1 {
   display: flex;
   align-items: center;
   color: var(--color-grayish);
+  margin: 1em 0;
 }
 
 div.kiritoriLine p {
-  padding-left: 0px;
+  padding: 0px;
 }
 
 .kiritoriLine:before,
@@ -287,13 +291,11 @@ div.kiritoriLine p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 25%;
+  /* width: 25%; */
 }
 
 .personNewArrivals {
   color: var(--color-text);
-  margin-block-start: 0;
-  margin-block-end: 0;
 }
 
 .messageTime {
@@ -315,14 +317,21 @@ div.kiritoriLine p {
   border-radius: 10px;
 }
 
-.messageBubble:before {
-  content: "";
+.messageBubble::before {
+  /* content: "";
   position: absolute;
   top: 50%;
   left: -35px;
   margin-top: -15px;
   border: 15px solid transparent;
-  border-right: 15px solid var(--color-message-bubble);
+  border-right: 15px solid var(--color-message-bubble); */
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -21px;
+  margin-top: -12px;
+  border: 12px solid transparent;
+  border-right: 12px solid var(--color-message-bubble);
 }
 
 .messageBubble p {
@@ -361,49 +370,45 @@ a .personContainer:hover .iconNewArrival::after {
   align-items: center;
   flex-direction: row;
   justify-content: space-between;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   border-radius: 10px;
 }
 
 .personContainer p {
   padding: .25em 0;
+  height: 1em;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  white-space: nowrap;
+}
+
+.personTimeContainer p {
+  text-align: end;
+  width: 100%;
 }
 
 .personText {
   color: var(--color-text);
-  padding-right: 1em;
-  width: 72%;
-  min-width: 10%;
-  max-width: 72%;
+  margin: 0 auto 0 0;
+  /* width: 72%; */
+  /* min-width: 10%; */
+  /* max-width: 72%; */
 }
 
 .personName {
   font-weight: bold;
-  margin-block-start: 0;
-  margin-block-end: 0;
-  text-overflow: ellipsis;
-  overflow-x: hidden;
-  white-space: nowrap;
 }
 
 .personMessage {
   color: var(--color-grayish);
   font-weight: normal;
-  margin-block-start: 0;
-  margin-block-end: 0;
   width: 100%;
-  text-overflow: ellipsis;
-  overflow-x: hidden;
-  white-space: nowrap;
 }
 
 .personTime {
   font-weight: normal;
   color: var(--color-grayish);
-  margin-block-start: 0;
-  margin-block-end: 0;
-  margin: auto;
-  flex-shrink: 0;
+  /* flex-shrink: 0; */
 }
 
 hr {
@@ -643,4 +648,18 @@ hr {
 
 #fuwaimg_caption_text {
   color: var(--color-text);
+}
+
+/*-------------------------------- 外部リンク記号 --------------------------------*/
+
+a[target="_blank"]::after {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-image: url('./svg/open_in_new.svg');
+  background-position: center;
+  background-size: contain;
+  vertical-align: bottom;
+  filter: brightness(0) saturate(100%) invert(43%) sepia(0%) saturate(26%) hue-rotate(200deg) brightness(92%) contrast(89%);
 }
