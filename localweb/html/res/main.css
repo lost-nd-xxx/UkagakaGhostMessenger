@@ -198,8 +198,15 @@ h1 {
 
 /*-------------------------------- コンテンツ --------------------------------*/
 
-.center_text {
+.notice_text {
   text-align: center;
+  align-self: center;
+  padding: .5em;
+  margin-bottom: 2em;
+}
+
+.notice_text a {
+  text-decoration: underline;
 }
 
 .kiritoriLine {
@@ -543,6 +550,7 @@ hr {
   text-align: center;
   border-radius: 22px;
   transition: .3s;
+  padding-right: .25em;
 }
 
 .nav-content:has(.setting_btn) a:hover {
@@ -580,11 +588,12 @@ hr {
 
 #unreadCount {
   color: white;
-  font-size: .75em;
+  font-size: .5em;
   line-height: 24px;
   margin: 0;
   visibility: visible;
   opacity: 1;
+  text-wrap-mode: nowrap;
 }
 
 #unreadBadge {

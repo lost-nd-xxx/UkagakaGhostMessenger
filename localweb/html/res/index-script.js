@@ -47,7 +47,7 @@ function rewriteHtml(item) {
     elem.appendChild(child);
     // 表示名
     child = document.createElement('p');
-    child.setAttribute('class', 'center_text');
+    child.setAttribute('class', 'notice_text');
     child.textContent = '何も記録されていません';
     elem.querySelector('.personLink').appendChild(child);
   } else if (account_list.length === 0) {
@@ -57,7 +57,7 @@ function rewriteHtml(item) {
     elem.appendChild(child);
     // 表示名
     child = document.createElement('p');
-    child.setAttribute('class', 'center_text');
+    child.setAttribute('class', 'notice_text');
     child.textContent = '該当する項目がありませんでした';
     elem.querySelector('.personLink').appendChild(child);
   } else {
@@ -162,22 +162,24 @@ function fetchData() {
 }
 
 function errorHtml() {
+  // 現在の内容を取得
+  let bodyhtml = document.querySelector('html');
   // ページタイトル
-  document.querySelector('title').textContent = 'UkagakaGhostMessenger エラー';
-  // 中身
-  let bodyhtml = document.createElement('body');
-  bodyhtml.appendChild(document.createElement('h1'));
+  bodyhtml.querySelector('title').textContent = 'UkagakaGhostMessenger エラー';
+  // 不要なものを削除
+  bodyhtml.querySelector('.header').remove();
+  bodyhtml.querySelector('#addressContainer').remove();
+  // 本文
+  bodyhtml.querySelector('.main').prepend(document.createElement('p'));
+  bodyhtml.querySelector('.main>p').setAttribute('class', 'notice_text');
+  bodyhtml.querySelector('.main>p').textContent = 'このページを閉じて、ベースウェア本体からプラグインを操作しなおしてください。';
+  // 題字要素
+  bodyhtml.querySelector('.main').prepend(document.createElement('h1'));
   bodyhtml.querySelector('h1').textContent = 'データを見つけられませんでした';
-  bodyhtml.appendChild(document.createElement('p'));
-  bodyhtml.querySelector('p').setAttribute('class', 'center_text');
-  bodyhtml.querySelector('p').textContent = 'このページを閉じて、ベースウェア本体からプラグインを操作しなおしてください。';
-  bodyhtml.appendChild(document.createElement('div'));
-  bodyhtml.querySelector('div').setAttribute('class', 'footer');
-  bodyhtml.querySelector('.footer').appendChild(document.createElement('div'));
-  bodyhtml.querySelector('.footer>div').setAttribute('class', 'footerContainer');
-  bodyhtml.querySelector('.footer>.footerContainer').appendChild(document.createElement('p'));
-  bodyhtml.querySelector('.footer>.footerContainer>p').textContent = 'UkagakaGhostMessenger';
-  document.querySelector('body').replaceWith(bodyhtml);
+  // 差し替え実行
+  document.querySelector('html').replaceWith(bodyhtml);
+  // 非表示になっているのを表示に切り替え
+  // document.querySelector('body').setAttribute('class', 'hns_visible');
   // 繰り返し取得を解除
   clearInterval(check_update);
 };

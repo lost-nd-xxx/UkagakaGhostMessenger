@@ -148,25 +148,27 @@ function fetchData() {
 };
 
 function errorHtml() {
+  // 現在の内容を取得
+  let bodyhtml = document.querySelector('html');
   // ページタイトル
-  document.querySelector('title').textContent = 'UkagakaGhostMessenger エラー';
-  // 中身 シンプル
-  let bodyhtml = document.createElement('body');
-  bodyhtml.appendChild(document.createElement('h1'));
+  bodyhtml.querySelector('title').textContent = 'UkagakaGhostMessenger エラー';
+  // 不要なものを削除
+  bodyhtml.querySelector('.header').remove();
+  bodyhtml.querySelector('.contentContainer').remove();
+  bodyhtml.querySelector('#modal_container').remove();
+  bodyhtml.querySelector('#fuwaimg').remove();
+  // 本文
+  bodyhtml.querySelector('.main').prepend(document.createElement('p'));
+  bodyhtml.querySelector('.main>p').setAttribute('class', 'notice_text');
+  bodyhtml.querySelector('.main>p.notice_text').appendChild(document.createElement('a'));
+  bodyhtml.querySelector('.main>p.notice_text>a').setAttribute('href', './index.html');
+  bodyhtml.querySelector('.main>p.notice_text>a').textContent = '一覧に移動する場合、この文字列をクリックしてください。';
+  // 題字要素
+  bodyhtml.querySelector('.main').prepend(document.createElement('h1'));
   bodyhtml.querySelector('h1').textContent = 'エラーが発生しました';
-  bodyhtml.appendChild(document.createElement('p'));
-  bodyhtml.querySelector('p').setAttribute('class', 'center_text');
-  bodyhtml.querySelector('.center_text').appendChild(document.createElement('a'));
-  bodyhtml.querySelector('.center_text>a').setAttribute('href', './index.html');
-  bodyhtml.querySelector('.center_text>a').textContent = '前の頁に戻る際は、この文字列をクリックしてください。';
-  bodyhtml.appendChild(document.createElement('div'));
-  bodyhtml.querySelector('div').setAttribute('class', 'footer');
-  bodyhtml.querySelector('.footer').appendChild(document.createElement('div'));
-  bodyhtml.querySelector('.footer>div').setAttribute('class', 'footerContainer');
-  bodyhtml.querySelector('.footer>.footerContainer').appendChild(document.createElement('p'));
-  bodyhtml.querySelector('.footer>.footerContainer>p').textContent = 'UkagakaGhostMessenger';
-  document.querySelector('body').replaceWith(bodyhtml);
-  // 一瞬デフォルトが見えてしまうので最初は非表示
+  // 差し替え実行
+  document.querySelector('html').replaceWith(bodyhtml);
+  // 非表示になっているのを表示に切り替え
   document.querySelector('body').setAttribute('class', 'hns_visible');
   // 繰り返し取得を解除
   clearInterval(check_update);
@@ -611,7 +613,7 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
     try {
       // send_script の初期化
       let send_script = '';
-      modal_window.querySelector('#modal_explanation>p').setAttribute('class', 'center_text');
+      modal_window.querySelector('#modal_explanation>p').setAttribute('class', 'notice_text');
       modal_window.querySelector('#modal_explanation>p').textContent = '通信中です...';
       if (modal_window.querySelector('#modal_explanation>ul') != null) {
         modal_window.querySelector('#modal_explanation>ul').setAttribute('class', 'hns_hidden');
