@@ -66,17 +66,22 @@ body {
   background-attachment: fixed;
   background-position: left bottom;
   background-color: var(--color-page-background);
-  font-family: sans-serif;
   margin: 0;
   word-wrap: break-word;
   word-break: break-all;
+  line-height: 1.5;
+
+  font-family: "Helvetica Neue",
+    Arial,
+    "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans",
+    Meiryo,
+    sans-serif;
 }
 
 p {
-  margin-block-start: 0 !important;
-  margin-block-end: 0 !important;
-  margin-inline-start: 0 !important;
-  margin-inline-end: 0 !important;
+  margin-block: 0;
+  margin-inline: 0;
 }
 
 /*-------------------------------- ヘッダー --------------------------------*/
@@ -268,7 +273,6 @@ div.kiritoriLine p {
   height: 64px;
   object-fit: cover;
   border-radius: 50%;
-  /* margin-right: 15px; */
 }
 
 .personIconContainer {
@@ -279,19 +283,21 @@ div.kiritoriLine p {
 
 .iconNewArrival::after {
   position: absolute;
-  content: "●";
-  color: deeppink;
-  font-size: 1.5em;
-  top: -.2em;
-  right: .2em;
-  -webkit-text-stroke: .2em var(--color-main-background);
+  content: "";
+  font-size: 1px;
+  width: 15px;
+  height: 15px;
+  background-color: deeppink;
+  top: -5px;
+  right: 9px;
+  border: 5px solid var(--color-main-background);
+  border-radius: 100%;
 }
 
 .personTimeContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* width: 25%; */
 }
 
 .personNewArrivals {
@@ -318,13 +324,6 @@ div.kiritoriLine p {
 }
 
 .messageBubble::before {
-  /* content: "";
-  position: absolute;
-  top: 50%;
-  left: -35px;
-  margin-top: -15px;
-  border: 15px solid transparent;
-  border-right: 15px solid var(--color-message-bubble); */
   content: "";
   position: absolute;
   top: 50%;
@@ -359,7 +358,7 @@ a .personContainer:hover {
 }
 
 a .personContainer:hover .iconNewArrival::after {
-  -webkit-text-stroke: .2em color-mix(in srgb, var(--color-main-background) 50%, var(--color-message-bubble));
+  border-color: color-mix(in srgb, var(--color-main-background) 50%, var(--color-message-bubble));
   transition: .3s;
 }
 
@@ -379,6 +378,7 @@ a .personContainer:hover .iconNewArrival::after {
   height: 1em;
   text-overflow: ellipsis;
   overflow-x: hidden;
+  overflow-y: hidden;
   white-space: nowrap;
 }
 
@@ -390,9 +390,6 @@ a .personContainer:hover .iconNewArrival::after {
 .personText {
   color: var(--color-text);
   margin: 0 auto 0 0;
-  /* width: 72%; */
-  /* min-width: 10%; */
-  /* max-width: 72%; */
 }
 
 .personName {
@@ -408,11 +405,11 @@ a .personContainer:hover .iconNewArrival::after {
 .personTime {
   font-weight: normal;
   color: var(--color-grayish);
-  /* flex-shrink: 0; */
 }
 
 hr {
-  border-color: var(--color-nav-background);
+  border: none;
+  border-top: 1px solid var(--color-grayish);
   width: 99%;
   margin: 0 auto;
 }
@@ -576,7 +573,6 @@ hr {
   visibility: visible;
   opacity: 1;
   transition: .3s;
-  /* margin-right: 1em; */
 }
 
 .navCircleBtn a .navIcon {
@@ -594,6 +590,7 @@ hr {
 #unreadCount {
   color: white;
   font-size: .5em;
+  font-weight: bolder;
   line-height: 24px;
   margin: 0;
   visibility: visible;
@@ -622,10 +619,6 @@ hr {
   position: relative;
 }
 
-/* .footer p {
-  text-align: center;
-} */
-
 .footer ul {
   list-style: none;
   display: flex;
@@ -633,6 +626,7 @@ hr {
   padding: 0;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .footer ul li {
@@ -660,6 +654,6 @@ a[target="_blank"]::after {
   background-image: url('./svg/open_in_new.svg');
   background-position: center;
   background-size: contain;
-  vertical-align: bottom;
+  vertical-align: middle;
   filter: brightness(0) saturate(100%) invert(43%) sepia(0%) saturate(26%) hue-rotate(200deg) brightness(92%) contrast(89%);
 }
