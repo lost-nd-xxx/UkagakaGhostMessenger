@@ -113,7 +113,7 @@ function rewriteHtml(data) {
     // 書き換えたものをまとめて差し替え
     document.querySelector('html').replaceWith(doc);
     // 既読用スクリプトを定義
-    const send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]`
+    const send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]`
     // 既読情報を送信
     send_jsstp(send_script);
     return 1;
@@ -522,7 +522,7 @@ async function send_jsstp(script) {
 
   for (let i = 0; i < fmo.keys.length; i++) {
     // 送信データを定義
-    const send_data = { "ID": fmo.keys[i], "Script": script, "Option": "notify" };
+    const send_data = { "ID": fmo.keys[i], "Script": script };
     // 送信
     const result = await jsstp.SEND(send_data);
     console.log('jsstp_log: ' + result.head);
@@ -623,9 +623,9 @@ document.querySelector('#modal_exec').addEventListener('click', (event) => {
       document.querySelector('#modal_window').replaceWith(modal_window);
 
       if (clicked === 'callingGhostExec') {
-        send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnCallingGhost]\\![call,ghost,"${item.sender}"]`;
+        send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnCallingGhost]\\![call,ghost,"${item.sender}"]`;
       } else {
-        send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]`;
+        send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,${clicked},"${item.sender}","${item.SenderId}"]`;
       };
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('タイムアウト')), 10000)
