@@ -389,6 +389,7 @@ a .personContainer:hover .iconNewArrival::after {
 .personText {
   color: var(--color-text);
   margin: 0 auto 0 0;
+  width: 75%;
 }
 
 .personName {
