@@ -209,8 +209,7 @@ h1 {
 .notice_text {
   text-align: center;
   align-self: center;
-  padding: .5em;
-  margin-bottom: 2em;
+  padding: 1em .5em;
 }
 
 .notice_text a {
@@ -616,6 +615,7 @@ hr {
   color: var(--color-grayish);
   bottom: 0;
   margin: auto;
+  margin-top: 1em;
   position: relative;
 }
 
