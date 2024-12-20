@@ -248,7 +248,7 @@ document.querySelector('#oyasumi_toggle').addEventListener('click', (event) => {
   // デフォルトのリンク動作を防止
   event.preventDefault();
   // スクリプトを定義
-  const send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,oyasumi_toggle]`
+  const send_script = `\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_SettingsFromWeb,oyasumi_toggle]`
   // 情報を送信
   async function send_exec() {
     let send_result = await send_jsstp(send_script);
@@ -303,7 +303,7 @@ async function send_jsstp(script) {
 
   for (let i = 0; i < fmo.keys.length; i++) {
     // 送信データを定義
-    const send_data = { "ID": fmo.keys[i], "Script": script };
+    const send_data = { "ID": fmo.keys[i], "Script": script, "Option": "notify" };
     // 送信
     const result = await jsstp.SEND(send_data);
     console.log('jsstp_log: ' + result.head);
