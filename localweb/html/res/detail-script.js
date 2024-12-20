@@ -522,7 +522,7 @@ async function send_jsstp(script) {
 
   for (let i = 0; i < fmo.keys.length; i++) {
     // 送信データを定義
-    const send_data = { "ID": fmo.keys[i], "Script": script };
+    const send_data = { "ID": fmo.keys[i], "Script": script, "Event": "OnUkagakaGhostMessenger_SendToPlugin" };
     // 送信
     const result = await jsstp.SEND(send_data);
     console.log('jsstp_log: ' + result.head);
