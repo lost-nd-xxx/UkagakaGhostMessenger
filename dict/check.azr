@@ -232,24 +232,16 @@ OnUkagakaGhostMessenger_ExecRinging()
 		ref_arr += curt;
 	}
 
+	// イベントを起こす
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
 	dictOptionalHeader["reference"] = ref_arr;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
 	dictOptionalHeader["marker"] = version();
 	dictOptionalHeader["script_option"] = "nobreak";
+
+	// 変数を初期化
 	Waiting_Ringing = {};
 }
-
-// 仕様変更前
-// OnUkagakaGhostMessenger_ExecRinging_Old()
-// {
-// 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
-// 	dictOptionalHeader["reference"] = Waiting_Ringing;
-// 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
-// 	dictOptionalHeader["marker"] = version();
-// 	dictOptionalHeader["script_option"] = "nobreak";
-// 	Waiting_Ringing = {};
-// }
 
 //----------------------------------------------------------------
 // 待機枠がLate加味の時刻を達成しているか確認　あったら表示につなげる
