@@ -48,30 +48,34 @@ string OnTrayBalloonClick(dict ref)
 
 	// ログの新しい方から探す
 	int result = -1;
-	int cnt = _aryvn(notify_log)-1;
-	for ( int i=0; i<_aryvn(notify_log); i++ ) {
-		string sctipt = notify_log[cnt][0];
-		string title = _regex_search( sctipt[0], "title=([^,\]]*)" )[1];
+	if ( r0 != "UkagakaGhostMessenger" && _strstr( r1, "件のメッセージを受信しました", 0 ) == -1 ) {
+		// プラグイン本体にまとめられた通知ではない
 
-		// 複数行の文字列にも対応したい
-		string text = "";
-		int while_cnt = 0;
-		while ( while_cnt<10 ) {
-			string tmp_text = _regex_search( sctipt[0], "text=([^,\]]*)", while_cnt )[1];
-			if ( _strlen(tmp_text)<=0 ) {
-				break;
-			} else if ( _strlen(text)>0 ) {
-				text += "  ";
+		int cnt = _aryvn(notify_log)-1;
+		for ( int i=0; i<_aryvn(notify_log); i++ ) {
+			string sctipt = notify_log[cnt][0];
+			string title = _regex_search( sctipt[0], "title=([^,\]]*)" )[1];
+
+			// 複数行の文字列にも対応したい
+			string text = "";
+			int while_cnt = 0;
+			while ( while_cnt<10 ) {
+				string tmp_text = _regex_search( sctipt[0], "text=([^,\]]*)", while_cnt )[1];
+				if ( _strlen(tmp_text)<=0 ) {
+					break;
+				} else if ( _strlen(text)>0 ) {
+					text += "  ";
+				}
+				text += tmp_text;
+				while_cnt++;
 			}
-			text += tmp_text;
-			while_cnt++;
-		}
 
-		if ( r0==title && _strstr( r1, text, 0 )==0 ) {
-			result = cnt;
-			break;
+			if ( r0==title && _strstr( r1, text, 0 )==0 ) {
+				result = cnt;
+				break;
+			}
+			cnt--;
 		}
-		cnt--;
 	}
 
 	// スクリプトを作る
