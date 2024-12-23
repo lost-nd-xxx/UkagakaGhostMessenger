@@ -94,7 +94,7 @@ readConfig()
 	array config_txt = {};
 	config_txt = _readtext( "ugm_config.txt", "utf8", "crlf" );
 
-	localhost_number = -1;
+	localhost_number = 8000;
 	for ( int i=0; i<_aryvn(config_txt); i++ ) {
 		if ( _regex_match( config_txt[i], "localhost_number,\s*\d+\s*" )==1 ) {
 			localhost_number = _regex_search( config_txt[i], "localhost_number,\s*(\d+)\s*" )[1];
@@ -102,8 +102,8 @@ readConfig()
 			akari_log = _regex_search( config_txt[i], "akari_log,\s*(\S+)\s*" )[1];
 		}
 	}
-	// 変だったら8000に直す
-	if ( localhost_number<1024 || localhost_number>65535 || localhost_number==9801 ) {
+	// 範囲外だったら8000に直す
+	if ( localhost_number<1024 || localhost_number>65535 || localhost_number==9801 || localhost_number==9821 ) {
 		localhost_number = 8000;
 	}
 }
@@ -175,7 +175,7 @@ UpdateWebJson()
 					if ( _gettype( messages_to_sort[msg_day][msg_time_cnt] )=="nil" ) {
 						messages_to_sort[msg_day] += $( msg_time_cnt, {} );
 					}
-					// 時計ずれなどによる時間被り対策のため配列とする
+					// 時間被り対策のため配列とする
 					for ( int i4=0; i4<_aryvn(msg_txt); i4++ ) {
 						dict d = $();
 						if ( _strstr(msg_txt[i4],"class=\"stamp\"",0)!=-1 ) {

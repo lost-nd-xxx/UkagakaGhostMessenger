@@ -22,7 +22,9 @@ load()
 		$("marker", "")
 	};
 	
-	_saoriload( "yaya.dll", "yaya");
+	_saoriload( "yaya.dll", "yaya" );
+	_fdelete("localweb\\shutdown.signal");
+	_fdelete("localweb\\running.signal");
 	_file_execute( _abspath("localweb\\ugm_server.exe") );
 
 	readConfig();
@@ -31,8 +33,9 @@ load()
 
 unload()
 {
-	_saoriunload( "yaya");
-	_file_execute( _abspath("localweb\\ugm_server.exe"), "shutdown" );
+	_saoriunload( "yaya" );
+	_writetext("localweb\\shutdown.signal","","utf8","crlf");
+	_fdelete("localweb\\running.signal");
 
 	SaveVar();
 }

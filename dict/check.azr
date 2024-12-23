@@ -132,13 +132,14 @@ string ShowMessage(dict ref)
 
 		SaveData_Received[sender][SenderId]["msgs"][MessageId] += received_msg;
 
-		Waiting_Ringing = {};
-		Waiting_Ringing += sender;
-		Waiting_Ringing += SenderId;
-		Waiting_Ringing += MessageId;
+		array ringing = {};
+		ringing += sender;
+		ringing += SenderId;
+		ringing += MessageId;
 		for ( int i=0; i<_aryvn(reserved["EventReference"]); i++ ) {
-			Waiting_Ringing += reserved["EventReference"][i];
+			ringing += reserved["EventReference"][i];
 		}
+    Waiting_Ringing += ringing;
 	}
 	else {
 		// テキストが無い場合、通知も鳴らないのでRingingしない
@@ -187,11 +188,27 @@ string ShowMessage(dict ref)
 array Waiting_Ringing;
 OnUkagakaGhostMessenger_ExecRinging()
 {
+	// reference用の情報を成型する
+	array ref_arr = {};
+	for ( int i0=0; i0<_aryvn(Waiting_Ringing); i0++ ) {
+		string curt = "";
+		for ( int i1=0; i1<_aryvn(Waiting_Ringing[i0]); i1++ ) {
+			if (i1>0) {
+				curt += _bytechar(1);
+			}
+			curt += Waiting_Ringing[i0][i1];
+		}
+		ref_arr += curt;
+	}
+
+	// イベントを起こす
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
 	dictOptionalHeader["reference"] = Waiting_Ringing;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
 	dictOptionalHeader["marker"] = version();
 	dictOptionalHeader["script_option"] = "nobreak";
+
+	// 変数を初期化
 	Waiting_Ringing = {};
 }
 
