@@ -1,51 +1,12 @@
 // 条件を照合して表示
 
 //----------------------------------------------------------------
-// 表示用の情報を返しつつ、受信枠の情報を更新する（複数/親）
-// 引数：　配列に入った辞書型のメッセージ情報
-// { ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }, ... }
-// 返値：　通知用スクリプト（あれば）
-//----------------------------------------------------------------
-string ShowMessage(array ref)
-{
-	array script_arr = {};
-	for ( int i=0; i<_aryvn(ref); i++ ) {
-		string curt = ShowMessage_JustOne(ref[i]);
-		if ( _strlen(curt)>0 ) {
-			script_arr += curt;
-		}
-	}
-
-	if ( oyasumi_flag==0 && _aryvn(script_arr)>0 ) {
-		// おやすみモードでない＆出すべき通知がある
-
-		// Fake_DataLimitのカウントを進める
-		Fake_DataLimit_Count++;
-		Fake_DataLimit_LastTime = GetEpochSec();
-
-		string script = "";
-		if ( _aryvn(script_arr)>=2 ) {
-			// 出すべき通知が複数あるのでまとめる
-			script += "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,text=";
-			script += _aryvn(script_arr);
-			script += "件のメッセージを受信しました]";
-		} else {
-			// 単体なのでそのまま表示
-			script += script_arr[0];
-		}
-		// OnUkagakaGhostMessenger_Ringingを発生させる
-		script += "\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
-		return script;
-	}
-}
-
-//----------------------------------------------------------------
-// 表示用の情報を返しつつ、受信枠の情報を更新する（単体/子）
+// 表示用の情報を返しつつ、受信枠の情報を更新する
 // 引数：　辞書型のメッセージ単体情報
 // ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }
-// 返値：　通知用スクリプト（あれば）
+// 返値：　通知用スクリプト
 //----------------------------------------------------------------
-string ShowMessage_JustOne(dict ref)
+string ShowMessage(dict ref)
 {
 	string sender = ref["sender"];
 	string SenderId = ref["SenderId"];
@@ -163,7 +124,7 @@ string ShowMessage_JustOne(dict ref)
 		script += "\\C\\![set,trayballoon,--icon=none,--title=";
 		script += SaveData_Received[sender][SenderId]["SenderName"];
 		script += GenerateTrayBalloonScript(Text);
-		script += "]";
+		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
 
 		array text_array = GenerateReceivedLogText(Text,sender);
 
@@ -171,11 +132,14 @@ string ShowMessage_JustOne(dict ref)
 
 		SaveData_Received[sender][SenderId]["msgs"][MessageId] += received_msg;
 
-		array ringing = { sender, SenderId, MessageId };
+		array ringing = {};
+		ringing += sender;
+		ringing += SenderId;
+		ringing += MessageId;
 		for ( int i=0; i<_aryvn(reserved["EventReference"]); i++ ) {
 			ringing += reserved["EventReference"][i];
 		}
-		Waiting_Ringing += ringing;
+    Waiting_Ringing += ringing;
 	}
 	else {
 		// テキストが無い場合、通知も鳴らないのでRingingしない
@@ -188,7 +152,7 @@ string ShowMessage_JustOne(dict ref)
 		SaveData_Reserved[sender][SenderId][MessageId] = nil;
 	}
 
-	// Message_Runを満たしたメッセージ 通常は次回の判定発生時（1秒後）に表示
+	// Message_Runを満たしたメッセージ
 	array msg = PickUpMessageByCondition("Message_Run",{{sender,SenderId,MessageId}});
 	// Message_Run以外の条件を満たしているか調べる
 	msg = CheckMessageCondition("Message_Run",msg);
@@ -201,7 +165,13 @@ string ShowMessage_JustOne(dict ref)
 	UpdateWebJson();
 
 	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
-	if ( mute_flag!=1 && _strlen(script)>0 ) {
+	if ( mute_flag!=1 && oyasumi_flag==0 ) {
+		if (_strlen(script)>0) {
+			// 通知を出すならFake_DataLimitのカウントを進める
+			Fake_DataLimit_Count++;
+			Fake_DataLimit_LastTime = GetEpochSec();
+		}
+		// ミュートされていない ＆ おやすみモードでなければ通知を出す
 		notify_log += { script, sender, SenderId };
 		return script;
 	}
@@ -216,7 +186,6 @@ string ShowMessage_JustOne(dict ref)
 //----------------------------------------------------------------
 // プラグイン読み込み前の情報を持ち越さない
 array Waiting_Ringing;
-
 OnUkagakaGhostMessenger_ExecRinging()
 {
 	// reference用の情報を成型する
@@ -234,7 +203,7 @@ OnUkagakaGhostMessenger_ExecRinging()
 
 	// イベントを起こす
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
-	dictOptionalHeader["reference"] = ref_arr;
+	dictOptionalHeader["reference"] = Waiting_Ringing;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
 	dictOptionalHeader["marker"] = version();
 	dictOptionalHeader["script_option"] = "nobreak";
@@ -255,35 +224,26 @@ string CheckWaitingList()
 		script = "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=メッセージの連続表示上限に達しました。1分間、受信が一時停止されます]";
 		return script;
 	}
-
+	
 	if ( _aryvn(SaveData_Waiting) <= 0 ) {
 		// 待ちが無い
 		return;
 	}
 
 	int now = GetEpochSec();
-	array MessagesToNotify = {};
 	for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
 		dict curt = SaveData_Waiting[i];
 		int epoch = curt["epoch_sec"];
 		if ( epoch <= now ) {
 			// 達成済みを発見
-			MessagesToNotify += curt;
-			// 待機枠の該当項目を削除
+			string script = ShowMessage(curt);
 			SaveData_Waiting[i] = nil;
-		}
-	}
-
-	if ( _aryvn(MessagesToNotify) > 0 ) {
-		// 待機枠に達成済みがあった
-		string script = ShowMessage(MessagesToNotify);
-		SaveVar();
-		if ( _strlen(script) > 0 ) {
+			SaveVar();
 			return script;
 		}
 	}
 
-	// 表示すべき事柄が無い
+	// 達成済みが無い
 	return;
 }
 
