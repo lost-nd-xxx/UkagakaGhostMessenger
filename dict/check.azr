@@ -150,6 +150,9 @@ string ShowMessage(dict ref)
 	// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
 	if ( reserved["RunCount"] <= ExecutedCount && reserved["RunCount"] > 0 ) {
 		SaveData_Reserved[sender][SenderId][MessageId] = nil;
+		if ( _dicvn(SaveData_Reserved[sender][SenderId]) <= 0 ) {
+			SaveData_Reserved[sender][SenderId] = nil;
+		}
 	}
 
 	// Message_Runを満たしたメッセージ
