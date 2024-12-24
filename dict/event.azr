@@ -9,6 +9,7 @@ string OnSecondChange(dict ref)
 	if ( now > (Fake_DataLimit_LastTime+60) ) {
 		// Fake_DataLimit_Countのカウントをゼロに戻す
 		Fake_DataLimit_Count = 0;
+		Fake_DataLimit_LastTime = GetEpochSec();
 	}
 	
 	// 表示待ちを処理
@@ -29,6 +30,7 @@ string OnSecondChange(dict ref)
 
 	if ( _strlen(script) > 0 ) {
 		// 喋るべきスクリプトがある
+		SaveVar();
   	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_RaiseNotification";
 		dictOptionalHeader["marker"] = version();
 		dictOptionalHeader["script_option"] = "nobreak";

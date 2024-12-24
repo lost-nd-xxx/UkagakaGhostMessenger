@@ -11,8 +11,7 @@ secondchangeinterval,1
 
 id,6f0415e0-3c00-11ef-9a9c-0800200c9a66
 
-// 更新URL
-//homeurl,hogehoge
-
 readme,readme.txt
 readme.charset,UTF-8
+
+homeurl,https://raw.githubusercontent.com/lost-nd-xxx/UkagakaGhostMessenger/main/

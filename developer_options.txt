@@ -4,10 +4,12 @@ __akari_tester/,nonar,noupdate
 __memo/,nonar,noupdate
 developer_options.txt,nonar,noupdate
 localweb/__server_golang/,nonar,noupdate
+localweb/running.signal,nonar,noupdate
 localweb/shutdown.signal,nonar,noupdate
 localweb/html/res/image/UkagakaGhostMessengerナビゲーターうめちゃん/,nonar,noupdate
 ugm_config.txt,nonar,noupdate
 server_log.txt,nonar,noupdate
 akari_log.txt,nonar,noupdate
+akari_log.json,nonar,noupdate
 profile/,nonar,noupdate
 savedata.adb,nonar,noupdate

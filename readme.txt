@@ -7,10 +7,9 @@
 
 ------------------------
 ## 取扱説明書等
-※【要差し替え】
-* ゴースト使用者向け説明書 URL
-* ゴースト制作者向け説明書 URL
-* 仕様書 URL
+* ゴースト使用者向け説明書 https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki/HowToUse#ゴースト使用者向け
+* ゴースト制作者向け説明書 https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki/HowToUse#ゴースト制作者向け
+* 仕様書 https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki/Specification
 
 ------------------------
 ## メッセージ履歴について
