@@ -14,7 +14,7 @@ string pluginname()
 
 string version()
 {
-	return "UkagakaGhostMessenger/1.0.0";
+	return pluginname()+"/"+"1.0.1 pre";
 }
 
 //----------------------------------------------------------------
