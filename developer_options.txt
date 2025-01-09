@@ -6,6 +6,7 @@ developer_options.txt,nonar,noupdate
 localweb/__server_golang/,nonar,noupdate
 localweb/running.signal,nonar,noupdate
 localweb/shutdown.signal,nonar,noupdate
+localweb/html/res/data.json,nonar,noupdate
 localweb/html/res/image/UkagakaGhostMessengerナビゲーターうめちゃん/,nonar,noupdate
 ugm_config.txt,nonar,noupdate
 server_log.txt,nonar,noupdate
