@@ -9,12 +9,20 @@
 //----------------------------------------------------------------
 string pluginname()
 {
+	// プラグイン名
 	return "UkagakaGhostMessenger";
+}
+
+string version_num()
+{
+	// バージョンを文字列で
+	return "1.0.1";
 }
 
 string version()
 {
-	return pluginname()+"/"+"1.0.1 pre";
+	// 表示用
+	return pluginname()+"/"+version_num();
 }
 
 //----------------------------------------------------------------
