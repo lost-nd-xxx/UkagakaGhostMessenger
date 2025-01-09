@@ -16,7 +16,7 @@ string pluginname()
 string version_num()
 {
 	// バージョンを文字列で
-	return "1.0.1";
+	return "1.0.2";
 }
 
 string version()
