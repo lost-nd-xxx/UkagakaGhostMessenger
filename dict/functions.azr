@@ -9,12 +9,20 @@
 //----------------------------------------------------------------
 string pluginname()
 {
+	// プラグイン名
 	return "UkagakaGhostMessenger";
+}
+
+string version_num()
+{
+	// バージョンを文字列で
+	return "1.0.1";
 }
 
 string version()
 {
-	return "UkagakaGhostMessenger/1.0.0";
+	// 表示用
+	return pluginname()+"/"+version_num();
 }
 
 //----------------------------------------------------------------
@@ -312,32 +320,36 @@ dict GetTimeByEpochSec(int ref)
 }
 
 //----------------------------------------------------------------
-// ゴースト名がインストール済み（＆読み込まれている）か確認する
+// ゴースト名がインストール済み（＆フォルダが読み込まれている）か確認する
 // 引数：　ゴースト名の文字列の配列
 // 　　　　例：{"Ｒポストと狛犬","Emily_Phase4.5",...}
 // 返値：　認識されていたら1、そうでなければ0、の数値の配列　引数と順序は一緒
-// 失敗したら-1の数値単独
+// 失敗したら-1の数値が1つだけ入った配列
 //----------------------------------------------------------------
 array IsGhostNameInstalled(array ref)
 {
 	// 結果用
 	array result;
 
-	if ( _aryvn(InstalledGhostNameList)==0 ) {
-		// 未構築
-		return -1;
+	if ( _aryvn(InstalledGhostNameList)<=0 ) {
+		// インストール済みのリストが未構築など
+		result += -1;
+		return result;
 	}
-	
-	for ( int i0=0; i0<_aryvn(ref); i0++ ) {
-		int match=0;
-		string ghostname = ref[i0];
-		for ( int i1=0; i1<_aryvn(InstalledGhostNameList); i1++ ) {
-			if ( TranslateSystemChar(InstalledGhostNameList[i1]) == TranslateSystemChar(ghostname) ) {
-				match=1;
-				break;
-			}
+
+	// 配列を、区切り付きの単独文字列に（TranslateSystemCharで文字列置き換え済み）
+	string list = TranslateSystemChar(_azv2json(InstalledGhostNameList));
+	list = _regex_replace( list, "\R", _bytechar(1) );
+
+	for ( int i=0; i<_aryvn(ref); i++ ) {
+		string ghostname = _bytechar(1) + "_____" + TranslateSystemChar(ref[i]) + "__" + _bytechar(1);
+		int search_result = _strstr( list, ghostname, 0 );
+		if ( search_result == -1 ) {
+			result += 0;
 		}
-		result += match;
+		else {
+			result += 1;
+		}
 	}
 
 	return result;
@@ -351,92 +363,50 @@ array IsGhostNameInstalled(array ref)
 string TranslateSystemChar(string ref)
 {
 	string after = "_";
-	string before = "[\\\/:\*\?\"\<\>\|\=]";
+	string before = "[ !\'\"#$&()*+,\-/:;<=>?@\[\]`{|}~]";
 	string result = _regex_replace( ref, before, after );
-	
+
 	return result;
-}
-
-//----------------------------------------------------------------
-// FMOを変数に入れなおす
-// 引数・返値：　なし
-//----------------------------------------------------------------
-// スコープを一番外側にする
-dict FmoTable;
-array FmoCache;
-
-RefreshFmo()
-{
-	// 現在のfmoを取得
-	array raw_fmo = _getfmo();
-
-	if ( _arystr(FmoCache) == _arystr(raw_fmo) ) {
-		// 前回と変化が無かったので関数を終了
-		return;
-	}
-	else {
-		// 変化があるか確認する用のキャッシュを更新
-		FmoCache = raw_fmo;
-	}
-
-	// 結果用の変数を空の辞書型に戻す
-	FmoTable = $();
-
-	// fmoの中身を切り出していく
-	for ( int i=0; i < _aryvn( raw_fmo ); i++ ) {
-		// バイト値1で分割
-		array split = _strsplit( raw_fmo[i], _bytechar(1) );
-		
-		// 固定長32byteがid
-		string id = _substr( split[0], 0, 32 );
-		
-		// 固定長32byte＋1ドットの次からがkey
-		string key = _substr( split[0], 33, 20 );
-
-		// 変数が無かったら空を入れておく
-		if ( _gettype( FmoTable[id] ) == "nil" ) {
-			FmoTable += $( id, $() );
-		}
-
-		// 値を格納
-		FmoTable[id] += $( key, split[1] );
-	}
-	return;
 }
 
 //----------------------------------------------------------------
 // 指定されたゴースト名の情報をFMOから取得する　ここには起動中のものしかいない
 // 同じゴースト名・違うパスなどの組み合わせで複数体が同時起動されていた場合、
 // 先に認識された方のみが検出される
+// 引数のゴースト名はTranslateSystemCharが適用されるが、返値には適用されない（パスがおかしくなるため）
 // 引数：　GetFmoInfo( { ゴースト名, { FMOのキー名の文字列1, FMOのキー名の文字列2, } } );
 // 返値：　指定されたキー名と対する値の入った辞書型
 //----------------------------------------------------------------
 dict GetFmoInfo(array argv)
 {
 	// 引数を格納
-	string fullname = argv[0];
-	array ref = argv[1];
+	string fullname = TranslateSystemChar(argv[0]);
+	array keys = argv[1];
 	
 	// 格納用の変数を定義
 	dict result;
 
 	// FMOの更新確認
-	RefreshFmo();
-	
+	array raw_fmo = _getfmo();
+	string fmo_string = _azv2json(raw_fmo);
+	fmo_string = _regex_replace( fmo_string, "\R", _bytechar(2) );
+
 	// 探す
-	array ids = _dickeyget( FmoTable );
-	for ( int i0=0; i0<_aryvn(ids); i0++ ) {
-		string curt_id = ids[i0];
-		if ( TranslateSystemChar(FmoTable[curt_id]["fullname"]) == TranslateSystemChar(fullname) ) {
-			// 起動中ゴーストの情報が合致した
-			for ( int i1=0; i1<_aryvn(ref); i1++ ) {
-				// 指定されたキーの情報を格納
-				string curt_key = ref[i1];
-				result += $( curt_key, FmoTable[curt_id][curt_key] );
-			}
-			// 格納が終わったらループを脱出する
-			break;
-		}
+	array searched_fullname = _regex_search( TranslateSystemChar(fmo_string), _bytechar(2)+"_____(\w{32})\.fullname"+_bytechar(1)+fullname+"__"+_bytechar(2) );
+	string unique_id = searched_fullname[1];
+
+	if ( _strlen(unique_id)<=0 ) {
+		// 見つからなかったので無を返す
+		return;
+	}
+	else if ( _strstr(unique_id,"ssp_fmo_header_dummyentry") == 0 ) {
+		// 起動中ではなかったので無を返す
+		return;
+	}
+
+	for ( int i=0; i<_aryvn(keys); i++ ) {
+		string value = _regex_search( fmo_string, _bytechar(34)+unique_id+"\."+keys[i]+_bytechar(1)+"(.*?)"+_bytechar(34)+","+_bytechar(2) )[1];
+		result += $( keys[i], value );
 	}
 
 	if ( _dicvn(result) > 0 ) {
@@ -444,7 +414,7 @@ dict GetFmoInfo(array argv)
 		return result;
 	}
 	else {
-		// 起動中にはいなかったので無を返す
+		// 情報が取れなかったので無を返す
 		return;
 	}
 }
@@ -531,9 +501,7 @@ array AsortEx( array ar )
 
 	// 辞書から取り出す　文字コード順
 	array result;
-	for ( int i=0; i<_aryvn(ar); i++ ) {
-		result += _dickeyget(d)[i];
-	}
+	result = _dicvget(d);
 
 	return result;
 }

@@ -11,7 +11,7 @@ string OnSecondChange(dict ref)
 		Fake_DataLimit_Count = 0;
 		Fake_DataLimit_LastTime = GetEpochSec();
 	}
-	
+
 	// 表示待ちを処理
   string script = CheckWaitingList();
 
@@ -169,17 +169,11 @@ array InstalledGhostNameList;
 
 installedghostname(dict ref)
 {
-	// 変数を空にする
-	InstalledGhostNameList = {};
+	dict d = ref;
+	d["Charset"] = nil;
+	d["ID"] = nil;
+	d["Language"] = nil;
+	d["head"] = nil;
 
-	for ( int i=0; i<_dicvn(ref); i++ ) {
-		if ( _gettype(ref["Reference"+i]) == "nil" ) {
-			// 終了したら脱出
-			return;
-		}
-		else {
-			// 存在したら配列に追加
-			InstalledGhostNameList += ref["Reference"+i];
-		}
-	}
+	InstalledGhostNameList = _dicvget(d);
 }
