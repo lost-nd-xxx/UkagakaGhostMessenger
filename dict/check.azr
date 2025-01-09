@@ -206,7 +206,7 @@ OnUkagakaGhostMessenger_ExecRinging()
 
 	// イベントを起こす
 	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Ringing";
-	dictOptionalHeader["reference"] = Waiting_Ringing;
+	dictOptionalHeader["reference"] = ref_arr;
 	dictOptionalHeader["target"] = "__SYSTEM_ALL_GHOST__";
 	dictOptionalHeader["marker"] = version();
 	dictOptionalHeader["script_option"] = "nobreak";
