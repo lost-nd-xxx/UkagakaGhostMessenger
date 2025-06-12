@@ -17,7 +17,7 @@ OnUkagakaGhostMessenger_Trigger(dict res)
   }
 
 	// イベントを送ってきたゴースト名
-	string sender = TranslateSystemChar(ref["sender"]);
+	string sender = TranslateSystemChar(res["sender"]);
 
   // 該当するメッセージを抜き出す
   array msg;
