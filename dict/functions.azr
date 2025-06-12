@@ -147,7 +147,7 @@ UpdateWebJson()
 			}
 			else {
 				// それ以外
-				account += $("SenderIcon","./res/image/"+ghost+"/"+SaveData_Received[ghost][chara]["SenderIcon"]);
+				account += $("SenderIcon","./res/image/"+GhostNameToFolderName(ghost)+"/"+SaveData_Received[ghost][chara]["SenderIcon"]);
 			}
 			// 表示名
 			account += $("SenderName",SaveData_Received[ghost][chara]["SenderName"]);
@@ -454,7 +454,7 @@ string CopyImage( string original, string sender )
 	string filename = split[_aryvn(split)-1];
 
 	// プラグイン側の相対パスを作る
-	string copy_dir = dir + "\\" + sender;
+	string copy_dir = dir + "\\" + GhostNameToFolderName(sender);
 
 	if ( _isfile( copy_dir ) == 0 ) {
 		// コピー先ディレクトリが無いので作る
@@ -503,5 +503,20 @@ array AsortEx( array ar )
 	array result;
 	result = _dicvget(d);
 
+	return result;
+}
+
+//----------------------------------------------------------------
+// 与えられたゴースト名の文字列をフォルダ名（「ゴースト名_被り除け文字列」）にして返す
+// ゴースト名は長いと省略される（半角換算40字まで/フォルダ名に使えなかったりする文字は置き換えられる）
+// 被り除け文字列はゴースト名のハッシュ値（32bitCRC、半角英数で8字）
+// 8桁なのでそれだけだと被る可能性もあるが、ゴースト名冒頭と組み合わせているのでたぶん大丈夫　だと思う
+// 引数：　ゴースト名の文字列単体
+// 返値：　フォルダ名の文字列単体
+//----------------------------------------------------------------
+
+string GhostNameToFolderName( string ref )
+{
+	string result = _saorirequest( "yaya", "MakeFolderName", ref )["Result"];
 	return result;
 }
