@@ -12,8 +12,11 @@ string OnSecondChange(dict ref)
 		Fake_DataLimit_LastTime = GetEpochSec();
 	}
 
+	string script = "";
 	// 表示待ちを処理
-  string script = CheckWaitingList();
+	if ( notify_enable == 1 ) {
+		script += CheckWaitingList();
+	}
 
   // 全てのメッセージ
 	array msg = ListUpAllMessageArray();
@@ -28,7 +31,7 @@ string OnSecondChange(dict ref)
 		AddMessageWaitingList(msg);
 	}
 
-	if ( _strlen(script) > 0 ) {
+	if ( _strlen(script) > 0 && notify_enable == 1 ) {
 		// 喋るべきスクリプトがある
 		SaveVar();
   	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_RaiseNotification";

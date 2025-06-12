@@ -2,8 +2,13 @@
 dict dictOptionalHeader;
 //セーブ用
 dict dictSaveData;
+// 読み込み中などに通知表示をしない用
+int notify_enable;
 load()
 {
+	// 読み込み中に受信動作が発火して欲しくない
+	notify_enable = 0;
+
 	_script_load("dict\\functions");
 	_script_load("dict\\send");
 	_script_load("dict\\check");
@@ -30,6 +35,9 @@ load()
 
 	readConfig();
 	RestoreVar();
+
+	// 読み込みが終わったら受信動作を許可
+	notify_enable = 1;
 }
 
 unload()
