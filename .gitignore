@@ -1,0 +1,28 @@
+# git
+/.git/
+
+# ウィンドウズ
+desktop.ini
+
+# SSP等ベースウェア
+/profile/
+/var/
+
+# UGM
+*.log
+*.json
+savedata.adb
+/ugm_config.txt
+/akari_log.txt
+/server_log.txt
+/localweb/running.signal
+/localweb/shutdown.signal
+## 先にimageフォルダをすべて除外する
+/localweb/html/res/image/
+## そのあと、要るものだけ許可する
+!/localweb/html/res/image/icon_default.png
+!/localweb/html/res/image/page_background.png
+
+# その他
+/__memo/
+/__akari_tester/
