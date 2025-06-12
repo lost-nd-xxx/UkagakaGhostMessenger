@@ -26,7 +26,7 @@ OnUkagakaGhostMessenger_Trigger(dict res)
   }
   else {
     for ( int i0=0; i0<_aryvn(ghosts); i0++ ) {
-      string ghost = ghosts[i0];
+      string ghost = TranslateSystemChar(ghosts[i0]);
       if ( _aryvn(charas) == 0 ) {
         for ( int i1=0; i1<_dicvn(SaveData_Reserved[ghost]); i1++ ) {
           string chara = _dickeyget(SaveData_Reserved[ghost])[i1];
