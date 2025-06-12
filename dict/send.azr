@@ -7,7 +7,7 @@ OnUkagakaGhostMessenger_Cancel(dict req)
 {
 	//----------------------------------------------------------------
 	// イベントを起こしたゴーストのゴースト名
-	string sender = TranslateSystemChar(req["Sender"]);
+	string sender = req["Sender"];
 	//----------------------------------------------------------------
   // 送信者識別子
   string SenderId = req["Reference0"];
@@ -69,7 +69,7 @@ OnUkagakaGhostMessenger_Send(dict req)
 	}
 	//----------------------------------------------------------------
 	// イベントを起こしたゴーストのゴースト名
-	string sender = TranslateSystemChar(req["Sender"]);
+	string sender = req["Sender"];
 	//----------------------------------------------------------------
 	// ゴーストのフルパス
 	string ghostpath = GetFmoInfo({sender,{"ghostpath"}})["ghostpath"];
