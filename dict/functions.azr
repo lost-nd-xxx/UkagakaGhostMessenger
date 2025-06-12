@@ -121,7 +121,6 @@ readConfig()
 //----------------------------------------------------------------
 UpdateWebJson()
 {
-	array testlog = {};
 	array webjson = {};
 	dict jsontmp = $();
 
