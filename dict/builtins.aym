@@ -1899,3 +1899,48 @@ outputnum
 {
 	RES.RESULT = OUTPUTNUM(REQ.ARGS[0])
 }
+
+//------------------------------------------------------------------------------
+//　関数名：MakeFolderName
+//　※MakeShortText from yaya-dic( https://github.com/YAYA-shiori/yaya-dic/blob/0153e53f13f3dcbcbd58d3a51cdc3bf72107f005/yaya_base/optional.dic#L266C1-L307C2 )
+//　※TranslateSystemChar from yaya-dic( https://github.com/YAYA-shiori/yaya-dic/blob/0153e53f13f3dcbcbd58d3a51cdc3bf72107f005/yaya_base/optional.dic#L65C1-L79C2 )
+//　機能　：文字列からフォルダ名を作る
+//　引数　：argv0＝文字列
+//------------------------------------------------------------------------------
+
+MakeFolderName
+{
+	if ARRAYSIZE(REQ.ARGS) < 1 {
+		LOGGING("MakeFolderName: 引数が不足しています")
+		-1
+		return
+	}
+
+	_src = REQ.ARGS[0]
+	_cut = 40
+	_result = ''
+
+	_text = RE_REPLACE( _src, "[ !%(CHR(0x22))%(CHR(0x25))#$&()*+,\-/:;<=>?@\[\]`{|}~]", '_' )
+
+	if GETSTRBYTES(_text,127) <= _cut {
+		_result += _text
+	}
+
+	_num = STRLEN(_src)
+	_lendiff = 0//後で保存するためにスコープを一つ下げるためのダミー代入
+
+	while 1 {
+		_result = SUBSTR(_text,0,_num)
+
+		_lendiff = _cut - GETSTRBYTES(_result,127)
+		if _lendiff >= 0 {
+			break
+		}
+		_num -= 1
+		if _num <= 0 {
+			break
+		}
+	}
+
+	RES.RESULT = _result + '_' + STRDIGEST( _src , 'CRC32' )
+}
