@@ -58,7 +58,7 @@ OnUkagakaGhostMessenger_Request(dict res)
   }
   dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_Response";
   dictOptionalHeader["reference"] = result;
-  dictOptionalHeader["target"] = sender;
+  dictOptionalHeader["target"] = res["Sender"];
   dictOptionalHeader["marker"] = version();
   dictOptionalHeader["script_option"] = "nobreak";
 }
