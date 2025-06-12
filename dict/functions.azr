@@ -50,6 +50,8 @@ int localhost_number;
 // セーブデータを読めるように出力するかどうか
 // セーブファイルに保存しない
 string akari_log;
+// バグ修正の処理を済ませたかどうかの記録
+dict bugfix_record;
 
 SaveVar()
 {
@@ -57,7 +59,8 @@ SaveVar()
 		$("SaveData_Reserved",SaveData_Reserved),
 		$("SaveData_Waiting",SaveData_Waiting),
 		$("SaveData_Received",SaveData_Received),
-		$("oyasumi_flag",oyasumi_flag)
+		$("oyasumi_flag",oyasumi_flag),
+		$("bugfix_record",bugfix_record)
 	};
 
 	_vsave("savedata", dictSaveData);
@@ -78,6 +81,10 @@ RestoreVar()
 	SaveData_Waiting = dictSaveData["SaveData_Waiting"];
 	SaveData_Received = dictSaveData["SaveData_Received"];
 	oyasumi_flag = dictSaveData["oyasumi_flag"];
+	bugfix_record = dictSaveData["bugfix_record"];
+
+	// バグ修正の処理を入れる
+	BugFix_General();
 
 	// おやすみモードが一時停止なら解除する
 	if ( oyasumi_flag == 1 ) {

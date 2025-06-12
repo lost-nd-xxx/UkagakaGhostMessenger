@@ -12,6 +12,7 @@ load()
 	_script_load("dict\\textexpand");
 	_script_load("dict\\trigger");
 	_script_load("dict\\fromweb");
+	_script_load("dict\\bugfix");
 
 	dictOptionalHeader += ${
 		$("target", ""),

@@ -1,0 +1,65 @@
+// バグ修正用
+
+BugFix_General()
+{
+  BugFix_20250612_1();
+  return;
+}
+
+// 2025年6月の修正
+// 既存データを名指しで修正する
+// 対象：「UkagakaGhostMessengerナビゲーターうめちゃん」「Love Ra.bit」
+BugFix_20250612_1()
+{
+  // 修正を実行した記録が無ければ実行する
+  if ( bugfix_record["20250612_1"] == nil ) {
+    //----------------------------------------------------------------
+    // 「Love Ra.bit」のデータがあるなら処理
+    if ( _isfile( "localweb\\html\\res\\image\\Love_Ra.bit" ) == 1 ){
+      // フォルダを移動
+      // 画像保存用ディレクトリ　末尾の\\を入れない
+      string dir_old = "localweb\\html\\res\\image\\Love_Ra.bit";
+      string dir_new = "localweb\\html\\res\\image\\" + GhostNameToFolderName("Love Ra.bit");
+      // コピーしてから、前のものを削除
+      _dcopy( dir_old, dir_new );
+      _ddelete( dir_old );
+    }
+    // 予約を修正
+    if ( _dicvn(SaveData_Reserved["Love_Ra.bit"]) > 0 ){
+      dict reserved_loverabit = SaveData_Reserved["Love_Ra.bit"];
+      SaveData_Reserved += $( "Love Ra.bit", reserved_loverabit );
+      SaveData_Reserved["Love_Ra.bit"] = nil;
+    }
+    // 受信済みを修正
+    if ( _dicvn(SaveData_Received["Love_Ra.bit"]) > 0 ){
+      dict received_loverabit = SaveData_Received["Love_Ra.bit"];
+      SaveData_Received += $( "Love Ra.bit", received_loverabit );
+      SaveData_Received["Love_Ra.bit"] = nil;
+    }
+    // SaveData_Waitingを修正
+    for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
+      if ( SaveData_Waiting[i]["sender"] == "Love_Ra.bit" ) {
+        SaveData_Waiting[i]["sender"] = "Love Ra.bit";
+      }
+    }
+    //----------------------------------------------------------------
+    // 「UkagakaGhostMessengerナビゲーターうめちゃん」のデータがあるなら処理
+    if ( _isfile( "localweb\\html\\res\\image\\UkagakaGhostMessengerナビゲーターうめちゃん" ) == 1 ){
+      // フォルダを移動する
+      // 画像保存ディレクトリ　末尾の\\を入れない
+      string dir_old = "localweb\\html\\res\\image\\UkagakaGhostMessengerナビゲーターうめちゃん";
+      string dir_new = "localweb\\html\\res\\image\\" + GhostNameToFolderName("UkagakaGhostMessengerナビゲーターうめちゃん");
+      // コピーしてから、前のものを削除
+      _dcopy( dir_old, dir_new );
+      _ddelete( dir_old );
+    }
+    //----------------------------------------------------------------
+    // 修正を実行した記録を残す
+    bugfix_record += $( "20250612_1", 1 );
+  }
+  //----------------------------------------------------------------
+	// web用jsonの更新はこの後別の場所で行う
+  return;
+}
+
+
