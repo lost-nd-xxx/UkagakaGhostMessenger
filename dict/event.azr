@@ -13,33 +13,39 @@ string OnSecondChange(dict ref)
 	}
 
 	string script = "";
-	// 表示待ちを処理
+	// 表示待ちを処理（毎秒実行）
 	if ( notify_enable == 1 ) {
 		script += CheckWaitingList();
 	}
 
-  // 全てのメッセージ
-	array msg = ListUpAllMessageArray();
+	// 条件照合はcheck_intervalごとに実行
+	check_interval_count++;
+	if ( check_interval_count >= check_interval ) {
+		check_interval_count = 0;
 
-	if ( _aryvn(msg)>0 ) {
-		// 条件達成か確認
-		msg = CheckMessageCondition("",msg);
-	}
+		// 全てのメッセージ
+		array msg = ListUpAllMessageArray();
 
-	if ( _aryvn(msg)>0 ) {
-		// 条件を満たしたメッセージがある
-		AddMessageWaitingList(msg);
+		if ( _aryvn(msg)>0 ) {
+			// 条件達成か確認
+			msg = CheckMessageCondition("",msg);
+		}
+
+		if ( _aryvn(msg)>0 ) {
+			// 条件を満たしたメッセージがある
+			AddMessageWaitingList(msg);
+		}
 	}
 
 	if ( _strlen(script) > 0 && notify_enable == 1 ) {
 		// 喋るべきスクリプトがある
 		SaveVar();
-  	dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_RaiseNotification";
+		dictOptionalHeader["event"] = "OnUkagakaGhostMessenger_RaiseNotification";
 		dictOptionalHeader["marker"] = version();
 		dictOptionalHeader["script_option"] = "nobreak";
 		return script;
 	}
-	
+
 	return;
 }
 

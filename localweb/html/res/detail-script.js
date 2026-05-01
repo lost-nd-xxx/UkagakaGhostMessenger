@@ -38,7 +38,25 @@ function rewriteHtml(data) {
     doc.querySelector('.profileIcon').setAttribute('alt', item.SenderName);
     doc.querySelector('.profileIcon').setAttribute('src', item.SenderIcon);
     // プロフィールの名前欄
-    doc.querySelector('.profileName').textContent = item.SenderName;
+    let profileNameElem = doc.querySelector('.profileName');
+    profileNameElem.innerHTML = '';
+    let profileNameSpan = document.createElement('span');
+    profileNameSpan.textContent = item.SenderName;
+    profileNameElem.appendChild(profileNameSpan);
+    if (item.mute_flag !== 0) {
+      let muteIcon = document.createElement('img');
+      muteIcon.setAttribute('class', 'statusIcon');
+      muteIcon.setAttribute('src', './res/svg/volume_off.svg');
+      muteIcon.setAttribute('alt', 'ミュート中');
+      profileNameElem.appendChild(muteIcon);
+    }
+    if (item.block_flag !== 0) {
+      let blockIcon = document.createElement('img');
+      blockIcon.setAttribute('class', 'statusIcon');
+      blockIcon.setAttribute('src', './res/svg/account_circle_off.svg');
+      blockIcon.setAttribute('alt', 'ブロック中');
+      profileNameElem.appendChild(blockIcon);
+    }
     doc.querySelector('.profileIcon').setAttribute('alt', item.SenderName);
     // プロフィールの文章欄
     doc.querySelector('.profileText>p').innerText = item.SenderProfile.replaceAll(/\<br\>/g, '\n');
@@ -110,8 +128,6 @@ function rewriteHtml(data) {
       }
     });
     doc.querySelector('.contentContainer').replaceWith(msgs);
-    // 書き換えたものをまとめて差し替え
-    document.querySelector('html').replaceWith(doc);
     // 既読用スクリプトを定義
     const send_script = `\\C\\![notifyplugin,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_MarkAsRead,"${item.sender}","${item.SenderId}"]`
     // 既読情報を送信

@@ -26,6 +26,10 @@
     filter: invert(90%) !important;
   }
 
+  .statusIcon {
+    filter: invert(90%) !important;
+  }
+
   .nav-content ul li a:hover {
     background: var(--color-nav-background) !important;
   }
@@ -142,6 +146,10 @@ h1 {
   color: var(--color-text);
   margin: 0;
   padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25em;
 }
 
 .profileText {
@@ -394,6 +402,23 @@ a .personContainer:hover .iconNewArrival::after {
 
 .personName {
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: .25em;
+}
+
+.personName span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.statusIcon {
+  height: 1em;
+  width: 1em;
+  filter: invert(25%);
+  flex-shrink: 0;
 }
 
 .personMessage {

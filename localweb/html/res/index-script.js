@@ -94,7 +94,23 @@ function rewriteHtml(item) {
         // 表示名
         child = document.createElement('p');
         child.setAttribute('class', 'personName');
-        child.textContent = acct.SenderName;
+        let nameSpan = document.createElement('span');
+        nameSpan.textContent = acct.SenderName;
+        child.appendChild(nameSpan);
+        if (acct.mute_flag !== 0) {
+          let muteIcon = document.createElement('img');
+          muteIcon.setAttribute('class', 'statusIcon');
+          muteIcon.setAttribute('src', './res/svg/volume_off.svg');
+          muteIcon.setAttribute('alt', 'ミュート中');
+          child.appendChild(muteIcon);
+        }
+        if (acct.block_flag !== 0) {
+          let blockIcon = document.createElement('img');
+          blockIcon.setAttribute('class', 'statusIcon');
+          blockIcon.setAttribute('src', './res/svg/account_circle_off.svg');
+          blockIcon.setAttribute('alt', 'ブロック中');
+          child.appendChild(blockIcon);
+        }
         elem.querySelector('.personLink:last-child .personText').appendChild(child);
         // メッセージのプレビュー　略される
         child = document.createElement('p');

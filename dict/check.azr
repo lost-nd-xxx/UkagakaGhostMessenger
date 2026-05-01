@@ -2,11 +2,11 @@
 
 //----------------------------------------------------------------
 // 表示用の情報を返しつつ、受信枠の情報を更新する
-// 引数：　辞書型のメッセージ単体情報
+// 引数：　辞書型のメッセージ単体情報, まとめ通知時に通知スクリプト生成をスキップするフラグ（省略時0）
 // ${ $( "sender", ゴースト名の文字列 ), $( "SenderId", 送信者識別子の文字列 ), $( "MessageId", メッセージ識別子の文字列 ) }
-// 返値：　通知用スクリプト
+// 返値：　通知用スクリプト（skip_notify=1のときは無）
 //----------------------------------------------------------------
-string ShowMessage(dict ref)
+string ShowMessage(dict ref, int skip_notify)
 {
 	string sender = ref["sender"];
 	string SenderId = ref["SenderId"];
@@ -120,11 +120,13 @@ string ShowMessage(dict ref)
 			received_msg += $( "RandomResult", a[1] );
 		}
 
-		// 通知用スクリプトと通知ログを作る
-		script += "\\C\\![set,trayballoon,--icon=none,--title=";
-		script += SaveData_Received[sender][SenderId]["SenderName"];
-		script += GenerateTrayBalloonScript(Text);
-		script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
+		// 通知用スクリプトと通知ログを作る（まとめ通知時はスキップ）
+		if ( skip_notify != 1 ) {
+			script += "\\C\\![set,trayballoon,--icon=none,--title=";
+			script += SaveData_Received[sender][SenderId]["SenderName"];
+			script += GenerateTrayBalloonScript(Text);
+			script += "]\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
+		}
 
 		array text_array = GenerateReceivedLogText(Text,sender);
 
@@ -143,7 +145,9 @@ string ShowMessage(dict ref)
 	}
 	else {
 		// テキストが無い場合、通知も鳴らないのでRingingしない
-		Waiting_Ringing = {};
+		if ( skip_notify != 1 ) {
+			Waiting_Ringing = {};
+		}
 	}
 
 	// 残り回数がないなら予約を消す
@@ -166,6 +170,11 @@ string ShowMessage(dict ref)
 
 	// web用jsonを出力する
 	UpdateWebJson();
+
+	// skip_notify=1のときは通知を出さず終了
+	if ( skip_notify == 1 ) {
+		return;
+	}
 
 	int mute_flag = SaveData_Received[sender][SenderId]["mute_flag"];
 	if ( mute_flag!=1 && oyasumi_flag==0 ) {
@@ -195,11 +204,12 @@ OnUkagakaGhostMessenger_ExecRinging()
 	array ref_arr = {};
 	for ( int i0=0; i0<_aryvn(Waiting_Ringing); i0++ ) {
 		string curt = "";
-		for ( int i1=0; i1<_aryvn(Waiting_Ringing[i0]); i1++ ) {
+		array entry = Waiting_Ringing[i0];
+		for ( int i1=0; i1<_aryvn(entry); i1++ ) {
 			if (i1>0) {
 				curt += _bytechar(1);
 			}
-			curt += Waiting_Ringing[i0][i1];
+			curt += entry[i1];
 		}
 		ref_arr += curt;
 	}
@@ -227,27 +237,99 @@ string CheckWaitingList()
 		script = "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=メッセージの連続表示上限に達しました。1分間、受信が一時停止されます]";
 		return script;
 	}
-	
+
 	if ( _aryvn(SaveData_Waiting) <= 0 ) {
 		// 待ちが無い
+		batch_start_time = 0;
 		return;
 	}
 
+	// 達成済みの件数と対象インデックスを先に調べる
 	int now = GetEpochSec();
+	array hit_indexes;
 	for ( int i=0; i<_aryvn(SaveData_Waiting); i++ ) {
-		dict curt = SaveData_Waiting[i];
-		int epoch = curt["epoch_sec"];
+		int epoch = SaveData_Waiting[i]["epoch_sec"];
 		if ( epoch <= now ) {
-			// 達成済みを発見
-			string script = ShowMessage(curt);
-			SaveData_Waiting[i] = nil;
-			SaveVar();
-			return script;
+			hit_indexes += i;
 		}
 	}
 
-	// 達成済みが無い
-	return;
+	if ( _aryvn(hit_indexes) <= 0 ) {
+		// 達成済みが無い
+		batch_start_time = 0;
+		return;
+	}
+
+	// 達成済みが1件以上ある
+	// バッチ待機中でなければここで開始時刻を記録して今回は処理しない
+	if ( batch_start_time == 0 ) {
+		batch_start_time = now;
+		return;
+	}
+
+	// バッチ待機中だが5秒経っていなければ今回は処理しない
+	if ( now < batch_start_time + 4 ) {
+		return;
+	}
+
+	// 5秒経過したので処理する
+	batch_start_time = 0;
+
+	string script;
+
+	if ( _aryvn(hit_indexes) == 1 ) {
+		// 1件：通常処理
+		int idx = hit_indexes[0];
+		script = ShowMessage(SaveData_Waiting[idx], 0);
+		SaveData_Waiting[idx] = nil;
+	}
+	else {
+		// 2件以上：まとめ通知
+		// 前回の残りが残っていないようにリセット
+		Waiting_Ringing = {};
+		// ミュートチェックと受信処理の両方に使うため、先に送信者情報を取得しておく
+		array hit_ghosts;
+		array hit_charas;
+		for ( int i=0; i<_aryvn(hit_indexes); i++ ) {
+			int idx = hit_indexes[i];
+			hit_ghosts += SaveData_Waiting[idx]["sender"];
+			hit_charas += SaveData_Waiting[idx]["SenderId"];
+		}
+
+		// 全件を受信処理のみ（通知スクリプト生成スキップ）で処理し、Waiting_Ringingを積む
+		// 末尾から削除して配列ずれを防ぐ
+		for ( int i=_aryvn(hit_indexes)-1; i>=0; i-- ) {
+			int idx = hit_indexes[i];
+			ShowMessage(SaveData_Waiting[idx], 1);
+			SaveData_Waiting[idx] = nil;
+		}
+
+
+		// まとめ通知スクリプトを生成
+		int mute_all = 1;
+		for ( int i=0; i<_aryvn(hit_ghosts); i++ ) {
+			// 1件でもミュートなしがあれば通知を出す
+			if ( SaveData_Received[hit_ghosts[i]][hit_charas[i]]["mute_flag"] != 1 ) {
+				mute_all = 0;
+				break;
+			}
+		}
+
+		if ( mute_all != 1 && oyasumi_flag == 0 ) {
+			string count_text = _sprintf("%d", _aryvn(hit_indexes));
+			script += "\\C\\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=";
+			script += count_text;
+			script += "件の通知があります]";
+			// Fake_DataLimitのカウントをまとめて1つ進める
+			Fake_DataLimit_Count++;
+			Fake_DataLimit_LastTime = GetEpochSec();
+			// Ringingを発火させる
+			script += "\\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]";
+		}
+	}
+
+	SaveVar();
+	return script;
 }
 
 //----------------------------------------------------------------
