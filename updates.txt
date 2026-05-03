@@ -12,7 +12,7 @@ file,dict/builtins.aymfe8a2417c6f97e6e02473fc887bf6160size=35559date=2025-06-
 file,dict/check.azr9dbb86ad5b0cc8a703914d0631fe4021size=30602date=2026-05-02T04:45:19
 file,dict/event.azr7601321d3126737b12d8e059e5c99300size=5339date=2026-05-02T02:47:43
 file,dict/fromweb.azrf0652d197073091cb54362cadb88144csize=4460date=2025-06-10T22:16:46
-file,dict/functions.azr6f5f33f8709c1375fb2770cc6a74edf4size=18991date=2026-05-02T03:23:26
+file,dict/functions.azr1908387739d4b2f46b9742899acde43fsize=18991date=2026-05-02T05:13:35
 file,dict/reqnres.azr79c10c213e9afbed325c2dc09f0c4b64size=2067date=2025-06-12T18:15:52
 file,dict/send.azr220770f3b46680feb2dcab1c25797abcsize=12267date=2025-06-12T18:16:35
 file,dict/textexpand.azr228da9cfb6733e0c8a5ce0d78fd0222esize=13515date=2025-06-10T22:16:46
