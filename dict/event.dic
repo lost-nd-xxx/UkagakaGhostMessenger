@@ -110,13 +110,14 @@ OnMenuExec
 
 //----------------------------------------------------------------
 // ゴーストが起動した
-// ※起動したゴースト名には TranslateSystemChar を通しているが、条件の値には
-//   通していないので、記号を含む名前は一致しない（1.x系と同じ）。修正は移植の後で行う
+// Reference1＝起動したゴースト名。条件 Ghost_Booted の値（ゴースト名）と加工せずに比べる
+// ※1.0.5までは起動したゴースト名にだけ TranslateSystemChar を通していたので、
+//   記号を含む名前は一致しなかった
 //----------------------------------------------------------------
 OnGhostBoot
 {
 	// 起動したゴースト名
-	_ghostname = TranslateSystemChar(_argv[0]['Reference1'])
+	_ghostname = TOSTR(_argv[0]['Reference1'])
 
 	// Ghost_Bootedを満たしたメッセージ
 	_msg = PickUpMessageByCondition('Ghost_Booted', UGM.Rows(_ghostname))
@@ -134,12 +135,12 @@ OnGhostBoot
 
 //----------------------------------------------------------------
 // ゴーストが終了した
-// ※名前の扱いは OnGhostBoot と同じ
+// ※名前の扱いは OnGhostBoot と同じ（条件 Ghost_Closed と比べる）
 //----------------------------------------------------------------
 OnGhostExit
 {
 	// 終了したゴースト名
-	_ghostname = TranslateSystemChar(_argv[0]['Reference1'])
+	_ghostname = TOSTR(_argv[0]['Reference1'])
 
 	// Ghost_Closedを満たしたメッセージ
 	_msg = PickUpMessageByCondition('Ghost_Closed', UGM.Rows(_ghostname))
