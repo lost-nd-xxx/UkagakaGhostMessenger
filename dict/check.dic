@@ -701,11 +701,20 @@ CheckMessagePassiveCondition
 		}
 
 		// Ghost_IsInAddressBook
+		// 値は「ゴースト名」（仕様）か「ゴースト名/送信者識別子」。ゴースト名だけなら、
+		// そのゴーストの送信者が1人でも受信履歴にいれば成立
+		// ※1.0.5までは「ゴースト名/送信者識別子」の組しか見ておらず、仕様の書き方では成立しなかった
 		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_IsInAddressBook'])) != 0 {
 			_a = _cond['Ghost_IsInAddressBook']
 			_match = 0
 			foreach _a ; _row {
-				if GETTYPE(SaveData_Received[_row[0]][_row[1]]) != 0 {
+				_g = UGM.FindGhostKey(SaveData_Received, _row[0])
+				if ARRAYSIZE(_row) >= 2 {
+					if GETTYPE(SaveData_Received[_g][TOSTR(_row[1])]) != 0 {
+						_match++
+					}
+				}
+				elseif GETTYPE(SaveData_Received[_g]) == 5 && HASH_SIZE(SaveData_Received[_g]) > 0 {
 					_match++
 				}
 			}
@@ -721,7 +730,8 @@ CheckMessagePassiveCondition
 			_a = _cond['Message_IsRun']
 			_match = 0
 			foreach _a ; _row {
-				if GETTYPE(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]]) != 0 {
+				_g = UGM.FindGhostKey(SaveData_Received, _row[0])
+				if GETTYPE(SaveData_Received[_g][_row[1]]['msgs'][_row[2]]) != 0 {
 					_match++
 				}
 			}
@@ -737,7 +747,8 @@ CheckMessagePassiveCondition
 			_a = _cond['Message_IsNotRun']
 			_match = 0
 			foreach _a ; _row {
-				if GETTYPE(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]]) != 0 {
+				_g = UGM.FindGhostKey(SaveData_Received, _row[0])
+				if GETTYPE(SaveData_Received[_g][_row[1]]['msgs'][_row[2]]) != 0 {
 					_match++
 				}
 			}
