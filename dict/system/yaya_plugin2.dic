@@ -192,7 +192,7 @@ request
 //------------------------------------------------------------------------------
 PLUGINFW.MakeResponse
 {
-	_result = _argv[0] + C_CRLF + 'Sender: akari' + C_CRLF + 'Charset: UTF-8' + C_CRLF
+	_result = _argv[0] + C_CRLF + 'Sender: ' + pluginname() + C_CRLF + 'Charset: UTF-8' + C_CRLF
 	for _i = 1 ; _i < _argc ; _i++ {
 		_result += _argv[_i] + C_CRLF
 	}
