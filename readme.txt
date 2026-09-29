@@ -43,17 +43,16 @@ ugm_server.exeの起動によるもので、仕様です。
 
 ------------------------
 ## 使用モジュール等のライセンス
-* akari http://le.silk.to/akari.php
-> このプログラムを使用したいかなる不利益も作者は責任を負いません。
-> 伺かのサブシステムとして使う場合に限り、無償で無制限に使用できます。
+* YAYA  https://github.com/YAYA-shiori/yaya-shiori
+  * ライセンスは以下のどちらかを参照のこと
+    * プラグインフォルダ/license_text/yaya.txt
+    * https://github.com/YAYA-shiori/yaya-shiori/blob/600/readme.txt
+  * AYA Ver.5 の元のライセンス: プラグインフォルダ/license_text/aya-original.txt
 
 * うかてん https://github.com/nikolat/ukaten
   * main.azrを当方による改変ののちに組み込んでいます。
 > 上記以外のテキストファイル、辞書ファイルの類いは、
 > すべてpublic domainとして自由に利用できるものとします。
-
-* YAYA as SAORI https://github.com/YAYA-shiori/yaya-as-saori
-  * Unlicense license https://github.com/YAYA-shiori/yaya-as-saori/blob/main/LICENSE
 
 * manpu_doodle https://github.com/lost-nd-xxx/manpu_doodle
   * Unlicense license https://github.com/lost-nd-xxx/manpu_doodle/blob/main/LICENSE
@@ -76,6 +75,9 @@ ugm_server.exeの起動によるもので、仕様です。
 * 紺野ややめ https://github.com/YAYA-shiori/konnoyayame
   * 同梱の開発キット（開発用スクリプト）を当方で改変し、開発に使用しています（配布物には含みません）。
   * Public Domain (Unlicense) https://github.com/YAYA-shiori/konnoyayame/blob/master/LICENSE
+
+* 第弐版仮想道頓堀水泳拡張（道頓堀プラグイン） https://ms.shillest.net/yaya_as.xhtml
+  * NYSDL Version 0.9982 プラグインフォルダ/license_text/TOMBORI.txt
 
 ### うめちゃんのイラスト
 ユスラさんがにじジャーニーで生成されたものを加工して使っています。
