@@ -42,6 +42,8 @@ OnSecondChange
 
 	if _script != '' && notify_enable == 1 {
 		// 喋るべきスクリプトがある
+		// ※Script を返すと、応答の Event は OnPluginExec に上書きされる（yaya_plugin2.dic の
+		//   makeDefaultEventAndReference）。下の Event は1.x系から一度も送られていない（互換のため現状維持）
 		SaveVar
 		dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_RaiseNotification'
 		dictOptionalHeader['marker'] = version()
@@ -86,6 +88,7 @@ OnTrayBalloonClick
 	}
 	_output = '\C\![open,browser,' + UGM.EscapeScriptArg(_url) + ']'
 	// 結果を送信
+	// ※Script を返すので、この Event は OnPluginExec に上書きされて送られない（1.x系と同じ。互換のため現状維持）
 	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_TrayBalloonClick'
 	dictOptionalHeader['marker'] = version()
 	dictOptionalHeader['script_option'] = 'nobreak'
