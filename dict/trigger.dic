@@ -11,10 +11,10 @@
 // 条件 Ghost_Triggered の値は「イベント識別子/トリガーを立ててきたゴースト名」
 // （ゴースト名は省略可）。1.x系は条件の値（入れ子の配列）を文字列として
 // : で分けていたが、ここでは先頭の行を仕様どおりに読む。
-// ゴースト名は加工せずに比べる。
+// ゴースト名は、両方に TranslateSystemChar を通して比べる（「Love Ra.bit」も「Love_Ra.bit」も一致する）。
 // ※1.0.5までは、送ってきたゴースト名を小文字の sender ヘッダから取っていたので常に空になり、
 //   ゴースト名を指定した Ghost_Triggered は一致しなかった。また、対象のゴースト名に
-//   TranslateSystemChar を通してから予約を引いていたので、記号を含む名前は見つからなかった
+//   TranslateSystemChar を通してから予約をそのまま引いていたので、記号を含む名前は見つからなかった
 // ※対象のゴースト名を省略すると、Ghost_Triggered を持たない予約も照合に回す（1.x系と同じ）
 //----------------------------------------------------------------
 OnUkagakaGhostMessenger_Trigger
@@ -35,8 +35,8 @@ OnUkagakaGhostMessenger_Trigger
 		_charas = SPLIT(TOSTR(_res['Reference2']), ':')
 	}
 
-	// イベントを送ってきたゴースト名
-	_sender = TOSTR(_res['Sender'])
+	// イベントを送ってきたゴースト名（比べるために加工しておく）
+	_sender = TranslateSystemChar(TOSTR(_res['Sender']))
 
 	// 該当するメッセージを抜き出す
 	_msg = IARRAY
@@ -44,7 +44,15 @@ OnUkagakaGhostMessenger_Trigger
 		_msg = ListUpAllMessageArray
 	}
 	else {
-		foreach _ghosts ; _ghost {
+		// 対象のゴースト名（加工後）
+		_targets = IHASH()
+		foreach _ghosts ; _g {
+			_targets[TranslateSystemChar(_g)] = 1
+		}
+		foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
+			if !HASH_EXIST(TranslateSystemChar(_ghost), _targets) {
+				continue
+			}
 			if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
 				continue
 			}
@@ -62,7 +70,7 @@ OnUkagakaGhostMessenger_Trigger
 						continue
 					}
 					if ARRAYSIZE(_row) >= 2 {
-						if _row[0] == _EventId && _row[1] == _sender {
+						if _row[0] == _EventId && TranslateSystemChar(TOSTR(_row[1])) == _sender {
 							_msg ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg_id)
 						}
 					}

@@ -110,9 +110,11 @@ OnMenuExec
 
 //----------------------------------------------------------------
 // ゴーストが起動した
-// Reference1＝起動したゴースト名。条件 Ghost_Booted の値（ゴースト名）と加工せずに比べる
-// ※1.0.5までは起動したゴースト名にだけ TranslateSystemChar を通していたので、
-//   記号を含む名前は一致しなかった
+// Reference1＝起動したゴースト名。条件 Ghost_Booted の値（ゴースト名）と、
+// 両方に TranslateSystemChar を通して比べる（「Love Ra.bit」も「Love_Ra.bit」も一致する。
+// Ghost_IsBooting などと同じ比べ方）
+// ※1.0.5までは起動したゴースト名にだけ通していたので、記号を含む名前は、条件に
+//   加工後の形（Love_Ra.bit）で書いたときだけ一致していた
 //----------------------------------------------------------------
 OnGhostBoot
 {
@@ -120,7 +122,7 @@ OnGhostBoot
 	_ghostname = TOSTR(_argv[0]['Reference1'])
 
 	// Ghost_Bootedを満たしたメッセージ
-	_msg = PickUpMessageByCondition('Ghost_Booted', UGM.Rows(_ghostname))
+	_msg = UGM.PickUpByGhostName('Ghost_Booted', _ghostname)
 
 	if ARRAYSIZE(_msg) > 0 {
 		// Ghost_Booted以外の条件を満たしているか調べる
@@ -143,7 +145,7 @@ OnGhostExit
 	_ghostname = TOSTR(_argv[0]['Reference1'])
 
 	// Ghost_Closedを満たしたメッセージ
-	_msg = PickUpMessageByCondition('Ghost_Closed', UGM.Rows(_ghostname))
+	_msg = UGM.PickUpByGhostName('Ghost_Closed', _ghostname)
 
 	if ARRAYSIZE(_msg) > 0 {
 		// Ghost_Closed以外の条件を満たしているか調べる
@@ -154,6 +156,44 @@ OnGhostExit
 		// 条件を満たしたメッセージがある
 		AddMessageWaitingList(_msg)
 	}
+}
+
+//----------------------------------------------------------------
+// 条件の値がゴースト名1つだけで、そのゴースト名が指定した名前と一致する予約を取り出す
+// 名前は両方に TranslateSystemChar を通して比べる
+// 引数：　条件の種類名, ゴースト名
+// 返値：　メッセージ単体のハッシュの配列
+// （1.x系の PickUpMessageByCondition と同じく、値が1行1つのときだけ一致とする）
+//----------------------------------------------------------------
+UGM.PickUpByGhostName
+{
+	_cond = _argv[0]
+	_name = TranslateSystemChar(_argv[1])
+	_result = IARRAY
+	foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
+		if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
+			continue
+		}
+		foreach HASH_KEYS(SaveData_Reserved[_ghost]) ; _chara {
+			if GETTYPE(SaveData_Reserved[_ghost][_chara]) != 5 {
+				continue
+			}
+			foreach HASH_KEYS(SaveData_Reserved[_ghost][_chara]) ; _msg {
+				_rows = SaveData_Reserved[_ghost][_chara][_msg]['Condition'][_cond]
+				if ARRAYSIZE(_rows) != 1 {
+					continue
+				}
+				_row = _rows[0]
+				if ARRAYSIZE(_row) != 1 {
+					continue
+				}
+				if TranslateSystemChar(TOSTR(_row[0])) == _name {
+					_result ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg)
+				}
+			}
+		}
+	}
+	_result
 }
 
 //----------------------------------------------------------------
