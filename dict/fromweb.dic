@@ -27,9 +27,11 @@ OnUkagakaGhostMessenger_MarkAsRead
 	}
 
 	// メッセージ達成を確認
-	// ※条件 Message_Read の行（ゴースト名/送信者識別子/メッセージ識別子）が既読にした
-	//   相手と一致したとき、予約した側の受信記録から、行のメッセージ識別子の最後の記録を
-	//   見ている（1.x系と同じ）
+	// 条件 Message_Read の行（ゴースト名/送信者識別子/メッセージ識別子）が既読にした相手と
+	// 一致したとき、そのメッセージの最新の受信記録が既読なら達成とする
+	// （ゴースト名は加工前・加工後のどちらで書いても一致する）
+	// ※1.0.5までは、ゴースト名を加工せずに比べ、予約した側のゴーストの受信記録を見ていた
+	_r0t = TranslateSystemChar(_r0)
 	_result = IARRAY
 	foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
 		if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
@@ -44,8 +46,8 @@ OnUkagakaGhostMessenger_MarkAsRead
 				foreach _conds ; _row {
 					_time_count = 0
 					_read_time = 0
-					if _row[0] == _r0 && _row[1] == _r1 {
-						_ar = SaveData_Received[_ghost][_chara]['msgs'][_row[2]]
+					if TranslateSystemChar(TOSTR(_row[0])) == _r0t && _row[1] == _r1 {
+						_ar = SaveData_Received[_r0][_r1]['msgs'][_row[2]]
 						_last = _ar[ARRAYSIZE(_ar) - 1]
 						_time_count = TOINT(_last['time_count'])
 						_read_time = TOINT(_last['read_time'])
