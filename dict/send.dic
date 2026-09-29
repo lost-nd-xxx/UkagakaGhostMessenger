@@ -148,8 +148,13 @@ OnUkagakaGhostMessenger_Send
 		return
 	}
 	//----------------------------------------------------------------
-	// 有効にするかどうか（Enable を省略すると取り消しになる。1.x系と同じ）
-	if TOSTR(_ref['Enable']) != '1' {
+	// 有効にするかどうか（仕様どおり、省略時は有効。0 なら取り消し）
+	// ※1.0.5までは、省略すると取り消しになっていた
+	_enable = '1'
+	if HASH_EXIST('Enable', _ref) {
+		_enable = TOSTR(_ref['Enable'])
+	}
+	if _enable != '1' {
 		// 無効にして保存する
 		if GETTYPE(SaveData_Reserved[_sender][_SenderId]) == 5 {
 			SaveData_Reserved[_sender][_SenderId] = UGM.HashRemove(SaveData_Reserved[_sender][_SenderId], _MessageId)
