@@ -14,14 +14,18 @@ OnUkagakaGhostMessenger_Request
 	_MessageId = TOSTR(_res['Reference2'])
 
 	// YAYAのローカル変数はブロックの中だけで有効なので、先に作っておく
+	// ゴースト名を省略したら、問い合わせてきたゴースト名（仕様）
+	// ※1.0.5までは TranslateSystemChar を通していたので、記号・空白を含む名前の履歴が見つからなかった
 	_sender = TOSTR(_res['Reference0'])
 	if _sender == '' {
-		_sender = TranslateSystemChar(TOSTR(_res['Sender']))
+		_sender = TOSTR(_res['Sender'])
 	}
+	// 受信履歴のゴースト名（加工前・加工後のどちらで書かれていても見つける）
+	_g = UGM.FindGhostKey(SaveData_Received, _sender)
 
 	_SenderId = TOSTR(_res['Reference1'])
 	if _SenderId == '' {
-		_SenderId = _sender
+		_SenderId = _g
 	}
 
 	_result = IARRAY
@@ -29,7 +33,7 @@ OnUkagakaGhostMessenger_Request
 	_result ,= _SenderId
 	_result ,= _MessageId
 
-	_msgs = SaveData_Received[_sender][_SenderId]['msgs'][_MessageId]
+	_msgs = SaveData_Received[_g][_SenderId]['msgs'][_MessageId]
 	_cnt = ARRAYSIZE(_msgs)
 	if GETTYPE(_msgs) == 0 || _cnt == 0 {
 		// 無かった
