@@ -509,6 +509,23 @@ UGM.FirstCondValue
 }
 
 //----------------------------------------------------------------
+// 条件の行（ゴースト名/送信者識別子/メッセージ識別子）のメッセージの、最新の受信記録が既読か
+// 引数：　条件の行（配列）
+// 返値：　既読なら1、未読・受信していないなら0
+//----------------------------------------------------------------
+UGM.IsMessageRead
+{
+	_g = UGM.FindGhostKey(SaveData_Received, _argv[0])
+	_recs = SaveData_Received[_g][_argv[1]]['msgs'][_argv[2]]
+	_n = ARRAYSIZE(_recs)
+	if GETTYPE(_recs) == 0 || _n == 0 {
+		0
+		return
+	}
+	TOINT(_recs[_n - 1]['read_time']) > 0
+}
+
+//----------------------------------------------------------------
 // 指定されたメッセージ（複数可）が受動的な条件をすべて満たしているかどうか照合する
 // 受動的はユーザにとって　時間など
 // 引数：　メッセージ単体のハッシュの配列
@@ -759,12 +776,13 @@ CheckMessagePassiveCondition
 			}
 		}
 
-		// Message_IsRead（最初の受信記録の既読時刻を見る。1.x系と同じ）
+		// Message_IsRead（指定したメッセージがすべて、最新の受信記録が既読なら成立）
+		// ※1.0.5までは最初の受信記録を見ていた（Message_Read は最後の受信記録を見ている）
 		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsRead'])) != 0 {
 			_a = _cond['Message_IsRead']
 			_match = 0
 			foreach _a ; _row {
-				if TOINT(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]][0]['read_time']) > 0 {
+				if UGM.IsMessageRead(_row) {
 					_match++
 				}
 			}
@@ -775,19 +793,18 @@ CheckMessagePassiveCondition
 			}
 		}
 
-		// Message_IsNotRead
-		// ※1.x系は受信記録の配列をキーで引いていたので既読を数えられず、判定の
-		//   「match > 件数」も成り立たないため、この条件は常に達成になっていた。
-		//   移植でも同じ結果になるよう、判定は1.x系のままにしている。修正は移植の後で行う
+		// Message_IsNotRead（指定したメッセージのどれも、最新の受信記録が既読でなければ成立。
+		// 受信していないメッセージは未読として扱う）
+		// ※1.0.5までは既読を数えられず、この条件は常に成立していた
 		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsNotRead'])) != 0 {
 			_a = _cond['Message_IsNotRead']
 			_match = 0
 			foreach _a ; _row {
-				if TOINT(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]][0]['read_time']) > 0 {
+				if UGM.IsMessageRead(_row) {
 					_match++
 				}
 			}
-			if _match > ARRAYSIZE(_a) {
+			if _match > 0 {
 				// 条件不達成
 				_result ,= 0
 				continue
