@@ -14,3 +14,4 @@ akari_log.txt,nonar,noupdate
 akari_log.json,nonar,noupdate
 profile/,nonar,noupdate
 savedata.adb,nonar,noupdate
+savedata.json,nonar,noupdate

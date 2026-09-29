@@ -16,7 +16,7 @@ string pluginname()
 string version_num()
 {
 	// バージョンを文字列で
-	return "1.0.4";
+	return "1.0.5";
 }
 
 string version()
@@ -74,6 +74,9 @@ SaveVar()
 
 	_vsave("savedata", dictSaveData);
 
+	// 2.0.0（YAYA版）へ引き継ぐため、セーブデータをJSONでも出力する
+	_writetext( "savedata.json", _azv2json( dictSaveData ), "utf8", "crlf" );
+
 	// web用jsonを出力する
 	UpdateWebJson();
 
@@ -95,6 +98,9 @@ RestoreVar()
 	// バグ修正の処理を入れる
 	BugFix_General();
 
+	// 2.0.0公開のお知らせを予約する（初回のみ）
+	SystemNotice_2_0_0();
+
 	// おやすみモードが一時停止なら解除する
 	if ( oyasumi_flag == 1 ) {
 		oyasumi_flag = 0;
@@ -107,6 +113,53 @@ RestoreVar()
 	if ( _strlen(akari_log)>0 ) {
 		_writetext( akari_log, _azv2json( dictSaveData ), "utf8", "crlf" );
 	}
+}
+
+//----------------------------------------------------------------
+// 2.0.0公開のお知らせを、プラグイン自身からのメッセージとして予約する
+// 条件なしの予約なので、OnSecondChangeの条件照合で受信処理に回る
+// 引数・返値：　なし
+//----------------------------------------------------------------
+SystemNotice_2_0_0()
+{
+	// 予約した記録があれば何もしない
+	if ( bugfix_record["notice_2_0_0"] != nil ) {
+		return;
+	}
+
+	string sender = pluginname();
+	string SenderId = "system";
+	string MessageId = "notice_2_0_0";
+	// トレイ通知では「,」「]」「\」「"」が「_」に置き換わるので使わない
+	string Text = "UkagakaGhostMessenger 2.0.0を公開しました。";
+	Text += ":nl:内部の仕組みを一新した大型更新のため、ネットワーク更新では配信されません。";
+	Text += ":nl:配布ページからnarファイルをダウンロードし、SSPにドラッグ＆ドロップして上書きインストールしてください。";
+	Text += ":nl:受信履歴などのデータは、そのまま引き継がれます。";
+	Text += ":nl:配布ページ：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki";
+
+	if ( _gettype(SaveData_Reserved[sender])=="nil" ) {
+		SaveData_Reserved += $(sender,$());
+	}
+	if ( _gettype(SaveData_Reserved[sender][SenderId])=="nil" ) {
+		SaveData_Reserved[sender] += $(SenderId,$());
+	}
+	int senttime = GetEpochSec();
+	SaveData_Reserved[sender][SenderId][MessageId] = nil;
+	SaveData_Reserved[sender][SenderId] += $( MessageId, ${
+		$("SenderName","システム通知"),
+		$("SenderIcon","default"),
+		$("SenderProfile",""),
+		$("Text",Text),
+		$("EventReference",{}),
+		$("RunCount",1),
+		$("ExecutedCount",0),
+		$("Late",{0}),
+		$("Condition",$()),
+		$("SentTime",senttime)
+	});
+
+	// 予約した記録を残す
+	bugfix_record += $( "notice_2_0_0", 1 );
 }
 
 readConfig()
