@@ -5,6 +5,9 @@
 //----------------------------------------------------------------
 // キャンセルイベントをゴーストから受け取った
 // 引数：　リクエストのハッシュ
+// Reference0＝送信者識別子（省略するとゴーストに属する全ての送信者）
+// 完了すると OnUkagakaGhostMessenger_SendComplete（cancel, 送信者識別子, 空）を返す
+// ※1.0.5までは完了イベントを返さず、保存もしていなかった
 //----------------------------------------------------------------
 OnUkagakaGhostMessenger_Cancel
 {
@@ -23,6 +26,38 @@ OnUkagakaGhostMessenger_Cancel
 	elseif GETTYPE(SaveData_Reserved[_sender]) == 5 {
 		// 送信者識別子が指定されていた
 		SaveData_Reserved[_sender] = UGM.HashRemove(SaveData_Reserved[_sender], _SenderId)
+	}
+	// 条件を満たして受信を待っていたものも取り消す
+	UGM.RemoveWaiting(_sender, _SenderId, '')
+
+	// 完了イベントを実行（保存もここで行う）
+	CompleteResponse_Send(_sender, 'cancel', _SenderId, '')
+}
+
+//----------------------------------------------------------------
+// 受信待ち（SaveData_Waiting）から、取り消した予約に当たるものを消す
+// 引数：　ゴースト名, 送信者識別子（空なら全て）, メッセージ識別子（空なら全て）
+// ※1.0.5までは待機中のものを消していなかったので、受信の時刻に予約が無いまま
+//   受信処理が走り、中身が空の送信者の欄が作られたり、そのメッセージを
+//   Message_Run の条件にした後続のメッセージが発動したりしていた
+//----------------------------------------------------------------
+UGM.RemoveWaiting
+{
+	_sender = _argv[0]
+	_SenderId = _argv[1]
+	_MessageId = _argv[2]
+	for _i = ARRAYSIZE(SaveData_Waiting) - 1 ; _i >= 0 ; _i-- {
+		_w = SaveData_Waiting[_i]
+		if _w['sender'] != _sender {
+			continue
+		}
+		if _SenderId != '' && _w['SenderId'] != _SenderId {
+			continue
+		}
+		if _MessageId != '' && _w['MessageId'] != _MessageId {
+			continue
+		}
+		SaveData_Waiting[_i, _i] = IARRAY
 	}
 }
 
@@ -119,6 +154,8 @@ OnUkagakaGhostMessenger_Send
 		if GETTYPE(SaveData_Reserved[_sender][_SenderId]) == 5 {
 			SaveData_Reserved[_sender][_SenderId] = UGM.HashRemove(SaveData_Reserved[_sender][_SenderId], _MessageId)
 		}
+		// 条件を満たして受信を待っていたものも取り消す
+		UGM.RemoveWaiting(_sender, _SenderId, _MessageId)
 
 		// 完了イベントを実行
 		CompleteResponse_Send(_sender, 'cancel', _SenderId, _MessageId)
