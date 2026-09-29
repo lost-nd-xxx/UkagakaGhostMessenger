@@ -50,7 +50,7 @@ ugm_server.exeの起動によるもので、仕様です。
   * AYA Ver.5 の元のライセンス: プラグインフォルダ/license_text/aya-original.txt
 
 * うかてん https://github.com/nikolat/ukaten
-  * main.azrを当方による改変ののちに組み込んでいます。
+  * 1.x系のmain.azrの処理を元に、2.x系の辞書（dict/system/yaya_plugin2.dic）を作成しています。
 > 上記以外のテキストファイル、辞書ファイルの類いは、
 > すべてpublic domainとして自由に利用できるものとします。
 
