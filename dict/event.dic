@@ -78,15 +78,17 @@ OnTrayBalloonClick
 	}
 
 	// スクリプトを作る（ブラウザを開く）
-	// URLエンコードの % が環境変数の埋め込みにならないよう、引数をエスケープする
-	_url = 'http://localhost:' + localhost_number + '/'
+	// URL はエスケープしない。URLエンコードの結果は , ] " \ を含まず、% の後は16進の大文字2桁なので
+	// 環境変数の埋め込み（%username など）にはならない。\% にすると \![open,browser] では
+	// 正しく開けなかった（2026-09-30 実機で確認）
+	_url ='http://localhost:' + localhost_number + '/'
 	if _result != -1 {
 		_url += 'person.html?sender='
 		_url += STRENCODE(notify_log[_result]['sender'], 'UTF-8', 'url')
 		_url += '&sender_id='
 		_url += STRENCODE(notify_log[_result]['SenderId'], 'UTF-8', 'url')
 	}
-	_output = '\C\![open,browser,' + UGM.EscapeScriptArg(_url) + ']'
+	_output = '\C\![open,browser,' + _url + ']'
 	// 結果を送信
 	// ※Script を返すので、この Event は OnPluginExec に上書きされて送られない（1.x系と同じ。互換のため現状維持）
 	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_TrayBalloonClick'
