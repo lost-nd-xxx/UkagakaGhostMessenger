@@ -73,8 +73,9 @@ GenerateReceivedLogText
 // 拡張記法の:image:からhtmlのimgタグを返す（ズームが必要ならaタグで囲む）
 // 引数：　:image:の文字列、ゴースト名
 // 返値：　htmlタグの文字列
-// ※画像のパスに、加工前のゴースト名を使っている（CopyImage はフォルダ名に
-//   GhostNameToFolderName を使う）。1.x系と同じ。修正は移植の後で行う
+// 画像のパスは、CopyImage が画像を保存したフォルダ（GhostNameToFolderName）にする
+// ※1.0.5までは加工前のゴースト名をフォルダ名に使っていたので、画像が表示されなかった
+//   （保存済みの履歴は BugFix_20260930_ImagePath で直す）
 //----------------------------------------------------------------
 GenerateHtmlImgTag
 {
@@ -89,7 +90,7 @@ GenerateHtmlImgTag
 	_filename = RE_REPLACE(_tag[1], '^nozoom=', '')
 	_split = SPLIT(_filename, '\')
 	_filename = _split[ARRAYSIZE(_split) - 1]
-	_filepath = './res/image/' + _sender + '/' + _filename
+	_filepath = './res/image/' + GhostNameToFolderName(_sender) + '/' + _filename
 
 	if STRSTR(_tag[2], 'alt=', 0) == 0 {
 		// altが必要

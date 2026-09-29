@@ -6,6 +6,54 @@
 BugFix_General
 {
 	BugFix_20250612_1
+	BugFix_20260930_ImagePath
+}
+
+//----------------------------------------------------------------
+// 2026年9月の修正（2.0.0）
+// 受信履歴の本文に添付した画像のパスが、加工前のゴースト名のフォルダ
+// （./res/image/ゴースト名/）になっていて表示されなかったのを、画像を保存した
+// フォルダ（./res/image/GhostNameToFolderNameの名前/）に書き換える
+//----------------------------------------------------------------
+BugFix_20260930_ImagePath
+{
+	// 修正を実行した記録があれば何もしない
+	if HASH_EXIST('20260930_ImagePath', bugfix_record) {
+		return
+	}
+	foreach HASH_KEYS(SaveData_Received) ; _ghost {
+		if GETTYPE(SaveData_Received[_ghost]) != 5 {
+			continue
+		}
+		_old = './res/image/' + _ghost + '/'
+		_new = './res/image/' + GhostNameToFolderName(_ghost) + '/'
+		foreach HASH_KEYS(SaveData_Received[_ghost]) ; _chara {
+			_msgs = SaveData_Received[_ghost][_chara]['msgs']
+			if GETTYPE(_msgs) != 5 {
+				continue
+			}
+			foreach HASH_KEYS(_msgs) ; _msg_id {
+				_n = ARRAYSIZE(_msgs[_msg_id])
+				for _i = 0 ; _i < _n ; _i++ {
+					_texts = _msgs[_msg_id][_i]['Text']
+					_changed = 0
+					_new_texts = IARRAY
+					foreach _texts ; _t {
+						if STRSTR(_t, _old, 0) >= 0 {
+							_t = REPLACE(_t, _old, _new)
+							_changed = 1
+						}
+						_new_texts ,= _t
+					}
+					if _changed {
+						SaveData_Received[_ghost][_chara]['msgs'][_msg_id][_i]['Text'] = _new_texts
+					}
+				}
+			}
+		}
+	}
+	// 修正を実行した記録を残す
+	bugfix_record['20260930_ImagePath'] = 1
 }
 
 //----------------------------------------------------------------
