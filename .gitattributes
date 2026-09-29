@@ -1,0 +1,4 @@
+# 改行を変換せず、作業フォルダと同じバイトのまま保存する。
+# ネットワーク更新では raw.githubusercontent.com がリポジトリの中身をそのまま配るので、
+# 手元で作る updates2.dau / updates.txt の MD5 と一致させるため。
+* -text
