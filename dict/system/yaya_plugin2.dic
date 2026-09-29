@@ -119,8 +119,9 @@ request
 	_ref = _req['header']
 	_ref['head'] = _head
 
-	// セキュリティレベル="External"なら即返る
-	if TOSTR(_ref['SecurityLevel']) == 'External' {
+	// セキュリティレベルが external（外部から）なら即返る。大文字小文字は区別しない
+	// ※1.0.5までは "External" とだけ比べていたので、SSPが送る "external" を遮断できていなかった
+	if TOLOWER(TOSTR(_ref['SecurityLevel'])) == 'external' {
 		PLUGINFW.MakeResponse('PLUGIN/2.0 204 No Content', IARRAY)
 		return
 	}
