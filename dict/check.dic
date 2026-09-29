@@ -69,9 +69,10 @@ ShowMessage
 		SaveData_Received[_sender][_SenderId]['SenderName'] = _sender
 	}
 
-	// プロフ文
+	// プロフィール文（独自記法を展開し、:nl: を <br> にする）
 	if TOSTR(_reserved['SenderProfile']) != '' {
-		SaveData_Received[_sender][_SenderId]['SenderProfile'] = _reserved['SenderProfile']
+		_SenderProfile = TransformTextExpand(TOSTR(_reserved['SenderProfile']))['text']
+		SaveData_Received[_sender][_SenderId]['SenderProfile'] = REPLACE(_SenderProfile, ':nl:', '<br>')
 	}
 	elseif !HASH_EXIST('SenderProfile', SaveData_Received[_sender][_SenderId]) {
 		SaveData_Received[_sender][_SenderId]['SenderProfile'] = ''
