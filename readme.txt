@@ -69,6 +69,10 @@ ugm_server.exeの起動によるもので、仕様です。
 * yaya-dic https://github.com/YAYA-shiori/yaya-dic
   * Public Domain (Unlicense) https://github.com/YAYA-shiori/yaya-dic/blob/master/LICENSE
 
+* 紺野ややめ https://github.com/YAYA-shiori/konnoyayame
+  * 同梱の開発キット（開発用スクリプト）を当方で改変し、開発に使用しています（配布物には含みません）。
+  * Public Domain (Unlicense) https://github.com/YAYA-shiori/konnoyayame/blob/master/LICENSE
+
 ### うめちゃんのイラスト
 ユスラさんがにじジャーニーで生成されたものを加工して使っています。
 * にじジャーニー https://nijijourney.com/ja/

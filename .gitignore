@@ -23,6 +23,14 @@ savedata.adb
 !/localweb/html/res/image/icon_default.png
 !/localweb/html/res/image/page_background.png
 
+# 開発キット（tools/ 由来）
+## *.json の除外から、キットの設定だけ戻す
+!/tools/*.json
+!/.claude/settings.json
+/tools/local.json
+/build/
+
 # その他
 /__memo/
 /__akari_tester/
+/__workspace/
