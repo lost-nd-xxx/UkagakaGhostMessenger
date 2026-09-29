@@ -108,9 +108,15 @@ OnUkagakaGhostMessenger_Send
 			_ref['Text'] = RE_REPLACE(_text, '^--Text=', '')
 		}
 		else {
-			// 値に = を含むと、最初の = から2つ目の = までだけが値になる（1.x系と同じ）
-			_split = SPLIT(_text, '=')
-			_ref[RE_REPLACE(_split[0], '^\-\-', '')] = _split[1]
+			// 最初の = でキーと値に分ける（値に = を含んでもよい）
+			// ※1.0.5までは、値の2つ目の = より後ろが捨てられていた
+			_eq = STRSTR(_text, '=', 0)
+			if _eq < 0 {
+				_ref[RE_REPLACE(_text, '^\-\-', '')] = ''
+			}
+			else {
+				_ref[RE_REPLACE(SUBSTR(_text, 0, _eq), '^\-\-', '')] = SUBSTR(_text, _eq + 1, STRLEN(_text) - _eq - 1)
+			}
 		}
 	}
 	//----------------------------------------------------------------
