@@ -133,6 +133,14 @@ request
 		PLUGINFW.OnHostStart
 	}
 
+	// version には、仕様（UKADOC）どおり Value ヘッダでバージョンを返す
+	// （Charset: UTF-8 で、以後のリクエストの文字コードも UTF-8 にする）
+	// ※1.0.5までは Script として返していた
+	if _id == 'version' {
+		PLUGINFW.MakeResponse('PLUGIN/2.0 200 OK', 'Value: ' + version())
+		return
+	}
+
 	// IDの関数を実行（メソッドの判定より先。1.x系と同じ）
 	_script = PLUGINFW.RaiseIDEvent(_id, _ref)
 
