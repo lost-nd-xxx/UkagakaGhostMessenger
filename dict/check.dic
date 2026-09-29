@@ -116,8 +116,10 @@ ShowMessage
 
 		// 通知用スクリプトと通知ログを作る（まとめ通知時はスキップ）
 		if _skip_notify != 1 {
-			_script += '\C\![set,trayballoon,--icon=none,--title='
-			_script += SaveData_Received[_sender][_SenderId]['SenderName']
+			// タイトル（表示名）も、さくらスクリプトのエスケープをする
+			// ※1.0.5までは表示名をそのまま入れていたので、, や ] を含むとスクリプトが崩れた
+			_script += '\C\![set,trayballoon,--icon=none,'
+			_script += UGM.EscapeScriptArg('--title=' + SaveData_Received[_sender][_SenderId]['SenderName'])
 			_script += GenerateTrayBalloonScript(_Text)
 			_script += ']\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]'
 		}
@@ -177,7 +179,7 @@ ShowMessage
 			Fake_DataLimit_LastTime = GetEpochSec()
 		}
 		// ミュートされていない ＆ おやすみモードでなければ通知を出す
-		notify_log ,= IHASH('script', _script, 'sender', _sender, 'SenderId', _SenderId)
+		notify_log ,= IHASH('script', _script, 'title', SaveData_Received[_sender][_SenderId]['SenderName'], 'sender', _sender, 'SenderId', _SenderId)
 		_script
 	}
 	else {

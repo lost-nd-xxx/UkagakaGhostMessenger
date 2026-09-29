@@ -58,7 +58,9 @@ OnSecondChange
 // 通知の履歴から、クリックされたバルーンのタイトルと同じものを新しい方から探し、
 // 見つかればその送信者のページを、無ければ一覧を開く
 // ※1.x系は本文も比べるつもりだったが、本文の取り出しが常に空になっていたため、
-//   実際にはタイトルだけで照合していた。移植でも同じにしている
+//   実際にはタイトルだけで照合していた（同じにしている）
+// ※タイトルは通知の履歴に記録したもの（エスケープ前の表示名）と比べる。1.0.5までは
+//   通知のスクリプトから正規表現で取り出していたので、, や ] を含む表示名は一致しなかった
 //----------------------------------------------------------------
 OnTrayBalloonClick
 {
@@ -67,28 +69,22 @@ OnTrayBalloonClick
 	// ログの新しい方から探す
 	_result = -1
 	for _cnt = ARRAYSIZE(notify_log) - 1 ; _cnt >= 0 ; _cnt-- {
-		_title = ''
-		if RE_SEARCH(notify_log[_cnt]['script'], 'title=([^,\]]*)') {
-			_title = RE_GETSTR()[1]
-		}
-		if _r0 == _title {
+		if _r0 == TOSTR(notify_log[_cnt]['title']) {
 			_result = _cnt
 			break
 		}
 	}
 
 	// スクリプトを作る（ブラウザを開く）
-	_output = '\C\![open,browser,http://localhost:' + localhost_number
-	if _result == -1 {
-		_output += '/]'
+	// URLエンコードの % が環境変数の埋め込みにならないよう、引数をエスケープする
+	_url = 'http://localhost:' + localhost_number + '/'
+	if _result != -1 {
+		_url += 'person.html?sender='
+		_url += STRENCODE(notify_log[_result]['sender'], 'UTF-8', 'url')
+		_url += '&sender_id='
+		_url += STRENCODE(notify_log[_result]['SenderId'], 'UTF-8', 'url')
 	}
-	else {
-		_output += '/person.html?sender='
-		_output += STRENCODE(notify_log[_result]['sender'], 'UTF-8', 'url')
-		_output += '&sender_id='
-		_output += STRENCODE(notify_log[_result]['SenderId'], 'UTF-8', 'url')
-		_output += ']'
-	}
+	_output = '\C\![open,browser,' + UGM.EscapeScriptArg(_url) + ']'
 	// 結果を送信
 	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_TrayBalloonClick'
 	dictOptionalHeader['marker'] = version()
