@@ -19,3 +19,5 @@ tools/,nonar,noupdate
 .claude/,nonar,noupdate
 CLAUDE.md,nonar,noupdate
 build/,nonar,noupdate
+dict/system/yaya_base/,nonar,noupdate
+.gitattributes,nonar,noupdate

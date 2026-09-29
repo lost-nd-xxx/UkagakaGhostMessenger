@@ -1,0 +1,60 @@
+//================================================================
+// UkagakaGhostMessenger 本体（1.x系の main.azr を移植）
+// PLUGIN/2.0 の要求と応答の処理は dict/system/yaya_plugin2.dic にある
+//================================================================
+
+//----------------------------------------------------------------
+// 読み込み時（load から呼ばれる）
+// tamac.exe（tools/）でも実行されるので、外部プログラムの起動や
+// ファイルの書き込みはここではなく OnSystemHostStart.UGM で行う
+//----------------------------------------------------------------
+OnSystemLoad.UGM
+{
+	// 読み込み中に受信動作が発火して欲しくない
+	notify_enable = 0
+
+	// TODO(移植中): readConfig / RestoreVar
+
+	// 読み込みが終わったら受信動作を許可
+	notify_enable = 1
+}
+
+//----------------------------------------------------------------
+// SSPで動き始めたとき（SSPから最初の version が来たとき）
+//----------------------------------------------------------------
+OnSystemHostStart.UGM
+{
+	void FDEL('localweb\shutdown.signal')
+	void FDEL('localweb\running.signal')
+	void EXECUTE(GETSETTING('coreinfo.path') + 'localweb\ugm_server.exe')
+}
+
+//----------------------------------------------------------------
+// 終了時（unload から呼ばれる）
+// SSPで動いていなかった（tamac.exe から読み込まれた）ときは何もしない
+//----------------------------------------------------------------
+OnSystemUnload.UGM
+{
+	if PLUGINFW.Hosted != 1 {
+		return
+	}
+	// ugm_server.exe に終了を知らせる
+	void FOPEN('localweb\shutdown.signal', 'w')
+	void FCLOSE('localweb\shutdown.signal')
+	void FDEL('localweb\running.signal')
+
+	// TODO(移植中): SaveVar
+}
+
+//----------------------------------------------------------------
+// 選択肢（1.x系と同じく、Referenceの名前の関数に振り分ける）
+//----------------------------------------------------------------
+OnChoiceSelect
+{
+	PLUGINFW.RaiseIDEvent(TOSTR(_argv[0]['Reference0']), _argv[0])
+}
+
+OnChoiceSelectEx
+{
+	PLUGINFW.RaiseIDEvent(TOSTR(_argv[0]['Reference1']), _argv[0])
+}

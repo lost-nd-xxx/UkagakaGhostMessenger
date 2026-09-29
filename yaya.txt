@@ -1,35 +1,34 @@
 //******************************************************************************
-// YAYA as SAORI テンプレート
-// yaya.txt (設定ファイル)
-// original written by umeici.
-// changed by 摂理, yaya develop team, and many UKAGAKA developers.
-// Special thanks to postic管理人 and もっしょくし.
-// Last Editor: Don
-// Last Update: 2021-11-12
+// UkagakaGhostMessenger
+// yaya.txt（YAYA as PLUGIN の設定ファイル）
+// 構成は「バーチャル道頓堀」（YAYA as PLUGIN のサンプル）の yaya.txt にならっています
 //******************************************************************************
 
 //---- 文字コード -----------------------------------------------------------------------
-charset.dic, UTF-8
 // 辞書ファイル
-charset.output, Shift_JIS
-// 出力
-
-//---- 言語 -----------------------------------------------------------------------------
-messagetxt, messagetxt/japanese.txt
-// ログに記録されるエラーメッセージ類の言語ファイル
+charset.dic, UTF-8
+// SSPとのやりとり（応答では常に Charset: UTF-8 を返す）
+charset.output, UTF-8
+// ファイルIO
+charset.file, UTF-8
+// セーブデータ
+charset.save, UTF-8
 
 //---- 読み込む辞書 ---------------------------------------------------------------------
-dic, dict/ayasaori.aym, UTF-8
-// 文SAORIインターフェイスモジュール
-dic, dict/builtins.aym, UTF-8
-// ビルトイン関数モジュール
+// システム辞書（PLUGIN/2.0の制御）
+dic, dict/system/yaya_plugin2.dic
+// 辞書の静的検査（tools/lint.ps1 用。yaya-dic より）
+// 配布物には含めないので、ファイルがあるときだけ読み込む
+dicif, dict/system/yaya_base/lint.dic
+// 本体
+dic, dict/main.dic
+dic, dict/functions.dic
 
 //---- 実行ログ -------------------------------------------------------------------------
-// log, ayasaori.log
-// 実行ログをayasaori.logに記録します。開発時には記録しておいたほうが良いです。
+// log, yaya.log
 iolog, off
-// load, unload, request 実行時の記録 on で記録する。
+ignoreiolog, ID: OnSecondChange
 
 //---- セーブファイル -------------------------------------------------------------------
+// セーブデータは savedata.json に自前で保存するので、YAYAの自動保存は使わない
 save.auto, off
-// 自動保存機能

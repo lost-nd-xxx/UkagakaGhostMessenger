@@ -5,7 +5,7 @@ craftman,lost_nd_xxx
 craftmanw,ろすえん
 craftmanurl,https://lnx.flop.jp/
 
-filename,akari.dll
+filename,yaya.dll
 
 secondchangeinterval,1
 

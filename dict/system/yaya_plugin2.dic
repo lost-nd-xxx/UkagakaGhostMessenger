@@ -1,0 +1,324 @@
+//******************************************************************************
+/*
+PLUGIN/2.0制御スクリプト for YAYA
+履歴
+ver. date     noted
+1.0  20080422 Initial Impl. by C.Ponapalt
+1.1  20080511 ScriptOption / EventOption
+
+UkagakaGhostMessenger版
+「バーチャル道頓堀」（YAYA as PLUGIN のサンプル、NYSDL）の yaya_plugin2.dic ver 1.1 を元に改変。
+- 文字コードを UTF-8 に変更
+- リクエストの解析を YAYA 600系の PARSEHEADER に変更
+- 応答の形式を、akari で動いていた 1.x 系（main.azr の _customrequest）と同じにした
+  - ID の関数は、ヘッダ全体（と開始行 head）のハッシュを引数にして呼ぶ
+  - 関数の戻り値があれば Script: を付け、Event を OnPluginExec にする
+  - 応答の追加ヘッダは dictOptionalHeader で指定する
+- 使っていない SAORI・時刻系の関数を削除
+*/
+//******************************************************************************
+
+
+//------------------------------------------------------------------------------
+//以下のdefineは基本的に弄らないで下さい
+//------------------------------------------------------------------------------
+
+// 文字/文字列定数
+#define	C_CRLF2		C_CRLF+C_CRLF					/* 改行コードx2   */
+#define	C_CRLF		CHR(0xd)+CHR(0xa)				/* 改行コード     */
+#define	C_BYTE1		CHR(0x1)						/* バイト値1      */
+
+//******************************************************************************
+// load
+//******************************************************************************
+
+//------------------------------------------------------------------------------
+//関数名：load
+//機能　：ロード時の処理
+//備考　：tamac.exe（tools/）でも実行されるので、ここから呼ぶ処理では
+//        外部プログラムの起動やファイルの書き込みをしないこと。
+//        それらは PLUGINFW.OnHostStart（SSPから最初の version が来たとき）で行う。
+//------------------------------------------------------------------------------
+load
+{
+	PLUGINFW.Hosted = 0
+	PLUGINFW.Path   = _argv[0]
+
+	resetOptionalHeader
+
+	_a = GETFUNCLIST('OnSystemLoad')
+	_n = ARRAYSIZE(_a)
+	for _i = 0 ; _i < _n ; _i++
+	{
+		EVAL(_a[_i])
+	}
+}
+
+//******************************************************************************
+//unload
+//******************************************************************************
+
+//------------------------------------------------------------------------------
+//関数名：unload
+//機能　：終了処理
+//備考　：PLUGINFW.Hosted が 1（SSPで動いていた）ときだけ、保存などを行うこと
+//------------------------------------------------------------------------------
+unload
+{
+	_a = GETFUNCLIST('OnSystemUnload')
+	_n = ARRAYSIZE(_a)
+	for _i = _n-1 ; _i >= 0 ; _i--
+	{
+		EVAL(_a[_i])
+	}
+}
+
+//------------------------------------------------------------------------------
+//関数名：AyaTest.Eval
+//機能　：受け取った文字列をEVALして返す（玉・tamac でのテスト用）
+//------------------------------------------------------------------------------
+AyaTest.Eval
+{
+	_AyaTest_Eval_lines = SPLIT(_argv[0],C_CRLF)
+	_AyaTest_Eval_result = ''
+	_AyaTest_Eval_count = ARRAYSIZE(_AyaTest_Eval_lines)
+
+	for _AyaTest_Eval_index = 0 ; _AyaTest_Eval_index < _AyaTest_Eval_count ; _AyaTest_Eval_index++ {
+		if _AyaTest_Eval_lines[_AyaTest_Eval_index] {
+			_AyaTest_Eval_result += EVAL(_AyaTest_Eval_lines[_AyaTest_Eval_index])
+		}
+	}
+	_AyaTest_Eval_result
+}
+
+
+//******************************************************************************
+//request
+//******************************************************************************
+//------------------------------------------------------------------------------
+//関数名：request
+//機能　：受け取った文字列をPLUGINリクエストとして解析し、応答を返す
+//------------------------------------------------------------------------------
+request
+{
+	if SUBSTR(_argv[0],0,3) == '?? ' { //玉・tamac でのテスト用
+		'!! ' + JOIN(AyaTest.Eval(ERASE(_argv[0],0,3)),',')
+		return
+	}
+
+	_req = PARSEHEADER(_argv[0])
+	_head = TOSTR(_req['start'])
+
+	// PLUGINに対するリクエストでない場合
+	if STRSTR(_head, 'PLUGIN', 0) < 0 {
+		PLUGINFW.MakeResponse('PLUGIN/2.0 400 Bad Request', IARRAY)
+		return
+	}
+
+	// 関数に渡すリクエスト（1.x系の ref と同じく、ヘッダ全体と開始行 head）
+	_ref = _req['header']
+	_ref['head'] = _head
+
+	// セキュリティレベル="External"なら即返る
+	if TOSTR(_ref['SecurityLevel']) == 'External' {
+		PLUGINFW.MakeResponse('PLUGIN/2.0 204 No Content', IARRAY)
+		return
+	}
+
+	// SSPからの最初の version で、SSPで動き始めたとみなす
+	_id = TOSTR(_ref['ID'])
+	if PLUGINFW.Hosted == 0 && _id == 'version' {
+		PLUGINFW.Hosted = 1
+		PLUGINFW.OnHostStart
+	}
+
+	// IDの関数を実行（メソッドの判定より先。1.x系と同じ）
+	_script = PLUGINFW.RaiseIDEvent(_id, _ref)
+
+	// NOTIFY
+	if STRSTR(_head, 'NOTIFY', 0) >= 0 {
+		resetOptionalHeader
+		PLUGINFW.MakeResponse('PLUGIN/2.0 200 OK', IARRAY)
+		return
+	}
+	// GET
+	if STRSTR(_head, 'GET', 0) >= 0 {
+		_lines = IARRAY
+		if _script != '' {
+			_lines ,= 'Script: ' + _script
+			makeDefaultEventAndReference(_ref, _script)
+		}
+		if dictOptionalHeader['target'] != '' {
+			_lines ,= 'Target: ' + dictOptionalHeader['target']
+		}
+		if dictOptionalHeader['event'] != '' {
+			_lines ,= 'Event: ' + dictOptionalHeader['event']
+		}
+		if dictOptionalHeader['event_option'] != '' {
+			_lines ,= 'EventOption: ' + dictOptionalHeader['event_option']
+		}
+		if dictOptionalHeader['script_option'] != '' {
+			_lines ,= 'ScriptOption: ' + dictOptionalHeader['script_option']
+		}
+		_refs = dictOptionalHeader['reference']
+		_n = ARRAYSIZE(_refs)
+		for _i = 0 ; _i < _n ; _i++ {
+			_lines ,= 'Reference' + _i + ': ' + _refs[_i]
+		}
+		if dictOptionalHeader['marker'] != '' {
+			_lines ,= 'Marker: ' + dictOptionalHeader['marker']
+		}
+		resetOptionalHeader
+		PLUGINFW.MakeResponse('PLUGIN/2.0 200 OK', _lines)
+		return
+	}
+	// 未知のリクエスト（1.x系と同じく、追加ヘッダはリセットしない）
+	PLUGINFW.MakeResponse('PLUGIN/2.0 400 Bad Request', IARRAY)
+}
+
+//------------------------------------------------------------------------------
+//関数名：PLUGINFW.MakeResponse
+//機能　：応答の文字列を作る
+//引数　：argv0＝ステータス行 argv1以降＝追加のヘッダ行
+//------------------------------------------------------------------------------
+PLUGINFW.MakeResponse
+{
+	_result = _argv[0] + C_CRLF + 'Sender: akari' + C_CRLF + 'Charset: UTF-8' + C_CRLF
+	for _i = 1 ; _i < _argc ; _i++ {
+		_result += _argv[_i] + C_CRLF
+	}
+	_result + C_CRLF
+}
+
+//------------------------------------------------------------------------------
+//関数名：PLUGINFW.RaiseIDEvent
+//機能　：IDの名前の関数を、リクエストのハッシュを引数にして実行する
+//引数　：argv0＝ID argv1＝リクエストのハッシュ
+//戻り値：関数の戻り値（文字列）。実行できない名前なら空文字列
+//備考　：1.x系（akari の _fncstr）は、どんな関数名でも実行していた。
+//        YAYAの EVAL は任意のコードを実行できるので、関数名の形をしていて、
+//        ユーザー関数として存在し、制御用の関数でないものだけを実行する。
+//------------------------------------------------------------------------------
+PLUGINFW.RaiseIDEvent
+{
+	_event = _argv[0]
+	if !PLUGINFW.IsCallableEvent(_event) {
+		''
+		return
+	}
+	PLUGINFW.Ref = _argv[1]
+	_result = TOSTR(EVAL(_event + '(PLUGINFW.Ref)'))
+	ERASEVAR('PLUGINFW.Ref')
+	_result
+}
+
+//------------------------------------------------------------------------------
+//関数名：PLUGINFW.IsCallableEvent
+//機能　：IDとして実行してよい関数名かどうか
+//------------------------------------------------------------------------------
+PLUGINFW.IsCallableEvent
+{
+	_name = _argv[0]
+	if !RE_MATCH(_name, '[A-Za-z_][A-Za-z0-9_.]*') {
+		0
+		return
+	}
+	if ISFUNC(_name) != 1 {
+		0
+		return
+	}
+	if ASEARCH(_name, ('load', 'unload', 'request')) >= 0 {
+		0
+		return
+	}
+	if RE_SEARCH(_name, '^(PLUGINFW|AyaTest|SHIORI3FW)\.') {
+		0
+		return
+	}
+	1
+}
+
+//------------------------------------------------------------------------------
+//関数名：makeDefaultEventAndReference
+//機能　：Scriptを返すとき、Event を OnPluginExec にし、Reference を組み立て直す
+//        （1.x系の main.azr と同じ）
+//------------------------------------------------------------------------------
+makeDefaultEventAndReference
+{
+	_ref = _argv[0]
+	dictOptionalHeader['event'] = 'OnPluginExec'
+	_a = IARRAY
+	_a ,= 'Version=' + version()
+	_a ,= 'From=' + pluginname()
+	_a ,= 'Script=' + _argv[1]
+	_a ,= 'Event=' + TOSTR(_ref['ID'])
+	for _i = 0 ; HASH_EXIST('Reference' + _i, _ref) ; _i++ {
+		_a ,= TOSTR(_ref['Reference' + _i])
+	}
+	dictOptionalHeader['reference'] = _a
+}
+
+//------------------------------------------------------------------------------
+//関数名：resetOptionalHeader
+//機能　：応答の追加ヘッダ（dictOptionalHeader）を空にする
+//------------------------------------------------------------------------------
+resetOptionalHeader
+{
+	dictOptionalHeader = IHASH()
+	dictOptionalHeader['target'] = ''
+	dictOptionalHeader['event'] = ''
+	dictOptionalHeader['event_option'] = ''
+	dictOptionalHeader['script_option'] = ''
+	dictOptionalHeader['reference'] = IARRAY
+	dictOptionalHeader['marker'] = ''
+}
+
+//------------------------------------------------------------------------------
+//関数名：PLUGINFW.OnHostStart
+//機能　：SSPで動き始めたときの処理（OnSystemHostStart で始まる関数を順に実行）
+//------------------------------------------------------------------------------
+PLUGINFW.OnHostStart
+{
+	_a = GETFUNCLIST('OnSystemHostStart')
+	_n = ARRAYSIZE(_a)
+	for _i = 0 ; _i < _n ; _i++
+	{
+		EVAL(_a[_i])
+	}
+}
+
+//******************************************************************************
+//配列操作
+//******************************************************************************
+JOIN
+{
+	if _argc <= 2 {
+		_argv[0]
+		return
+	}
+
+	_delim = _argv[_argc - 1]
+	_argc--
+
+	_text = _argv[0]
+	for _i = 1 ; _i < _argc ; _i++ {
+		_text += _delim
+		_text += _argv[_i]
+	}
+	_text
+}
+
+//******************************************************************************
+//lint（tools/lint.ps1）への補足
+//******************************************************************************
+//------------------------------------------------------------------------------
+//関数名：OnSHIORI3FW.Lint.UsedFunctions
+//機能　：名前で呼ばれる（IDやGETFUNCLISTで呼ばれる）関数を lint に伝える
+//------------------------------------------------------------------------------
+OnSHIORI3FW.Lint.UsedFunctions
+{
+	'^On'
+	'^version$'
+	'^installedghostname$'
+	'^OnSystem(Load|Unload|HostStart)'
+}
