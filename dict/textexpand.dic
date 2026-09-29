@@ -1,0 +1,335 @@
+//================================================================
+// 独自記法を実際の状態にする（1.x系の dict/textexpand.azr を移植）
+//================================================================
+
+//----------------------------------------------------------------
+// ログ用のテキストを生成する
+// 引数：　テキスト, ゴースト名
+// 返値：　差し替え後のテキストの段落ごとの配列
+//----------------------------------------------------------------
+GenerateReceivedLogText
+{
+	_result_text = REPLACE(_argv[0], ':nl:', '<br>')
+	_sender = _argv[1]
+
+	for _i = 0 ; _i < 100 ; _i++ {
+		// 代替テキスト無しの画像添付を探す
+		if !RE_SEARCH(_result_text, ':image:([^:]+?\.\w+):(?!alt=.*:)') {
+			break
+		}
+		_found = RE_GETSTR()[0]
+		_result_text = REPLACE(_result_text, _found, GenerateHtmlImgTag(_found, _sender))
+	}
+
+	for _i = 0 ; _i < 100 ; _i++ {
+		// 代替テキスト付きの画像添付を探す
+		if !RE_SEARCH(_result_text, ':image:([^:]+?\.\w+):alt=([^:]*?):') {
+			break
+		}
+		_found = RE_GETSTR()[0]
+		_result_text = REPLACE(_result_text, _found, GenerateHtmlImgTag(_found, _sender))
+	}
+
+	for _i = 0 ; _i < 100 ; _i++ {
+		// 内蔵スタンプを探す
+		if !RE_SEARCH(_result_text, ':stamp(\d+):') {
+			break
+		}
+		_found = RE_GETSTR()
+		_number = _found[1]
+		_alt = StampAltText()[TOINT(_number)]
+		_html = '<img class="stamp"'
+		if _alt != '' {
+			_html += ' alt="' + _alt + '"'
+		}
+		_html += ' src="./res/stamp/manpu' + _number + '.png">'
+		_result_text = REPLACE(_result_text, _found[0], _html)
+	}
+
+	// スタンプの前後で段落を分ける
+	_paragraph = IARRAY
+	for _i = 0 ; _i < 100 ; _i++ {
+		if !RE_SEARCH(_result_text, '^(.*?)(<img class="stamp".*?>)') {
+			// 該当が無い場合脱出
+			if _result_text != '' {
+				// 何かがあるので段落にする
+				_paragraph ,= _result_text
+			}
+			break
+		}
+		_found = RE_GETSTR()
+		if _found[1] != '' {
+			// 何かがあるので段落にする
+			_paragraph ,= _found[1]
+		}
+		_paragraph ,= _found[2]
+		_result_text = SUBSTR(_result_text, STRLEN(_found[0]), STRLEN(_result_text))
+	}
+
+	_paragraph
+}
+
+//----------------------------------------------------------------
+// 拡張記法の:image:からhtmlのimgタグを返す（ズームが必要ならaタグで囲む）
+// 引数：　:image:の文字列、ゴースト名
+// 返値：　htmlタグの文字列
+// ※画像のパスに、加工前のゴースト名を使っている（CopyImage はフォルダ名に
+//   GhostNameToFolderName を使う）。1.x系と同じ。修正は移植の後で行う
+//----------------------------------------------------------------
+GenerateHtmlImgTag
+{
+	_s = RE_REPLACE(_argv[0], '^:', '')
+	_s = RE_REPLACE(_s, ':$', '')
+	_tag = SPLIT(_s, ':')
+	_sender = _argv[1]
+	_html = ''
+	_alt = ''
+
+	// ファイルパス
+	_filename = RE_REPLACE(_tag[1], '^nozoom=', '')
+	_split = SPLIT(_filename, '\')
+	_filename = _split[ARRAYSIZE(_split) - 1]
+	_filepath = './res/image/' + _sender + '/' + _filename
+
+	if STRSTR(_tag[2], 'alt=', 0) == 0 {
+		// altが必要
+		_alt += RE_REPLACE(_tag[2], '^alt=', '')
+	}
+
+	if STRSTR(_tag[1], 'nozoom=', 0) != 0 {
+		// aタグが必要
+		_html += '<a href="' + _filepath + '" class="fuwaimg"'
+		if _alt != '' {
+			_html += ' data-fcaption="' + _alt + '"'
+		}
+		_html += '>'
+		// imgタグ
+		_html += '<img src="' + _filepath + '"'
+		if _alt != '' {
+			_html += ' alt="' + _alt + '"'
+		}
+		_html += '>'
+		_html += '</a>'
+	}
+	else {
+		// スタンプ扱い
+		_html += '<img class="stamp"'
+		if _alt != '' {
+			_html += ' alt="' + _alt + '"'
+		}
+		_html += ' src="' + _filepath + '">'
+	}
+
+	_html
+}
+
+//----------------------------------------------------------------
+// 通知用スクリプトを生成する
+// ここでは改行と画像altテキストをやる　TransformTextExpandの内容と重複しない
+// 引数：　テキスト
+// 返値：　差し替え後のスクリプトの部品　--text=文章文章,--text=文章文章
+//----------------------------------------------------------------
+GenerateTrayBalloonScript
+{
+	_result_text = SPLIT(_argv[0], ':nl:')
+	_n0 = ARRAYSIZE(_result_text)
+
+	for _i0 = 0 ; _i0 < _n0 ; _i0++ {
+		_curt = _result_text[_i0]
+		for _i1 = 0 ; _i1 < 100 ; _i1++ {
+			// 代替テキスト無しの画像添付を探す
+			if !RE_SEARCH(_curt, ':image:([^:]+?\.\w+):(?!alt=.*:)') {
+				break
+			}
+			_found = RE_GETSTR()
+			_str = RE_REPLACE(_found[1], '^nozoom=', '')
+			_split = SPLIT(_str, '\')
+			_filename = _split[ARRAYSIZE(_split) - 1]
+			_curt = REPLACE(_curt, _found[0], ':添付:' + _filename + ':')
+		}
+		for _i1 = 0 ; _i1 < 100 ; _i1++ {
+			// 代替テキスト付きの画像添付を探す
+			if !RE_SEARCH(_curt, ':image:([^:]+?\.\w+):alt=([^:]*?):') {
+				break
+			}
+			_found = RE_GETSTR()
+			if _found[2] != '' {
+				_curt = REPLACE(_curt, _found[0], ':' + _found[2] + ':')
+			}
+			else {
+				_curt = REPLACE(_curt, _found[0], '')
+			}
+		}
+		for _i1 = 0 ; _i1 < 100 ; _i1++ {
+			// 内蔵スタンプを探す
+			if !RE_SEARCH(_curt, ':stamp(\d+):') {
+				break
+			}
+			_found = RE_GETSTR()
+			_alttxt = StampAltText()[TOINT(_found[1])]
+			_curt = REPLACE(_curt, _found[0], ':' + _alttxt + ':')
+		}
+
+		_result_text[_i0] = _curt
+	}
+
+	_script = ''
+	for _i = 0 ; _i < _n0 ; _i++ {
+		_script += ',--text='
+		_script += RE_REPLACE(_result_text[_i], '[\\,\]"]', '_')
+	}
+	_script
+}
+
+//----------------------------------------------------------------
+// スタンプ用代替テキストの配列
+// 引数：なし
+// 返値：配列
+//----------------------------------------------------------------
+StampAltText
+{
+	_a = IARRAY
+	_a ,= ''
+	_a ,= '照れ'
+	_a ,= '！'
+	_a ,= '不安'
+	_a ,= '落込'
+	_a ,= '笑顔'
+	_a ,= '沈黙'
+	_a ,= '怒り'
+	_a ,= '汗'
+	_a ,= '照怒'
+	_a ,= '引き'
+	_a ,= '驚き'
+	_a ,= '喜び'
+	_a ,= '？'
+	_a ,= '困り'
+	_a ,= '☆★'
+	_a ,= '音符'
+	_a ,= 'ドル袋'
+	_a ,= '＄'
+	_a ,= 'きらり'
+	_a ,= '電球'
+	_a ,= 'Zzz'
+	_a ,= '海賊'
+	_a ,= 'どくろ'
+	_a ,= 'ハート'
+	_a ,= 'orz'
+	_a ,= '＾▽＾'
+	_a ,= '￣＿￣'
+	_a ,= '￣▽￣;'
+	_a ,= '￥'
+	_a ,= '！？'
+	_a ,= 'ぽえ～'
+	_a ,= 'エクトプラズム'
+	_a ,= '絆創膏'
+	_a ,= 'ぷんぷん'
+	_a ,= 'ふぅ'
+	_a ,= '昇天'
+	_a ,= 'ピヨり'
+	_a ,= '花'
+	_a ,= 'きらり'
+	_a
+}
+
+//----------------------------------------------------------------
+// テキストの情報系とランダム選択を差し替える
+// 引数：　テキスト
+// 返値：　ハッシュ（'text'＝差し替え後のテキスト、'choice'＝ランダム選択結果の配列）
+//         1.x系は { テキスト, 選択結果の配列 } の配列を返していた
+//----------------------------------------------------------------
+TransformTextExpand
+{
+	// システム情報などを取得して差し替え
+	_result_text = ReplaceSystemInfo(_argv[0])
+
+	// ランダム選択を決定して差し替え
+	ReplaceRandomChoice(_result_text)
+}
+
+//----------------------------------------------------------------
+// ランダム単語を決定して差し替え
+// 引数：　テキスト
+// 返値：　ハッシュ（'text'＝差し替え後のテキスト、'choice'＝ランダム選択結果の配列）
+//----------------------------------------------------------------
+ReplaceRandomChoice
+{
+	_result_text = _argv[0]
+	_result_choice = IARRAY
+
+	for _i = 0 ; _i < 100 ; _i++ {
+		if !RE_SEARCH(_result_text, '^(.*?):choice_start:(.+?):choice_end:') {
+			break
+		}
+		_found = RE_GETSTR()
+		_words = SPLIT(_found[2], ':')
+		_result = ANY(_words)
+		_result_choice ,= _result
+		_result_text = _found[1] + _result + SUBSTR(_result_text, STRLEN(_found[0]), STRLEN(_result_text))
+	}
+
+	_r = IHASH()
+	_r['text'] = _result_text
+	_r['choice'] = _result_choice
+	_r
+}
+
+//----------------------------------------------------------------
+// システム情報などを取得して差し替え　GetSystemInfoを内包する
+// 引数：　テキスト
+// 返値：　差し替え後のテキスト
+//----------------------------------------------------------------
+ReplaceSystemInfo
+{
+	_text = _argv[0]
+	_info = GetSystemInfo()
+	foreach ('year', 'month', 'day', 'weekday', 'hour', 'minute', 'second', 'ampm', 'hour12', 'systemuptime', 'systemupsecond', 'systemupminute', 'systemuphour', 'memoryload', 'memorytotalphys', 'memoryavailphys', 'memorytotalvirtual', 'memoryavailvirtual') ; _key {
+		if STRSTR(_text, ':' + _key + ':', 0) >= 0 {
+			_text = REPLACE(_text, ':' + _key + ':', TOSTR(_info[_key]))
+		}
+	}
+	_text
+}
+
+//----------------------------------------------------------------
+// システム情報などを取得
+// 引数：　なし
+// 返値：　ハッシュ
+// ※1.x系は :ampm: が常に「午前」になっていた（時刻ではなく文字列を比べていた）。
+//   移植では同じ動きにしている。修正は移植の後で行う
+//----------------------------------------------------------------
+GetSystemInfo
+{
+	_systemuptime = GETTICKCOUNT() / 1000
+	_systemuphour = _systemuptime / 3600
+	_systemupminute = (_systemuptime - _systemuphour * 3600) / 60
+	_systemupsecond = _systemuptime % 60
+
+	_memory = GETMEMINFO()
+	_time = UGM.GetTime
+
+	_ampm = '午前'
+
+	_hour12 = _time['時'] % 12
+
+	_result = IHASH()
+	_result['year'] = _time['年']
+	_result['month'] = _time['月']
+	_result['day'] = _time['日']
+	_result['weekday'] = _time['週']
+	_result['hour'] = _time['時']
+	_result['minute'] = _time['分']
+	_result['second'] = _time['秒']
+	_result['ampm'] = _ampm
+	_result['hour12'] = _hour12
+	_result['systemuptime'] = _systemuptime
+	_result['systemupsecond'] = _systemupsecond
+	_result['systemupminute'] = _systemupminute
+	_result['systemuphour'] = _systemuphour
+	_result['memoryload'] = _memory[0]
+	_result['memorytotalphys'] = _memory[1]
+	_result['memoryavailphys'] = _memory[2]
+	_result['memorytotalvirtual'] = _memory[3]
+	_result['memoryavailvirtual'] = _memory[4]
+	_result
+}

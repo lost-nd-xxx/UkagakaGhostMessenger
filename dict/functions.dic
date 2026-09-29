@@ -24,3 +24,691 @@ version
 	// 表示用
 	pluginname() + '/' + version_num()
 }
+
+//----------------------------------------------------------------
+// グローバル変数を初期化する（読み込み時に最初に呼ぶ）
+//
+// SaveData_Reserved   予約中（ハッシュ）
+// SaveData_Waiting    条件を満たして受信待機中（配列）
+// SaveData_Received   受信済み（ハッシュ）
+// oyasumi_flag        おやすみモードのフラグ
+// bugfix_record       バグ修正の処理を済ませたかどうかの記録（ハッシュ）
+// ここまでがセーブファイルに保存するもの。以下は保存しない
+// notify_log          送信した通知の履歴（配列）
+// Fake_DataLimit_Count / Fake_DataLimit_LastTime
+//                     一定時間内に多量のメッセージが来たら一時停止する
+// localhost_number    ローカルホストのポート番号
+// check_interval      条件照合の実行間隔（秒）
+// check_interval_count 条件照合の間隔カウンタ
+// batch_start_time    まとめ通知用のバッチ開始時刻（0=待機中ではない）
+// akari_log           セーブデータを読める形で出力するファイル名（1.x系の設定名のまま）
+// Waiting_Ringing / InstalledGhostNameList は下を参照
+//----------------------------------------------------------------
+UGM.InitGlobals
+{
+	SaveData_Reserved = IHASH()
+	SaveData_Waiting = IARRAY
+	SaveData_Received = IHASH()
+	oyasumi_flag = 0
+	bugfix_record = IHASH()
+
+	notify_log = IARRAY
+	Fake_DataLimit_Count = 0
+	Fake_DataLimit_LastTime = 0
+	localhost_number = 8000
+	check_interval = 1
+	check_interval_count = 0
+	batch_start_time = 0
+	akari_log = ''
+	// OnUkagakaGhostMessenger_Ringing の Reference の待ち（バイト値1区切りの文字列の配列）
+	Waiting_Ringing = IARRAY
+	// インストール済みのゴースト名（installedghostname で受け取る）
+	InstalledGhostNameList = IARRAY
+}
+
+//----------------------------------------------------------------
+// セーブデータを保存する
+// SSPで動いていない（tamac.exe から読み込まれた）ときはファイルに書かない
+//----------------------------------------------------------------
+SaveVar
+{
+	dictSaveData = IHASH()
+	dictSaveData['SaveData_Reserved'] = SaveData_Reserved
+	dictSaveData['SaveData_Waiting'] = SaveData_Waiting
+	dictSaveData['SaveData_Received'] = SaveData_Received
+	dictSaveData['oyasumi_flag'] = oyasumi_flag
+	dictSaveData['bugfix_record'] = bugfix_record
+
+	if PLUGINFW.Hosted == 1 {
+		void FWRITEJSON('savedata.json', dictSaveData)
+	}
+
+	// web用jsonを出力する
+	UpdateWebJson
+
+	// セーブデータを読めるようにする
+	UGM.WriteAkariLog
+}
+
+//----------------------------------------------------------------
+// セーブデータを読み込む
+// 1.0.5（akari版）が書き出した savedata.json も、そのまま読める
+// ファイルへの書き出し（web用json など）は OnSystemHostStart.UGM で行う
+//----------------------------------------------------------------
+RestoreVar
+{
+	dictSaveData = FREADJSON('savedata.json')
+	if GETTYPE(dictSaveData) != 5 {
+		dictSaveData = IHASH()
+	}
+
+	if GETTYPE(dictSaveData['SaveData_Reserved']) == 5 {
+		SaveData_Reserved = dictSaveData['SaveData_Reserved']
+	}
+	if HASH_EXIST('SaveData_Waiting', dictSaveData) {
+		SaveData_Waiting = dictSaveData['SaveData_Waiting']
+	}
+	if GETTYPE(dictSaveData['SaveData_Received']) == 5 {
+		SaveData_Received = dictSaveData['SaveData_Received']
+	}
+	oyasumi_flag = TOINT(dictSaveData['oyasumi_flag'])
+	if GETTYPE(dictSaveData['bugfix_record']) == 5 {
+		bugfix_record = dictSaveData['bugfix_record']
+	}
+
+	// おやすみモードが一時停止なら解除する
+	if oyasumi_flag == 1 {
+		oyasumi_flag = 0
+	}
+}
+
+//----------------------------------------------------------------
+// セーブデータを読める形で出力する（ugm_config.txt の akari_log）
+//----------------------------------------------------------------
+UGM.WriteAkariLog
+{
+	if PLUGINFW.Hosted == 1 && akari_log != '' {
+		void FWRITEJSON(akari_log, dictSaveData)
+	}
+}
+
+//----------------------------------------------------------------
+// ugm_config.txt の既定の内容
+//----------------------------------------------------------------
+UGM.DefaultConfigLines
+{
+	_a = IARRAY
+	_a ,= '//localhostのポート番号を指定'
+	_a ,= 'localhost_number,8000'
+	_a ,= ''
+	_a ,= '//指定されたファイル名でugm_server.exeのログを出力'
+	_a ,= '//server_log,server_log.txt'
+	_a ,= ''
+	_a ,= '//セーブデータを読める形で出力'
+	_a ,= '//akari_log,akari_log.txt'
+	_a ,= ''
+	_a ,= '//条件照合の実行間隔を秒で指定（デフォルト1、最小1）'
+	_a ,= '//check_interval,1'
+	_a ,= ''
+	_a
+}
+
+//----------------------------------------------------------------
+// ugm_config.txt が無ければ作る（SSPで動き始めたときに呼ぶ）
+//----------------------------------------------------------------
+UGM.CreateConfigIfMissing
+{
+	if UGM.Exists('ugm_config.txt') {
+		return
+	}
+	UGM.WriteLines('ugm_config.txt', UGM.DefaultConfigLines)
+}
+
+//----------------------------------------------------------------
+// ugm_config.txt を読む（無ければ既定値のまま）
+//----------------------------------------------------------------
+readConfig
+{
+	localhost_number = 8000
+	check_interval = 1
+
+	_lines = UGM.ReadLines('ugm_config.txt')
+	foreach _lines ; _line {
+		if RE_MATCH(_line, 'localhost_number,\s*\d+\s*') {
+			void RE_SEARCH(_line, 'localhost_number,\s*(\d+)\s*')
+			localhost_number = TOINT(RE_GETSTR()[1])
+		}
+		elseif RE_MATCH(_line, 'akari_log,\s*\S+\s*') {
+			void RE_SEARCH(_line, 'akari_log,\s*(\S+)\s*')
+			akari_log = RE_GETSTR()[1]
+		}
+		elseif RE_MATCH(_line, 'check_interval,\s*\d+\s*') {
+			void RE_SEARCH(_line, 'check_interval,\s*(\d+)\s*')
+			check_interval = TOINT(RE_GETSTR()[1])
+		}
+	}
+	// 範囲外だったら8000に直す
+	if localhost_number < 1024 || localhost_number > 65535 || localhost_number == 9801 || localhost_number == 9821 {
+		localhost_number = 8000
+	}
+	// 1未満だったら1に直す
+	if check_interval < 1 {
+		check_interval = 1
+	}
+}
+
+//----------------------------------------------------------------
+// web用jsonを出力する
+// SSPで動いていない（tamac.exe から読み込まれた）ときはファイルに書かない
+//----------------------------------------------------------------
+UpdateWebJson
+{
+	if PLUGINFW.Hosted != 1 {
+		return
+	}
+	void FWRITEJSON('localweb\html\res\data.json', UGM.BuildWebJson)
+}
+
+//----------------------------------------------------------------
+// web用jsonの中身を作る
+// 返値：　[ {unread_count_all, oyasumi_flag}, 送信者ごとの情報... ] の配列
+// 送信者はアカウント更新時間（time_count）の昇順。web側で逆順にして表示する
+//----------------------------------------------------------------
+UGM.BuildWebJson
+{
+	_jsontmp = IHASH()
+	_unread_count_all = 0
+
+	foreach HASH_KEYS(SaveData_Received) ; _ghost {
+		foreach HASH_KEYS(SaveData_Received[_ghost]) ; _chara {
+			_rcv = SaveData_Received[_ghost][_chara]
+			// 送信者ごとの情報をまとめる
+			_account = IHASH()
+			_account['sender'] = _ghost
+			_account['SenderId'] = _chara
+			_block_flag = TOINT(_rcv['block_flag'])
+			_account['block_flag'] = _block_flag
+			_account['mute_flag'] = TOINT(_rcv['mute_flag'])
+			// アイコン
+			if _rcv['SenderIcon'] == 'default' {
+				// デフォルト
+				_account['SenderIcon'] = './res/image/icon_default.png'
+			}
+			else {
+				// それ以外
+				_account['SenderIcon'] = './res/image/' + GhostNameToFolderName(_ghost) + '/' + _rcv['SenderIcon']
+			}
+			// 表示名
+			_account['SenderName'] = _rcv['SenderName']
+			// プロフ文
+			_account['SenderProfile'] = _rcv['SenderProfile']
+			// アカウント更新時間比較用の数値
+			_account['time_count'] = _rcv['time_count']
+			// 新着確認用の数値
+			_unread_count = 0
+
+			// メッセージを日付ごとにわけ、時間順に並べ替える
+			// 日付の文字列 → 受信時刻（EPOCH秒）→ 表示する要素の配列
+			_messages_to_sort = IHASH()
+			_msgs = _rcv['msgs']
+			if GETTYPE(_msgs) != 5 {
+				_msgs = IHASH()
+			}
+			foreach HASH_KEYS(_msgs) ; _msg_id {
+				_msg_id_msgs = _msgs[_msg_id]
+				_n3 = ARRAYSIZE(_msg_id_msgs)
+				for _i3 = 0 ; _i3 < _n3 ; _i3++ {
+					_m = _msg_id_msgs[_i3]
+					_msg_txt = _m['Text']
+					_msg_day = _m['time_text'][0]
+					_msg_minute = _m['time_text'][1]
+					_msg_time_cnt = TOINT(_m['time_count'])
+					_msg_read_cnt = TOINT(_m['read_time'])
+					// 未読なら未読カウントを足す
+					if _msg_time_cnt > _msg_read_cnt && _block_flag != 1 {
+						_unread_count++
+						_unread_count_all++
+					}
+					// 無ければ空を入れておく
+					if !HASH_EXIST(_msg_day, _messages_to_sort) {
+						_messages_to_sort[_msg_day] = IHASH()
+					}
+					// 時間被り対策のため配列とする
+					if !HASH_EXIST(_msg_time_cnt, _messages_to_sort[_msg_day]) {
+						_messages_to_sort[_msg_day][_msg_time_cnt] = IARRAY
+					}
+					_n4 = ARRAYSIZE(_msg_txt)
+					for _i4 = 0 ; _i4 < _n4 ; _i4++ {
+						_txt = _msg_txt[_i4]
+						_d = IHASH()
+						if STRSTR(_txt, 'class="stamp"', 0) != -1 {
+							// スタンプ
+							if RE_SEARCH(_txt, 'alt="(.+?)"') {
+								_d['alt'] = RE_GETSTR()[1]
+							}
+							_d['type'] = 'stamp'
+							_d['time'] = _msg_minute
+							void RE_SEARCH(_txt, 'src="(.+?)"')
+							_d['src'] = RE_GETSTR()[1]
+						}
+						else {
+							// ふきだし
+							_d['type'] = 'bubble'
+							_d['time'] = _msg_minute
+							_d['text'] = _txt
+						}
+						_messages_to_sort[_msg_day][_msg_time_cnt] ,= _d
+					}
+				}
+			}
+			// 送信者ごとの未読数
+			_account['unread_count'] = _unread_count
+
+			// メッセージを並べ替える（日付の文字列順、同じ日の中は受信時刻順）
+			_ar = IARRAY
+			foreach ASORT('string,case', HASH_KEYS(_messages_to_sort)) ; _day {
+				// 1次元目は日付なのでまず切り取り線を入れる
+				_ar ,= IHASH('type', 'kiritori', 'time', _day)
+				foreach ASORT('int', HASH_KEYS(_messages_to_sort[_day])) ; _second {
+					foreach _messages_to_sort[_day][_second] ; _e {
+						_ar ,= _e
+					}
+				}
+			}
+			// 並べ替えたメッセージを配列に入れる
+			_account['msgs'] = _ar
+			_sort_id = TOSTR(_account['time_count']) + _ghost + _chara
+			_jsontmp[_sort_id] = _account
+		}
+	}
+
+	_webjson = IARRAY
+	_webjson ,= IHASH('unread_count_all', _unread_count_all, 'oyasumi_flag', oyasumi_flag)
+	foreach ASORT('string,case', HASH_KEYS(_jsontmp)) ; _key {
+		_webjson ,= _jsontmp[_key]
+	}
+	_webjson
+}
+
+//----------------------------------------------------------------
+// EPOCH秒を取得する
+// 引数：　年,月,日,時,分,秒をキー、値が整数のハッシュ（省略可）
+//         省略したキーは現在の値を使う。引数そのものを省略すると現在の日時
+// 返値：　EPOCH秒の整数
+// 1.x系は akari の _etime の結果から 2678400 を引いて補正していたが、
+// YAYA の GETSECCOUNT はそのままEPOCH秒を返す
+//----------------------------------------------------------------
+GetEpochSec
+{
+	_ref = _argv[0]
+	if GETTYPE(_ref) != 5 {
+		GETSECCOUNT()
+		return
+	}
+	if HASH_SIZE(_ref) <= 0 {
+		GETSECCOUNT()
+		return
+	}
+
+	_t = UGM.GetTime
+	_arg = IARRAY
+	foreach ('年', '月', '日', '時', '分', '秒') ; _key {
+		if GETTYPE(_ref[_key]) == 1 {
+			_arg ,= _ref[_key]
+		}
+		else {
+			_arg ,= _t[_key]
+		}
+	}
+	// GETSECCOUNT の4番目の引数は曜日（無視される）
+	GETSECCOUNT(_arg[0], _arg[1], _arg[2], 0, _arg[3], _arg[4], _arg[5])
+}
+
+//----------------------------------------------------------------
+// EPOCH秒を日時へ換算する
+// 引数：　EPOCH（万国標準時で1970/1/1 00:00:00）からの経過秒数を整数で（0なら現在）
+// 返値：　年,月,日,時,分,秒,週,ミリ秒をキーとしたハッシュ
+//         （週は "日"〜"土" の文字列、ミリ秒はゼロ固定。akari の _gettime 互換）
+//----------------------------------------------------------------
+GetTimeByEpochSec
+{
+	_sec = TOINT(_argv[0])
+	if _sec == 0 {
+		_sec = GetEpochSec()
+	}
+	_t = GETTIME(_sec)
+
+	_weekdays = ('日', '月', '火', '水', '木', '金', '土')
+	_w = '？'
+	if _t[3] >= 0 && _t[3] <= 6 {
+		_w = _weekdays[_t[3]]
+	}
+
+	IHASH('年', _t[0], '月', _t[1], '日', _t[2], '週', _w, '時', _t[4], '分', _t[5], '秒', _t[6], 'ミリ秒', 0)
+}
+
+//----------------------------------------------------------------
+// 現在の日時（akari の _gettime の代わり）
+// 返値：　GetTimeByEpochSec と同じハッシュ
+//----------------------------------------------------------------
+UGM.GetTime
+{
+	GetTimeByEpochSec(GetEpochSec())
+}
+
+//----------------------------------------------------------------
+// ゴースト名がインストール済み（＆フォルダが読み込まれている）か確認する
+// 引数：　ゴースト名の文字列（複数可）
+// 　　　　例：IsGhostNameInstalled("Ｒポストと狛犬","Emily_Phase4.5",...)
+// 返値：　認識されていたら1、そうでなければ0、の数値の配列　引数と順序は一緒
+// 失敗したら-1の数値が1つだけ入った配列
+// 1.x系はインストール済みの一覧をJSONにして文字列検索していたので、一覧の最後の
+// ゴーストや、バイト値1で区切られた一覧の中のゴーストを見つけられないことがあった。
+// ここでは一覧の名前と、TranslateSystemChar を通した名前どうしで比べる
+//----------------------------------------------------------------
+IsGhostNameInstalled
+{
+	_result = IARRAY
+
+	if ARRAYSIZE(InstalledGhostNameList) <= 0 {
+		// インストール済みのリストが未構築など
+		_result ,= -1
+		_result
+		return
+	}
+
+	_installed = IHASH()
+	foreach InstalledGhostNameList ; _name {
+		_installed[TranslateSystemChar(_name)] = 1
+	}
+
+	for _i = 0 ; _i < _argc ; _i++ {
+		if HASH_EXIST(TranslateSystemChar(_argv[_i]), _installed) {
+			_result ,= 1
+		}
+		else {
+			_result ,= 0
+		}
+	}
+	_result
+}
+
+//----------------------------------------------------------------
+// 使ってほしくない文字を半角アンダーバーへ変換する
+// 引数：　変換前の文字列
+// 返値：　変換後の文字列
+//----------------------------------------------------------------
+TranslateSystemChar
+{
+	RE_REPLACE(_argv[0], "[ !'""#$&()*+,\-/:;<=>?@\[\]`{|}~]", '_')
+}
+
+//----------------------------------------------------------------
+// 指定されたゴースト名の情報をFMOから取得する　ここには起動中のものしかいない
+// 同じゴースト名・違うパスなどの組み合わせで複数体が同時起動されていた場合、
+// 先に認識された方のみが検出される
+// 引数のゴースト名はTranslateSystemCharが適用されるが、返値には適用されない（パスがおかしくなるため）
+// 引数：　GetFmoInfo( ゴースト名, FMOのキー名の文字列1, FMOのキー名の文字列2, ... )
+// 返値：　指定されたキー名と対する値の入ったハッシュ（見つからなければ空のハッシュ）
+//----------------------------------------------------------------
+GetFmoInfo
+{
+	_result = IHASH()
+	_fullname = TranslateSystemChar(_argv[0])
+
+	// SSPのFMOは Shift_JIS
+	_fmo = READFMO('Sakura', 'Shift_JIS')
+	if _fmo == '' {
+		_result
+		return
+	}
+
+	// 行ごとに「ID.キー」と値に分ける
+	_lines = SPLIT(_fmo, CHR(13) + CHR(10))
+	_values = IHASH()
+	_unique_id = ''
+	foreach _lines ; _line {
+		_p = STRSTR(_line, CHR(1), 0)
+		if _p < 0 {
+			continue
+		}
+		_idkey = SUBSTR(_line, 0, _p)
+		_value = SUBSTR(_line, _p + 1, STRLEN(_line) - _p - 1)
+		if !HASH_EXIST(_idkey, _values) {
+			_values[_idkey] = _value
+		}
+		// 最初に見つかった、名前の一致するゴースト
+		if _unique_id == '' && RE_MATCH(_idkey, '.+\.fullname') && TranslateSystemChar(_value) == _fullname {
+			_unique_id = SUBSTR(_idkey, 0, STRLEN(_idkey) - 9)
+		}
+	}
+
+	if _unique_id == '' {
+		// 見つからなかった
+		_result
+		return
+	}
+	if STRSTR(_unique_id, 'ssp_fmo_header_dummyentry', 0) == 0 {
+		// 起動中ではなかった
+		_result
+		return
+	}
+
+	for _i = 1 ; _i < _argc ; _i++ {
+		_result[_argv[_i]] = _values[_unique_id + '.' + _argv[_i]]
+	}
+	_result
+}
+
+//----------------------------------------------------------------
+// ゴーストから画像をコピーする
+// 指定されたディレクトリが無ければ作る
+// 引数：　CopyImage( コピー元のパスの文字列※絶対パス推奨, ゴースト名の文字列 )
+// 返値：　成功時はファイル名の文字列　失敗時は空文字列
+//----------------------------------------------------------------
+CopyImage
+{
+	_original = _argv[0]
+	_sender = _argv[1]
+
+	// 画像保存用ディレクトリ　末尾の\を入れない
+	_dir = 'localweb\html\res\image'
+
+	if !UGM.Exists(_dir) {
+		// 画像保存用ディレクトリが無い
+		''
+		return
+	}
+
+	// 元ファイルのサイズを調べる
+	_fsize = FSIZE(_original)
+	if _fsize >= 5000000 {
+		// 元ファイルが適切なサイズではない
+		''
+		return
+	}
+	elseif _fsize <= 0 {
+		// 元ファイルが見つからないor虚無
+		''
+		return
+	}
+
+	// ファイル名を切り出す
+	_split = SPLIT(_original, '\')
+	_filename = _split[ARRAYSIZE(_split) - 1]
+
+	// プラグイン側の相対パスを作る
+	_copy_dir = _dir + '\' + GhostNameToFolderName(_sender)
+
+	if !UGM.Exists(_copy_dir) {
+		// コピー先ディレクトリが無いので作る
+		if MKDIR(_copy_dir) != 1 {
+			// ディレクトリを作れなかった
+			''
+			return
+		}
+	}
+
+	// コピー先の相対パス
+	_img_path = _copy_dir + '\' + _filename
+
+	if UGM.Exists(_img_path) {
+		// 既にあるので消しちゃう
+		void FDEL(_img_path)
+	}
+
+	// コピーする（FCOPY の2番目の引数はコピー先のディレクトリ）
+	if FCOPY(_original, _copy_dir) == 1 {
+		// コピー成功 ファイル名を返す
+		_filename
+	}
+	else {
+		// コピー失敗
+		''
+	}
+}
+
+//----------------------------------------------------------------
+// 配列をソートする
+// 引数：　対象の配列（1次元）
+// 返値：　重複を除いて文字列の順（大文字小文字を区別）に並べ替えた配列
+//----------------------------------------------------------------
+AsortEx
+{
+	ASORT('string,case', ARRAYDEDUP(_argv))
+}
+
+//----------------------------------------------------------------
+// 与えられたゴースト名の文字列をフォルダ名（「ゴースト名_被り除け文字列」）にして返す
+// ゴースト名は長いと省略される（半角換算40字まで/フォルダ名に使えなかったりする文字は置き換えられる）
+// 被り除け文字列はゴースト名のハッシュ値（32bitCRC、半角英数で8字）
+// 8桁なのでそれだけだと被る可能性もあるが、ゴースト名冒頭と組み合わせているのでたぶん大丈夫　だと思う
+// 1.x系で YAYA as SAORI の MakeFolderName（dict/builtins.aym）だったものをそのまま移した。
+// バイト数は Shift_JIS で数える（1.x系は文字コードID 127 で、日本語環境では Shift_JIS と同じ）
+// ※MakeShortText / TranslateSystemChar from yaya-dic
+//   ( https://github.com/YAYA-shiori/yaya-dic/blob/0153e53f13f3dcbcbd58d3a51cdc3bf72107f005/yaya_base/optional.dic )
+// 引数：　ゴースト名の文字列単体
+// 返値：　フォルダ名の文字列単体
+//----------------------------------------------------------------
+GhostNameToFolderName
+{
+	_src = _argv[0]
+	_cut = 40
+	_result = ''
+
+	_text = RE_REPLACE(_src, "[ !%(CHR(0x22))%(CHR(0x25))#$&()*+,\-/:;<=>?@\[\]`{|}~]", '_')
+
+	_num = STRLEN(_src)
+	while 1 {
+		_result = SUBSTR(_text, 0, _num)
+
+		if _cut - GETSTRBYTES(_result, 'Shift_JIS') >= 0 {
+			break
+		}
+		_num -= 1
+		if _num <= 0 {
+			break
+		}
+	}
+
+	_result + '_' + STRDIGEST(_src, 'CRC32')
+}
+
+//----------------------------------------------------------------
+// ファイル・フォルダ操作の補助
+//----------------------------------------------------------------
+// ファイルかフォルダがあれば1
+UGM.Exists
+{
+	ARRAYSIZE(FATTRIB(_argv[0])) > 1
+}
+
+// テキストファイルを行の配列で読む（無ければ空の配列）
+UGM.ReadLines
+{
+	_path = _argv[0]
+	_lines = IARRAY
+	if FOPEN(_path, 'r') != 1 {
+		_lines
+		return
+	}
+	while 1 {
+		_line = FREAD(_path)
+		if GETTYPE(_line) == 1 && _line == -1 {
+			break
+		}
+		_lines ,= _line
+	}
+	void FCLOSE(_path)
+	_lines
+}
+
+// 行の配列をテキストファイルに書く（改行はCRLF）
+// 引数：　ファイル名, 行1, 行2, ...
+UGM.WriteLines
+{
+	_path = _argv[0]
+	if FOPEN(_path, 'w') != 1 {
+		0
+		return
+	}
+	for _i = 1 ; _i < _argc ; _i++ {
+		void FWRITE(_path, _argv[_i])
+	}
+	void FCLOSE(_path)
+	1
+}
+
+//----------------------------------------------------------------
+// ハッシュからキーを除いたハッシュを返す（YAYAにはキーを消す関数が無いため）
+// 引数：　ハッシュ, 除くキー
+// 返値：　キーを除いたハッシュ
+// 例：　SaveData_Reserved = UGM.HashRemove(SaveData_Reserved, _sender)
+//----------------------------------------------------------------
+UGM.HashRemove
+{
+	_src = _argv[0]
+	_result = IHASH()
+	if GETTYPE(_src) != 5 {
+		_result
+		return
+	}
+	// キーの比べ方をハッシュと同じにする（1 と "1" は同じキー）
+	_del = IHASH(_argv[1], 1)
+	foreach _src ; _k, _v {
+		if !HASH_EXIST(_k, _del) {
+			_result[_k] = _v
+		}
+	}
+	_result
+}
+
+//----------------------------------------------------------------
+// 配列の末尾に、配列を1つの要素として足す（入れ子の配列を作る）
+// YAYAの , や ,= は右辺の配列を展開してしまうため、この関数を使う
+// 引数：　ハッシュ（'array'＝元の配列、'value'＝足す配列）
+// 返値：　足したあとの配列
+// 例：　IHASH の引数に配列を書くと展開されるので、ハッシュには代入で入れる
+//       _h = IHASH()
+//       _h['array'] = _a
+//       _h['value'] = _sub
+//       _a = UGM.PushArray(_h)
+//----------------------------------------------------------------
+UGM.PushArray
+{
+	_a = _argv[0]['array']
+	_s = _argv[0]['value']
+	_n = ARRAYSIZE(_a)
+	_m = ARRAYSIZE(_s)
+	if _m == 0 {
+		// 空の配列を要素にする
+		_a[_n][0] = ''
+		_a[_n] = IARRAY
+	}
+	else {
+		for _i = 0 ; _i < _m ; _i++ {
+			_a[_n][_i] = _s[_i]
+		}
+	}
+	_a
+}

@@ -1,0 +1,135 @@
+//================================================================
+// ウェブから来るイベント（1.x系の dict/fromweb.azr を移植）
+// ウェブの画面 → ゴースト（SSTP）→ \![notifyplugin,...] で届く
+//================================================================
+
+//----------------------------------------------------------------
+// 既読を付ける
+// Reference0＝ゴースト名 Reference1＝送信者識別子
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_MarkAsRead
+{
+	// 引数を整理
+	_r0 = TOSTR(_argv[0]['Reference0'])
+	_r1 = TOSTR(_argv[0]['Reference1'])
+	_epoch_sec = GetEpochSec()
+
+	// 発生済みに既読が無ければ付ける
+	if GETTYPE(SaveData_Received[_r0][_r1]['msgs']) == 5 {
+		foreach HASH_KEYS(SaveData_Received[_r0][_r1]['msgs']) ; _read_id {
+			_n = ARRAYSIZE(SaveData_Received[_r0][_r1]['msgs'][_read_id])
+			for _i1 = 0 ; _i1 < _n ; _i1++ {
+				if !HASH_EXIST('read_time', SaveData_Received[_r0][_r1]['msgs'][_read_id][_i1]) {
+					SaveData_Received[_r0][_r1]['msgs'][_read_id][_i1]['read_time'] = _epoch_sec
+				}
+			}
+		}
+	}
+
+	// メッセージ達成を確認
+	// ※条件 Message_Read の行（ゴースト名/送信者識別子/メッセージ識別子）が既読にした
+	//   相手と一致したとき、予約した側の受信記録から、行のメッセージ識別子の最後の記録を
+	//   見ている（1.x系と同じ）
+	_result = IARRAY
+	foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
+		if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
+			continue
+		}
+		foreach HASH_KEYS(SaveData_Reserved[_ghost]) ; _chara {
+			if GETTYPE(SaveData_Reserved[_ghost][_chara]) != 5 {
+				continue
+			}
+			foreach HASH_KEYS(SaveData_Reserved[_ghost][_chara]) ; _msg_id {
+				_conds = SaveData_Reserved[_ghost][_chara][_msg_id]['Condition']['Message_Read']
+				foreach _conds ; _row {
+					_time_count = 0
+					_read_time = 0
+					if _row[0] == _r0 && _row[1] == _r1 {
+						_ar = SaveData_Received[_ghost][_chara]['msgs'][_row[2]]
+						_last = _ar[ARRAYSIZE(_ar) - 1]
+						_time_count = TOINT(_last['time_count'])
+						_read_time = TOINT(_last['read_time'])
+					}
+					if _read_time != 0 && _read_time >= _time_count {
+						_result ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg_id)
+					}
+				}
+			}
+		}
+	}
+	// Message_Read以外の条件を満たしているか調べる
+	if ARRAYSIZE(_result) > 0 {
+		_result = CheckMessageCondition('Message_Read', _result)
+	}
+	// 条件を満たしたメッセージがあるなら待機列に追加
+	if ARRAYSIZE(_result) > 0 {
+		AddMessageWaitingList(_result)
+	}
+	// web用の情報を更新
+	UpdateWebJson
+	SaveVar
+}
+
+//----------------------------------------------------------------
+// web頁から色々する
+// Reference0＝操作の名前 Reference1＝ゴースト名 Reference2＝送信者識別子
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_SettingsFromWeb
+{
+	_key = TOSTR(_argv[0]['Reference0'])
+	_ghost = TOSTR(_argv[0]['Reference1'])
+	_chara = TOSTR(_argv[0]['Reference2'])
+
+	if _key == 'oyasumi_toggle' {
+		if oyasumi_flag == 0 {
+			oyasumi_flag = 1
+		}
+		elseif oyasumi_flag == 1 {
+			oyasumi_flag = 2
+		}
+		else {
+			oyasumi_flag = 0
+		}
+	}
+	elseif GETTYPE(SaveData_Received[_ghost][_chara]) != 5 {
+		// 指定された組み合わせがセーブデータにない
+		return
+	}
+	elseif _key == 'setting_block' {
+		if HASH_EXIST('block_flag', SaveData_Received[_ghost][_chara]) && TOINT(SaveData_Received[_ghost][_chara]['block_flag']) == 0 {
+			SaveData_Received[_ghost][_chara]['block_flag'] = 1
+		}
+		elseif HASH_EXIST('block_flag', SaveData_Received[_ghost][_chara]) {
+			SaveData_Received[_ghost][_chara]['block_flag'] = 0
+		}
+		else {
+			SaveData_Received[_ghost][_chara]['block_flag'] = 1
+		}
+	}
+	elseif _key == 'setting_mute' {
+		if HASH_EXIST('mute_flag', SaveData_Received[_ghost][_chara]) && TOINT(SaveData_Received[_ghost][_chara]['mute_flag']) == 0 {
+			SaveData_Received[_ghost][_chara]['mute_flag'] = 1
+		}
+		elseif HASH_EXIST('mute_flag', SaveData_Received[_ghost][_chara]) {
+			SaveData_Received[_ghost][_chara]['mute_flag'] = 0
+		}
+		else {
+			SaveData_Received[_ghost][_chara]['mute_flag'] = 1
+		}
+	}
+	elseif _key == 'setting_log_delete' {
+		// 画像は消していない
+		SaveData_Received[_ghost][_chara] = UGM.HashRemove(SaveData_Received[_ghost][_chara], 'msgs')
+	}
+	elseif _key == 'setting_address_delete' {
+		// 画像は消していない
+		SaveData_Received[_ghost] = UGM.HashRemove(SaveData_Received[_ghost], _chara)
+	}
+	else {
+		// 指示がおかしかったかもしれない
+		return
+	}
+	// web用の情報を更新
+	UpdateWebJson
+	SaveVar
+}

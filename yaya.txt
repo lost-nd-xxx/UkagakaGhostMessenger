@@ -23,6 +23,14 @@ dicif, dict/system/yaya_base/lint.dic
 // 本体
 dic, dict/main.dic
 dic, dict/functions.dic
+dic, dict/textexpand.dic
+dic, dict/send.dic
+dic, dict/check.dic
+dic, dict/event.dic
+dic, dict/reqnres.dic
+dic, dict/trigger.dic
+dic, dict/fromweb.dic
+dic, dict/bugfix.dic
 
 //---- 実行ログ -------------------------------------------------------------------------
 // log, yaya.log

@@ -1,0 +1,178 @@
+//================================================================
+// SSPなどから来るイベント（1.x系の dict/event.azr を移植）
+// 関数の引数はリクエストのハッシュ（dict/system/yaya_plugin2.dic を参照）
+//================================================================
+
+//----------------------------------------------------------------
+// OnSecondChange
+//----------------------------------------------------------------
+OnSecondChange
+{
+	_now = GetEpochSec()
+	if _now > (Fake_DataLimit_LastTime + 60) {
+		// Fake_DataLimit_Countのカウントをゼロに戻す
+		Fake_DataLimit_Count = 0
+		Fake_DataLimit_LastTime = GetEpochSec()
+	}
+
+	_script = ''
+	// 表示待ちを処理（毎秒実行）
+	if notify_enable == 1 {
+		_script += CheckWaitingList
+	}
+
+	// 条件照合はcheck_intervalごとに実行
+	check_interval_count++
+	if check_interval_count >= check_interval {
+		check_interval_count = 0
+
+		// 全てのメッセージ
+		_msg = ListUpAllMessageArray
+
+		if ARRAYSIZE(_msg) > 0 {
+			// 条件達成か確認
+			_msg = CheckMessageCondition('', _msg)
+		}
+
+		if ARRAYSIZE(_msg) > 0 {
+			// 条件を満たしたメッセージがある
+			AddMessageWaitingList(_msg)
+		}
+	}
+
+	if _script != '' && notify_enable == 1 {
+		// 喋るべきスクリプトがある
+		SaveVar
+		dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_RaiseNotification'
+		dictOptionalHeader['marker'] = version()
+		dictOptionalHeader['script_option'] = 'nobreak'
+		_script
+		return
+	}
+
+	''
+}
+
+//----------------------------------------------------------------
+// OnTrayBalloonClick
+// 通知の履歴から、クリックされたバルーンのタイトルと同じものを新しい方から探し、
+// 見つかればその送信者のページを、無ければ一覧を開く
+// ※1.x系は本文も比べるつもりだったが、本文の取り出しが常に空になっていたため、
+//   実際にはタイトルだけで照合していた。移植でも同じにしている
+//----------------------------------------------------------------
+OnTrayBalloonClick
+{
+	_r0 = TOSTR(_argv[0]['Reference0'])
+
+	// ログの新しい方から探す
+	_result = -1
+	for _cnt = ARRAYSIZE(notify_log) - 1 ; _cnt >= 0 ; _cnt-- {
+		_title = ''
+		if RE_SEARCH(notify_log[_cnt]['script'], 'title=([^,\]]*)') {
+			_title = RE_GETSTR()[1]
+		}
+		if _r0 == _title {
+			_result = _cnt
+			break
+		}
+	}
+
+	// スクリプトを作る（ブラウザを開く）
+	_output = '\C\![open,browser,http://localhost:' + localhost_number
+	if _result == -1 {
+		_output += '/]'
+	}
+	else {
+		_output += '/person.html?sender='
+		_output += STRENCODE(notify_log[_result]['sender'], 'UTF-8', 'url')
+		_output += '&sender_id='
+		_output += STRENCODE(notify_log[_result]['SenderId'], 'UTF-8', 'url')
+		_output += ']'
+	}
+	// 結果を送信
+	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_TrayBalloonClick'
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+	_output
+}
+
+//----------------------------------------------------------------
+// OnMenuExec
+// 一覧を開く
+//----------------------------------------------------------------
+OnMenuExec
+{
+	// 結果を送信
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+	'\C\![open,browser,http://localhost:' + localhost_number + '/]'
+}
+
+//----------------------------------------------------------------
+// ゴーストが起動した
+// ※起動したゴースト名には TranslateSystemChar を通しているが、条件の値には
+//   通していないので、記号を含む名前は一致しない（1.x系と同じ）。修正は移植の後で行う
+//----------------------------------------------------------------
+OnGhostBoot
+{
+	// 起動したゴースト名
+	_ghostname = TranslateSystemChar(_argv[0]['Reference1'])
+
+	// Ghost_Bootedを満たしたメッセージ
+	_msg = PickUpMessageByCondition('Ghost_Booted', UGM.Rows(_ghostname))
+
+	if ARRAYSIZE(_msg) > 0 {
+		// Ghost_Booted以外の条件を満たしているか調べる
+		_msg = CheckMessageCondition('Ghost_Booted', _msg)
+	}
+
+	if ARRAYSIZE(_msg) > 0 {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(_msg)
+	}
+}
+
+//----------------------------------------------------------------
+// ゴーストが終了した
+// ※名前の扱いは OnGhostBoot と同じ
+//----------------------------------------------------------------
+OnGhostExit
+{
+	// 終了したゴースト名
+	_ghostname = TranslateSystemChar(_argv[0]['Reference1'])
+
+	// Ghost_Closedを満たしたメッセージ
+	_msg = PickUpMessageByCondition('Ghost_Closed', UGM.Rows(_ghostname))
+
+	if ARRAYSIZE(_msg) > 0 {
+		// Ghost_Closed以外の条件を満たしているか調べる
+		_msg = CheckMessageCondition('Ghost_Closed', _msg)
+	}
+
+	if ARRAYSIZE(_msg) > 0 {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(_msg)
+	}
+}
+
+//----------------------------------------------------------------
+// インストール済みゴースト名のリストを保存する
+// Charset、ID、Language、開始行（head）以外のヘッダの値を、バイト値1で区切って並べる
+// ※1.x系はヘッダの値をそのまま（バイト値1で区切らずに）持っていたので、
+//   一覧の中のゴースト名を見つけられなかった。移植では名前ごとに分けて持つ
+//----------------------------------------------------------------
+installedghostname
+{
+	_list = IARRAY
+	foreach _argv[0] ; _key, _value {
+		if ASEARCH(_key, ('Charset', 'ID', 'Language', 'head')) >= 0 {
+			continue
+		}
+		foreach SPLIT(TOSTR(_value), CHR(1)) ; _name {
+			if _name != '' {
+				_list ,= _name
+			}
+		}
+	}
+	InstalledGhostNameList = _list
+}

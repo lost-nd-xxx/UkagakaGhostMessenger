@@ -1,0 +1,87 @@
+//================================================================
+// トリガー（1.x系の dict/trigger.azr を移植）
+//================================================================
+
+//----------------------------------------------------------------
+// ゴーストからトリガーを受け取った
+// Reference0＝イベント識別子
+// Reference1＝対象のゴースト名（: 区切りで複数。省略可）
+// Reference2＝対象の送信者識別子（: 区切りで複数。省略可）
+//
+// 条件 Ghost_Triggered の値は「イベント識別子/トリガーを立ててきたゴースト名」
+// （ゴースト名は省略可）。1.x系は条件の値（入れ子の配列）を文字列として
+// : で分けていたが、ここでは先頭の行を仕様どおりに読む。
+// ※次の点は1.x系と同じにしている。修正は移植の後で行う
+//   - 送ってきたゴースト名を小文字の sender ヘッダから取っているので、常に空になる
+//     （ゴースト名を指定した Ghost_Triggered は一致しない）
+//   - 対象のゴースト名に TranslateSystemChar を通してから予約を引いている
+//   - 対象のゴースト名を省略すると、Ghost_Triggered を持たない予約も照合に回す
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_Trigger
+{
+	_res = _argv[0]
+	// イベント識別子
+	_EventId = TOSTR(_res['Reference0'])
+
+	// 対象のゴースト名
+	_ghosts = IARRAY
+	if TOSTR(_res['Reference1']) != '' {
+		_ghosts = SPLIT(TOSTR(_res['Reference1']), ':')
+	}
+
+	// 対象の送信者識別子
+	_charas = IARRAY
+	if TOSTR(_res['Reference2']) != '' {
+		_charas = SPLIT(TOSTR(_res['Reference2']), ':')
+	}
+
+	// イベントを送ってきたゴースト名
+	_sender = TranslateSystemChar(TOSTR(_res['sender']))
+
+	// 該当するメッセージを抜き出す
+	_msg = IARRAY
+	if ARRAYSIZE(_ghosts) == 0 {
+		_msg = ListUpAllMessageArray
+	}
+	else {
+		foreach _ghosts ; _g {
+			_ghost = TranslateSystemChar(_g)
+			if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
+				continue
+			}
+			_target_charas = _charas
+			if ARRAYSIZE(_charas) == 0 {
+				_target_charas = HASH_KEYS(SaveData_Reserved[_ghost])
+			}
+			foreach _target_charas ; _chara {
+				if GETTYPE(SaveData_Reserved[_ghost][_chara]) != 5 {
+					continue
+				}
+				foreach HASH_KEYS(SaveData_Reserved[_ghost][_chara]) ; _msg_id {
+					_row = SaveData_Reserved[_ghost][_chara][_msg_id]['Condition']['Ghost_Triggered'][0]
+					if GETTYPE(_row) == 0 {
+						continue
+					}
+					if ARRAYSIZE(_row) >= 2 {
+						if _row[0] == _EventId && _row[1] == _sender {
+							_msg ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg_id)
+						}
+					}
+					else {
+						if _row[0] == _EventId {
+							_msg ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg_id)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 他の条件も達成しているか確認
+	_msg = CheckMessageCondition('Ghost_Triggered', _msg)
+
+	if ARRAYSIZE(_msg) > 0 {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(_msg)
+	}
+}

@@ -1,0 +1,77 @@
+//================================================================
+// 問い合わせと返却（1.x系の dict/reqnres.azr を移植）
+//================================================================
+
+//----------------------------------------------------------------
+// 受信状況の問い合わせ
+// Reference0＝ゴースト名（省略時は問い合わせてきたゴースト名に TranslateSystemChar を通したもの）
+// Reference1＝送信者識別子（省略時はゴースト名） Reference2＝メッセージ識別子
+// 返す Reference：ゴースト名, 送信者識別子, メッセージ識別子, 実行回数, 受信日時, 既読日時, ランダム選択の結果...
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_Request
+{
+	_res = _argv[0]
+	_MessageId = TOSTR(_res['Reference2'])
+
+	// YAYAのローカル変数はブロックの中だけで有効なので、先に作っておく
+	_sender = TOSTR(_res['Reference0'])
+	if _sender == '' {
+		_sender = TranslateSystemChar(TOSTR(_res['Sender']))
+	}
+
+	_SenderId = TOSTR(_res['Reference1'])
+	if _SenderId == '' {
+		_SenderId = _sender
+	}
+
+	_result = IARRAY
+	_result ,= _sender
+	_result ,= _SenderId
+	_result ,= _MessageId
+
+	_msgs = SaveData_Received[_sender][_SenderId]['msgs'][_MessageId]
+	_cnt = ARRAYSIZE(_msgs)
+	if GETTYPE(_msgs) == 0 || _cnt == 0 {
+		// 無かった
+		_result ,= '0'
+		_result ,= '0'
+		_result ,= '0'
+	}
+	else {
+		// あったので末尾（最新）の情報を返す
+		_last = _msgs[_cnt - 1]
+		_result ,= TOSTR(TOINT(_last['ExecutedCount']))
+
+		_time_count = TOINT(_last['time_count'])
+		_time_str = '0'
+		if _time_count > 0 {
+			_time_str = UGM.FormatDateTime(_time_count)
+		}
+		_result ,= _time_str
+
+		_read_time = TOINT(_last['read_time'])
+		_time_str = '0'
+		if _read_time > _time_count {
+			_time_str = UGM.FormatDateTime(_read_time)
+		}
+		_result ,= _time_str
+
+		foreach _last['RandomResult'] ; _r {
+			_result ,= _r
+		}
+	}
+	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_Response'
+	dictOptionalHeader['reference'] = _result
+	dictOptionalHeader['target'] = _res['Sender']
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+}
+
+//----------------------------------------------------------------
+// EPOCH秒を「yyyy/mm/dd hh:mm:ss」の文字列にする
+//----------------------------------------------------------------
+UGM.FormatDateTime
+{
+	_t = GetTimeByEpochSec(_argv[0])
+	STRFORM('$04d/$02d/$02d $02d:$02d:$02d', _t['年'], _t['月'], _t['日'], _t['時'], _t['分'], _t['秒'])
+}

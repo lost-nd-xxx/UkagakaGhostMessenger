@@ -1,0 +1,841 @@
+//================================================================
+// 条件を照合して表示（1.x系の dict/check.azr を移植）
+//
+// メッセージ単体の情報は、次のハッシュで受け渡す
+// IHASH( 'sender', ゴースト名, 'SenderId', 送信者識別子, 'MessageId', メッセージ識別子 )
+// （待機中のものには 'epoch_sec' も付く）
+//
+// ※YAYAでは、ハッシュや配列を要素に持つ配列の要素を _a[i] = IARRAY では消せない
+//   （空の配列に置き換わる）。要素を消すときは範囲指定で _a[i, i] = IARRAY と書く
+//================================================================
+
+//----------------------------------------------------------------
+// 表示用の情報を返しつつ、受信枠の情報を更新する
+// 引数：　メッセージ単体のハッシュ, まとめ通知時に通知スクリプト生成をスキップするフラグ（省略時0）
+// 返値：　通知用スクリプト（skip_notify=1のときは空文字列）
+//----------------------------------------------------------------
+ShowMessage
+{
+	_ref = _argv[0]
+	_skip_notify = TOINT(_argv[1])
+	_sender = _ref['sender']
+	_SenderId = _ref['SenderId']
+	_MessageId = _ref['MessageId']
+	_reserved = SaveData_Reserved[_sender][_SenderId][_MessageId]
+	_received_msg = IHASH()
+
+	// 受信済みセーブデータの欄が無だったら空や初期値を入れておく
+	if GETTYPE(SaveData_Received[_sender]) != 5 {
+		SaveData_Received[_sender] = IHASH()
+	}
+	if GETTYPE(SaveData_Received[_sender][_SenderId]) != 5 {
+		SaveData_Received[_sender][_SenderId] = IHASH()
+	}
+	if GETTYPE(SaveData_Received[_sender][_SenderId]['msgs']) != 5 {
+		SaveData_Received[_sender][_SenderId]['msgs'] = IHASH()
+	}
+	if !HASH_EXIST(_MessageId, SaveData_Received[_sender][_SenderId]['msgs']) {
+		SaveData_Received[_sender][_SenderId]['msgs'][_MessageId] = IARRAY
+	}
+	if !HASH_EXIST('block_flag', SaveData_Received[_sender][_SenderId]) {
+		SaveData_Received[_sender][_SenderId]['block_flag'] = 0
+	}
+	if !HASH_EXIST('mute_flag', SaveData_Received[_sender][_SenderId]) {
+		SaveData_Received[_sender][_SenderId]['mute_flag'] = 0
+	}
+
+	_block_flag = TOINT(SaveData_Received[_sender][_SenderId]['block_flag'])
+	if _block_flag == 1 {
+		// ブロックされている
+		// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
+		UGM.CountUpExecuted(_sender, _SenderId, _MessageId)
+		''
+		return
+	}
+
+	// アイコン
+	if TOSTR(_reserved['SenderIcon']) != '' {
+		SaveData_Received[_sender][_SenderId]['SenderIcon'] = _reserved['SenderIcon']
+	}
+	elseif !HASH_EXIST('SenderIcon', SaveData_Received[_sender][_SenderId]) {
+		SaveData_Received[_sender][_SenderId]['SenderIcon'] = 'default'
+	}
+
+	// 表示名
+	if TOSTR(_reserved['SenderName']) != '' {
+		SaveData_Received[_sender][_SenderId]['SenderName'] = _reserved['SenderName']
+	}
+	elseif !HASH_EXIST('SenderName', SaveData_Received[_sender][_SenderId]) {
+		SaveData_Received[_sender][_SenderId]['SenderName'] = _sender
+	}
+
+	// プロフ文
+	if TOSTR(_reserved['SenderProfile']) != '' {
+		SaveData_Received[_sender][_SenderId]['SenderProfile'] = _reserved['SenderProfile']
+	}
+	elseif !HASH_EXIST('SenderProfile', SaveData_Received[_sender][_SenderId]) {
+		SaveData_Received[_sender][_SenderId]['SenderProfile'] = ''
+	}
+
+	// 受信時刻
+	_time_count = GetEpochSec()
+	_received_msg['time_count'] = _time_count
+	SaveData_Received[_sender][_SenderId]['time_count'] = _time_count
+	// 実行速度のため、時間の文字列もここで作っておく
+	// セーブデータ容量は増えるが、メッセージごとに数文字なのでたぶん大丈夫
+	_t = UGM.GetTime
+	_time_text = IARRAY
+	_time_text ,= STRFORM('$04d/$02d/$02d', _t['年'], _t['月'], _t['日'])
+	_time_text ,= STRFORM('$02d:$02d', _t['時'], _t['分'])
+	_received_msg['time_text'] = _time_text
+	// 実行回数
+	_ExecutedCount = TOINT(_reserved['ExecutedCount']) + 1
+	_received_msg['ExecutedCount'] = _ExecutedCount
+
+	// 予約が残っていれば（待機中に取り消されていなければ）予約情報を更新する
+	// 無い予約に多次元代入すると、途中の段がハッシュではなく配列として作られてしまうため
+	if GETTYPE(_reserved) == 5 {
+		// 送信時刻（次回発動の基準時間）残り回数が尽きた場合の処理はもう少し下にある
+		SaveData_Reserved[_sender][_SenderId][_MessageId]['SentTime'] = _time_count
+		// 実行済み回数
+		SaveData_Reserved[_sender][_SenderId][_MessageId]['ExecutedCount'] = _ExecutedCount
+	}
+
+	// 本文
+	_Text = TOSTR(_reserved['Text'])
+	_script = ''
+	// テキスト加工とランダム選択の結果を入れる
+	if _Text != '' {
+		_a = TransformTextExpand(_Text)
+		_Text = _a['text']
+
+		if ARRAYSIZE(_a['choice']) > 0 {
+			_received_msg['RandomResult'] = _a['choice']
+		}
+
+		// 通知用スクリプトと通知ログを作る（まとめ通知時はスキップ）
+		if _skip_notify != 1 {
+			_script += '\C\![set,trayballoon,--icon=none,--title='
+			_script += SaveData_Received[_sender][_SenderId]['SenderName']
+			_script += GenerateTrayBalloonScript(_Text)
+			_script += ']\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]'
+		}
+
+		_received_msg['Text'] = GenerateReceivedLogText(_Text, _sender)
+
+		SaveData_Received[_sender][_SenderId]['msgs'][_MessageId] ,= _received_msg
+
+		// OnUkagakaGhostMessenger_Ringing の Reference（バイト値1区切り）
+		_ringing = _sender + CHR(1) + _SenderId + CHR(1) + _MessageId
+		foreach _reserved['EventReference'] ; _er {
+			_ringing += CHR(1) + _er
+		}
+		Waiting_Ringing ,= _ringing
+	}
+	else {
+		// テキストが無い場合、通知も鳴らないのでRingingしない
+		if _skip_notify != 1 {
+			Waiting_Ringing = IARRAY
+		}
+	}
+
+	// 残り回数がないなら予約を消す
+	// SaveData_Waitingの該当箇所の削除はCheckWaitingListで行う
+	_RunCount = TOINT(_reserved['RunCount'])
+	if _RunCount <= _ExecutedCount && _RunCount > 0 {
+		UGM.RemoveReserved(_sender, _SenderId, _MessageId)
+	}
+
+	// Message_Runを満たしたメッセージ
+	_row = IARRAY
+	_row ,= _sender
+	_row ,= _SenderId
+	_row ,= _MessageId
+	_msg = PickUpMessageByCondition('Message_Run', UGM.Rows(_row))
+	// Message_Run以外の条件を満たしているか調べる
+	_msg = CheckMessageCondition('Message_Run', _msg)
+	if ARRAYSIZE(_msg) > 0 {
+		// 条件を満たしたメッセージがある
+		AddMessageWaitingList(_msg)
+	}
+
+	// web用jsonを出力する
+	UpdateWebJson
+
+	// skip_notify=1のときは通知を出さず終了
+	if _skip_notify == 1 {
+		''
+		return
+	}
+
+	_mute_flag = TOINT(SaveData_Received[_sender][_SenderId]['mute_flag'])
+	if _mute_flag != 1 && oyasumi_flag == 0 {
+		if _script != '' {
+			// 通知を出すならFake_DataLimitのカウントを進める
+			Fake_DataLimit_Count++
+			Fake_DataLimit_LastTime = GetEpochSec()
+		}
+		// ミュートされていない ＆ おやすみモードでなければ通知を出す
+		notify_log ,= IHASH('script', _script, 'sender', _sender, 'SenderId', _SenderId)
+		_script
+	}
+	else {
+		''
+	}
+}
+
+//----------------------------------------------------------------
+// 予約の実行済み回数を1つ進め、残り回数がなければ予約を消す
+// 引数：　ゴースト名, 送信者識別子, メッセージ識別子
+//----------------------------------------------------------------
+UGM.CountUpExecuted
+{
+	_sender = _argv[0]
+	_SenderId = _argv[1]
+	_MessageId = _argv[2]
+	if GETTYPE(SaveData_Reserved[_sender][_SenderId][_MessageId]) != 5 {
+		// 予約が無い（多次元代入で配列が作られないようにする）
+		return
+	}
+	_RunCount = TOINT(SaveData_Reserved[_sender][_SenderId][_MessageId]['RunCount'])
+	_ExecutedCount = TOINT(SaveData_Reserved[_sender][_SenderId][_MessageId]['ExecutedCount']) + 1
+	// 予約情報の実行済み回数を更新する
+	SaveData_Reserved[_sender][_SenderId][_MessageId]['ExecutedCount'] = _ExecutedCount
+	// 残り回数がないなら予約を消す
+	if _RunCount <= _ExecutedCount && _RunCount > 0 {
+		SaveData_Reserved[_sender][_SenderId] = UGM.HashRemove(SaveData_Reserved[_sender][_SenderId], _MessageId)
+	}
+}
+
+//----------------------------------------------------------------
+// 予約を消す。送信者識別子の予約が無くなったら、その欄も消す
+// 引数：　ゴースト名, 送信者識別子, メッセージ識別子
+//----------------------------------------------------------------
+UGM.RemoveReserved
+{
+	_sender = _argv[0]
+	_SenderId = _argv[1]
+	if GETTYPE(SaveData_Reserved[_sender][_SenderId]) != 5 {
+		return
+	}
+	SaveData_Reserved[_sender][_SenderId] = UGM.HashRemove(SaveData_Reserved[_sender][_SenderId], _argv[2])
+	if HASH_SIZE(SaveData_Reserved[_sender][_SenderId]) <= 0 {
+		SaveData_Reserved[_sender] = UGM.HashRemove(SaveData_Reserved[_sender], _SenderId)
+	}
+}
+
+//----------------------------------------------------------------
+// 配列を1行とした、行の配列（入れ子の配列）を作る
+// 引数：　1行目の配列の要素
+// 返値：　要素が1つ（その行）の入れ子の配列
+// PickUpMessageByCondition に渡す値を作るのに使う
+//----------------------------------------------------------------
+UGM.Rows
+{
+	_push = IHASH()
+	_push['array'] = IARRAY
+	_push['value'] = _argv
+	UGM.PushArray(_push)
+}
+
+//----------------------------------------------------------------
+// OnUkagakaGhostMessenger_Ringingを起こす
+// 引数・返値：　なし
+// Waiting_Ringing はバイト値1区切りの文字列の配列（プラグイン読み込み前の情報を持ち越さない）
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_ExecRinging
+{
+	// イベントを起こす
+	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_Ringing'
+	dictOptionalHeader['reference'] = Waiting_Ringing
+	dictOptionalHeader['target'] = '__SYSTEM_ALL_GHOST__'
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+
+	// 変数を初期化
+	Waiting_Ringing = IARRAY
+}
+
+//----------------------------------------------------------------
+// 待機枠がLate加味の時刻を達成しているか確認　あったら表示につなげる
+// 引数：　なし
+// 返値：　スクリプトの文字列（あれば）
+//----------------------------------------------------------------
+CheckWaitingList
+{
+	if Fake_DataLimit_Count >= 20 {
+		// Fake_DataLimit_Countの上限に達していた
+		'\C\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text=メッセージの連続表示上限に達しました。1分間、受信が一時停止されます]'
+		return
+	}
+
+	if ARRAYSIZE(SaveData_Waiting) <= 0 {
+		// 待ちが無い
+		batch_start_time = 0
+		''
+		return
+	}
+
+	// 達成済みの件数と対象インデックスを先に調べる
+	_now = GetEpochSec()
+	_hit_indexes = IARRAY
+	_n = ARRAYSIZE(SaveData_Waiting)
+	for _i = 0 ; _i < _n ; _i++ {
+		if TOINT(SaveData_Waiting[_i]['epoch_sec']) <= _now {
+			_hit_indexes ,= _i
+		}
+	}
+
+	if ARRAYSIZE(_hit_indexes) <= 0 {
+		// 達成済みが無い
+		batch_start_time = 0
+		''
+		return
+	}
+
+	// 達成済みが1件以上ある
+	// バッチ待機中でなければここで開始時刻を記録して今回は処理しない
+	if batch_start_time == 0 {
+		batch_start_time = _now
+		''
+		return
+	}
+
+	// バッチ待機中だが5秒経っていなければ今回は処理しない
+	if _now < batch_start_time + 4 {
+		''
+		return
+	}
+
+	// 5秒経過したので処理する
+	batch_start_time = 0
+
+	_script = ''
+
+	if ARRAYSIZE(_hit_indexes) == 1 {
+		// 1件：通常処理
+		_idx = _hit_indexes[0]
+		_script = ShowMessage(SaveData_Waiting[_idx], 0)
+		SaveData_Waiting[_idx, _idx] = IARRAY
+	}
+	else {
+		// 2件以上：まとめ通知
+		// 前回の残りが残っていないようにリセット
+		Waiting_Ringing = IARRAY
+		// ミュートチェックと受信処理の両方に使うため、先に送信者情報を取得しておく
+		_hit_ghosts = IARRAY
+		_hit_charas = IARRAY
+		foreach _hit_indexes ; _idx {
+			_hit_ghosts ,= SaveData_Waiting[_idx]['sender']
+			_hit_charas ,= SaveData_Waiting[_idx]['SenderId']
+		}
+
+		// 全件を受信処理のみ（通知スクリプト生成スキップ）で処理し、Waiting_Ringingを積む
+		// 末尾から削除して配列ずれを防ぐ
+		for _i = ARRAYSIZE(_hit_indexes) - 1 ; _i >= 0 ; _i-- {
+			_idx = _hit_indexes[_i]
+			void ShowMessage(SaveData_Waiting[_idx], 1)
+			SaveData_Waiting[_idx, _idx] = IARRAY
+		}
+
+		// まとめ通知スクリプトを生成
+		_mute_all = 1
+		_n = ARRAYSIZE(_hit_ghosts)
+		for _i = 0 ; _i < _n ; _i++ {
+			// 1件でもミュートなしがあれば通知を出す
+			if TOINT(SaveData_Received[_hit_ghosts[_i]][_hit_charas[_i]]['mute_flag']) != 1 {
+				_mute_all = 0
+				break
+			}
+		}
+
+		if _mute_all != 1 && oyasumi_flag == 0 {
+			_script += '\C\![set,trayballoon,--icon=none,--title=UkagakaGhostMessenger,--text='
+			_script += ARRAYSIZE(_hit_indexes)
+			_script += '件の通知があります]'
+			// Fake_DataLimitのカウントをまとめて1つ進める
+			Fake_DataLimit_Count++
+			Fake_DataLimit_LastTime = GetEpochSec()
+			// Ringingを発火させる
+			_script += '\![timerraiseplugin,1,1,6f0415e0-3c00-11ef-9a9c-0800200c9a66,OnUkagakaGhostMessenger_ExecRinging]'
+		}
+	}
+
+	SaveVar
+	_script
+}
+
+//----------------------------------------------------------------
+// 条件達成したメッセージにLateを加味したEpochを追加して待機枠へ保存
+// 引数：　メッセージ単体のハッシュ（複数可）
+// 返値：　なし
+//----------------------------------------------------------------
+AddMessageWaitingList
+{
+	for _i = 0 ; _i < _argc ; _i++ {
+		_curt = _argv[_i]
+		_ghost = _curt['sender']
+		_chara = _curt['SenderId']
+		_msg_id = _curt['MessageId']
+
+		if TOINT(SaveData_Received[_ghost][_chara]['block_flag']) == 1 {
+			// ブロックされている
+			UGM.CountUpExecuted(_ghost, _chara, _msg_id)
+			continue
+		}
+
+		_reserved = SaveData_Reserved[_ghost][_chara][_msg_id]
+		if GETTYPE(_reserved) != 5 {
+			// メッセージが予約に見つからなかったので飛ばす
+			continue
+		}
+		if HASH_SIZE(_reserved) <= 0 {
+			continue
+		}
+
+		// Lateを計算
+		_Late = 0
+		_late_arr = _reserved['Late']
+		if ARRAYSIZE(_late_arr) == 1 {
+			// 値が1つなのでそのまま代入
+			_Late = TOINT(_late_arr[0])
+		}
+		elseif ARRAYSIZE(_late_arr) == 2 {
+			// 値が2つなのでその間のランダム値
+			_late0 = TOINT(_late_arr[0])
+			_late1 = TOINT(_late_arr[1])
+			// ここに来た時点で小→大と並べ替えられている
+			// 1.x系は 0〜9999 の乱数の余りを使っていたので、幅が1万秒を超えても頭打ちになる（同じにしている）
+			_Late = RAND(10000) % (_late1 - _late0)
+			_Late += _late0
+			// 手違いがあったらとりあえず0を入れる
+			if !(_Late >= 0) {
+				_Late = 0
+			}
+		}
+		_curt['epoch_sec'] = GetEpochSec() + _Late
+
+		// 待機配列に追加
+		SaveData_Waiting ,= _curt
+	}
+	SaveVar
+}
+
+//----------------------------------------------------------------
+// 全てのメッセージを配列で返す
+// 引数：　なし
+// 返値：　メッセージ単体のハッシュの配列
+//----------------------------------------------------------------
+ListUpAllMessageArray
+{
+	_result = IARRAY
+	foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
+		if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
+			continue
+		}
+		foreach HASH_KEYS(SaveData_Reserved[_ghost]) ; _chara {
+			if GETTYPE(SaveData_Reserved[_ghost][_chara]) != 5 {
+				continue
+			}
+			foreach HASH_KEYS(SaveData_Reserved[_ghost][_chara]) ; _msg {
+				_result ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg)
+			}
+		}
+	}
+	_result
+}
+
+//----------------------------------------------------------------
+// 能動条件名のリスト
+// 引数：　なし
+// 返値：　カンマ区切りの文字列
+//----------------------------------------------------------------
+ActiveConditionKeyList
+{
+	'Ghost_Booted,Ghost_Closed,Ghost_Triggered,Message_Run,Message_Read,'
+}
+
+//----------------------------------------------------------------
+// 指定されたメッセージ（複数可）で条件照合を行う
+// 引数：　除外する条件名の文字列, メッセージ単体のハッシュ, ...
+// 除外は能動条件を想定しているので単体のみ
+// 返値：　引数から条件達成していない組を排除した配列
+// ※除外する条件以外の能動条件を持つメッセージは排除される。能動条件を2つ以上
+//   持つメッセージは常に排除される（1.x系と同じ）
+//----------------------------------------------------------------
+CheckMessageCondition
+{
+	_exclude = _argv[0]
+	_ref = IARRAY
+	for _i = 1 ; _i < _argc ; _i++ {
+		_ref ,= _argv[_i]
+	}
+
+	// 受動条件の確認
+	_result = CheckMessagePassiveCondition(_ref)
+
+	// 末尾から処理しないと、配列の番号が消したぶんだけずれる
+	for _i0 = ARRAYSIZE(_result) - 1 ; _i0 >= 0 ; _i0-- {
+		_m = _result[_i0]
+		_conds = SaveData_Reserved[_m['sender']][_m['SenderId']][_m['MessageId']]['Condition']
+		if GETTYPE(_conds) != 5 {
+			continue
+		}
+		foreach HASH_KEYS(_conds) ; _key {
+			if _key == _exclude && _exclude != '' {
+				// 除外指定と一致するならスルー
+				continue
+			}
+			if STRSTR(ActiveConditionKeyList(), _key, 0) >= 0 {
+				// 能動条件を持っているので結果から排除
+				_result[_i0, _i0] = IARRAY
+				break
+			}
+		}
+	}
+
+	_result
+}
+
+//----------------------------------------------------------------
+// 条件の値（行の配列）の先頭の行の、先頭の値（無ければVOID）
+// 引数：　条件の値（行の配列）
+// ※入れ子の配列を関数に渡すと一番外側が展開されるので、_argv[0] が先頭の行になる
+//----------------------------------------------------------------
+UGM.FirstCondValue
+{
+	_argv[0][0]
+}
+
+//----------------------------------------------------------------
+// 指定されたメッセージ（複数可）が受動的な条件をすべて満たしているかどうか照合する
+// 受動的はユーザにとって　時間など
+// 引数：　メッセージ単体のハッシュの配列
+// 返値：　引数から条件達成していない組を排除した配列
+//----------------------------------------------------------------
+CheckMessagePassiveCondition
+{
+	_ref = _argv
+	// 現在の時間
+	_time = UGM.GetTime
+	_EpochSec = GetEpochSec()
+
+	// 条件ごとの結果（1＝達成、0＝不達成、-1＝判定できない）
+	_result = IARRAY
+
+	foreach _ref ; _r {
+		_sender = _r['sender']
+		_SenderId = _r['SenderId']
+		_MessageId = _r['MessageId']
+
+		// 指定されたメッセージの中身を格納したい
+		_message = SaveData_Reserved[_sender][_SenderId][_MessageId]
+		if GETTYPE(_message) != 5 {
+			// 指定されたメッセージが適切な状態ではない
+			_result ,= -1
+			continue
+		}
+		_cond = _message['Condition']
+		if GETTYPE(_cond) != 5 {
+			_cond = IHASH()
+		}
+
+		// SaveData_Waitingにあれば不達成
+		_bingo = 0
+		foreach SaveData_Waiting ; _w {
+			if _w['sender'] == _sender && _w['SenderId'] == _SenderId && _w['MessageId'] == _MessageId {
+				// ドンピシャのやつがあった
+				_bingo = 1
+				break
+			}
+		}
+		if _bingo == 1 {
+			// 条件不達成
+			_result ,= 0
+			continue
+		}
+
+		// Time_Seconds
+		if GETTYPE(UGM.FirstCondValue(_cond['Time_Seconds'])) != 0 {
+			_cond_time = TOINT(UGM.FirstCondValue(_cond['Time_Seconds']))
+			if TOINT(_message['SentTime']) + _cond_time > _EpochSec {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Time_DayOfWeek
+		if GETTYPE(UGM.FirstCondValue(_cond['Time_DayOfWeek'])) != 0 {
+			_c = TOINT(UGM.FirstCondValue(_cond['Time_DayOfWeek']))
+			_dayofweek = ('変', '日', '月', '火', '水', '木', '金', '土')
+			_cond_day = _dayofweek[_c]
+			if _time['週'] != _cond_day {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Time_During
+		if GETTYPE(UGM.FirstCondValue(_cond['Time_During'])) != 0 {
+			_a = _cond['Time_During']
+			_match = 0
+			// 1.x系と同じく、時と分を0埋めせずにつないだ数値と比べる（10:05 は 105）
+			_now = TOINT(TOSTR(_time['時']) + TOSTR(_time['分']))
+			foreach _a ; _cond_time {
+				_start = TOINT(_cond_time[0])
+				_end = TOINT(_cond_time[1])
+				if _start < _end {
+					// 0時をまたいでいない
+					if _start <= _now && _now <= _end {
+						// 条件達成
+						_match++
+					}
+				}
+				elseif _start > _end {
+					// 0時をまたいでいる
+					if _start <= _now || _now <= _end {
+						// 条件達成
+						_match++
+					}
+				}
+				// 始まりと終わりが一緒ならスルー
+			}
+			if _match == 0 {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Time_After
+		if GETTYPE(UGM.FirstCondValue(_cond['Time_After'])) != 0 {
+			// 値は 年/月/日/時/分 の後ろから詰めて読む（省略した前の方は現在の値）
+			_tmp_time = _cond['Time_After'][0]
+			_keys = ('分', '時', '日', '月', '年')
+			_c = IHASH()
+			_countup = 0
+			_countdown = ARRAYSIZE(_tmp_time) - 1
+			while _countup < 5 && _countdown >= 0 {
+				_c[_keys[_countup]] = TOINT(_tmp_time[_countdown])
+				_countup++
+				_countdown--
+			}
+			_c['秒'] = 0
+			if _EpochSec < GetEpochSec(_c) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Ghost_IsBooting
+		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_IsBooting'])) != 0 {
+			_a = _cond['Ghost_IsBooting']
+			_match = 0
+			foreach _a ; _row {
+				if STRSTR(TOSTR(GetFmoInfo(_row[0], 'modulestate')['modulestate']), 'shiori:running', 0) > -1 {
+					_match++
+				}
+			}
+			if _match != ARRAYSIZE(_a) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Ghost_IsNotBooting
+		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_IsNotBooting'])) != 0 {
+			_a = _cond['Ghost_IsNotBooting']
+			_match = 0
+			foreach _a ; _row {
+				if STRSTR(TOSTR(GetFmoInfo(_row[0], 'modulestate')['modulestate']), 'shiori:running', 0) > -1 {
+					_match++
+				}
+			}
+			if _match > 0 {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Ghost_Exists
+		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_Exists'])) != 0 {
+			if ARRAYSIZE(InstalledGhostNameList) == 0 {
+				// インストール済みゴーストのリストが未構築or構築失敗
+				_result ,= -1
+				continue
+			}
+			_names = IARRAY
+			foreach _cond['Ghost_Exists'] ; _row {
+				_names ,= _row[0]
+			}
+			if ASEARCH(0, IsGhostNameInstalled(_names)) >= 0 {
+				// 条件不達成（インストールされていないゴーストがある）
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Ghost_NotExists
+		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_NotExists'])) != 0 {
+			if ARRAYSIZE(InstalledGhostNameList) == 0 {
+				// インストール済みゴーストのリストが未構築or構築失敗
+				_result ,= -1
+				continue
+			}
+			_names = IARRAY
+			foreach _cond['Ghost_NotExists'] ; _row {
+				_names ,= _row[0]
+			}
+			if ASEARCH(1, IsGhostNameInstalled(_names)) >= 0 {
+				// 条件不達成（インストールされているゴーストがある）
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Ghost_IsInAddressBook
+		if GETTYPE(UGM.FirstCondValue(_cond['Ghost_IsInAddressBook'])) != 0 {
+			_a = _cond['Ghost_IsInAddressBook']
+			_match = 0
+			foreach _a ; _row {
+				if GETTYPE(SaveData_Received[_row[0]][_row[1]]) != 0 {
+					_match++
+				}
+			}
+			if _match != ARRAYSIZE(_a) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Message_IsRun
+		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsRun'])) != 0 {
+			_a = _cond['Message_IsRun']
+			_match = 0
+			foreach _a ; _row {
+				if GETTYPE(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]]) != 0 {
+					_match++
+				}
+			}
+			if _match != ARRAYSIZE(_a) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Message_IsNotRun
+		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsNotRun'])) != 0 {
+			_a = _cond['Message_IsNotRun']
+			_match = 0
+			foreach _a ; _row {
+				if GETTYPE(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]]) != 0 {
+					_match++
+				}
+			}
+			if _match > 0 {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Message_IsRead（最初の受信記録の既読時刻を見る。1.x系と同じ）
+		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsRead'])) != 0 {
+			_a = _cond['Message_IsRead']
+			_match = 0
+			foreach _a ; _row {
+				if TOINT(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]][0]['read_time']) > 0 {
+					_match++
+				}
+			}
+			if _match != ARRAYSIZE(_a) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// Message_IsNotRead
+		// ※1.x系は受信記録の配列をキーで引いていたので既読を数えられず、判定の
+		//   「match > 件数」も成り立たないため、この条件は常に達成になっていた。
+		//   移植でも同じ結果になるよう、判定は1.x系のままにしている。修正は移植の後で行う
+		if GETTYPE(UGM.FirstCondValue(_cond['Message_IsNotRead'])) != 0 {
+			_a = _cond['Message_IsNotRead']
+			_match = 0
+			foreach _a ; _row {
+				if TOINT(SaveData_Received[_row[0]][_row[1]]['msgs'][_row[2]][0]['read_time']) > 0 {
+					_match++
+				}
+			}
+			if _match > ARRAYSIZE(_a) {
+				// 条件不達成
+				_result ,= 0
+				continue
+			}
+		}
+
+		// どれにも不達成がなければ達成とする
+		_result ,= 1
+	}
+
+	_output = _ref
+
+	// 条件を満たしていないメッセージを結果から排除
+	// 末尾から処理しないと、配列の番号が消したぶんだけずれる
+	for _i = ARRAYSIZE(_ref) - 1 ; _i >= 0 ; _i-- {
+		if _result[_i] != 1 {
+			_output[_i, _i] = IARRAY
+		}
+	}
+
+	_output
+}
+
+//----------------------------------------------------------------
+// 指定された条件に合うメッセージを予約済み全ての中から取り出す
+// 引数：　PickUpMessageByCondition( 条件の種類名の文字列, 条件の値の行（配列）, ... )
+//         条件の値は行の配列（入れ子の配列）。UGM.Rows で作れる
+// 返値：　条件の種類の値が、指定した行の配列と一致するメッセージの配列（無ければ空の配列）
+//----------------------------------------------------------------
+PickUpMessageByCondition
+{
+	_cond = _argv[0]
+	_vals = _argv[1, _argc - 1]
+
+	// 格納用の変数
+	_result = IARRAY
+
+	// 2つ以上なら並べ替えておく
+	if ARRAYSIZE(_vals) >= 2 {
+		_vals = AsortEx(_vals)
+	}
+
+	foreach HASH_KEYS(SaveData_Reserved) ; _ghost {
+		if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
+			continue
+		}
+		foreach HASH_KEYS(SaveData_Reserved[_ghost]) ; _chara {
+			if GETTYPE(SaveData_Reserved[_ghost][_chara]) != 5 {
+				continue
+			}
+			foreach HASH_KEYS(SaveData_Reserved[_ghost][_chara]) ; _msg {
+				_conds = SaveData_Reserved[_ghost][_chara][_msg]['Condition'][_cond]
+
+				// 指定された条件の種類がある
+				if ARRAYSIZE(_conds) > 0 && _conds == _vals {
+					// 合致したら変数に入れる
+					_result ,= IHASH('sender', _ghost, 'SenderId', _chara, 'MessageId', _msg)
+				}
+			}
+		}
+	}
+
+	_result
+}

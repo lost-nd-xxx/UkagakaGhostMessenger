@@ -1,0 +1,310 @@
+//================================================================
+// 送信　＆　キャンセル（1.x系の dict/send.azr を移植）
+//================================================================
+
+//----------------------------------------------------------------
+// キャンセルイベントをゴーストから受け取った
+// 引数：　リクエストのハッシュ
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_Cancel
+{
+	_req = _argv[0]
+	//----------------------------------------------------------------
+	// イベントを起こしたゴーストのゴースト名
+	_sender = TOSTR(_req['Sender'])
+	//----------------------------------------------------------------
+	// 送信者識別子
+	_SenderId = TOSTR(_req['Reference0'])
+	//----------------------------------------------------------------
+	if _SenderId == '' {
+		// 送信者識別子が未指定なので、ゴーストに属する全ての予約を消す
+		SaveData_Reserved = UGM.HashRemove(SaveData_Reserved, _sender)
+	}
+	elseif GETTYPE(SaveData_Reserved[_sender]) == 5 {
+		// 送信者識別子が指定されていた
+		SaveData_Reserved[_sender] = UGM.HashRemove(SaveData_Reserved[_sender], _SenderId)
+	}
+}
+
+//----------------------------------------------------------------
+// 送信イベントをゴーストから受け取った
+// 引数：　リクエストのハッシュ
+// Reference は --キー=値 の形。--EventReference と --Condition は複数指定できる
+//----------------------------------------------------------------
+OnUkagakaGhostMessenger_Send
+{
+	_req = _argv[0]
+
+	// リファレンスをハッシュにしたい
+	// EventReferenceとConditionは複数来るかもなので空をセットしておく
+	_ref = IHASH()
+	_ref['EventReference'] = IARRAY
+	_ref['Condition'] = IHASH()
+
+	// ハッシュに格納していく Reference99でループ打ち止め
+	for _i = 0 ; _i < 100 ; _i++ {
+		// Referenceが無くなったらループ脱出
+		if !HASH_EXIST('Reference' + _i, _req) {
+			break
+		}
+		_text = TOSTR(_req['Reference' + _i])
+
+		if STRSTR(_text, '--EventReference=', 0) == 0 {
+			_ref['EventReference'] ,= RE_REPLACE(_text, '^--EventReference=', '')
+		}
+		elseif STRSTR(_text, '--Condition=', 0) == 0 {
+			// --Condition=条件名:値1/値2:値3 → 条件名 → ((値1,値2),(値3)) の入れ子の配列
+			_t = RE_REPLACE(_text, '^--Condition=', '')
+			_a = SPLIT(_t, ':')
+			_key = _a[0]
+			_a[0] = IARRAY
+			if !HASH_EXIST(_key, _ref['Condition']) {
+				_ref['Condition'][_key] = IARRAY
+			}
+			_n = ARRAYSIZE(_a)
+			for _j = 0 ; _j < _n ; _j++ {
+				_push = IHASH()
+				_push['array'] = _ref['Condition'][_key]
+				_push['value'] = SPLIT(_a[_j], '/')
+				_ref['Condition'][_key] = UGM.PushArray(_push)
+			}
+		}
+		elseif STRSTR(_text, '--Text=', 0) == 0 {
+			_ref['Text'] = RE_REPLACE(_text, '^--Text=', '')
+		}
+		else {
+			// 値に = を含むと、最初の = から2つ目の = までだけが値になる（1.x系と同じ）
+			_split = SPLIT(_text, '=')
+			_ref[RE_REPLACE(_split[0], '^\-\-', '')] = _split[1]
+		}
+	}
+	//----------------------------------------------------------------
+	// イベントを起こしたゴーストのゴースト名
+	_sender = TOSTR(_req['Sender'])
+	//----------------------------------------------------------------
+	// ゴーストのフルパス
+	_ghostpath = TOSTR(GetFmoInfo(_sender, 'ghostpath')['ghostpath'])
+	//----------------------------------------------------------------
+	// 省略時の値や初期値を入れる
+	_MessageId = ''
+	_SenderId = _sender
+	_SenderName = ''
+	_SenderIcon = ''
+	_SenderProfile = ''
+	_Text = ''
+	_EventReference = IARRAY
+	_RunCount = 1
+	_Late = IARRAY
+	_Late ,= 0
+	_Condition = IHASH()
+	//----------------------------------------------------------------
+	// ここから実際の値を確かめていく
+	//----------------------------------------------------------------
+	if TOSTR(_ref['SenderId']) != '' {
+		_SenderId = TOSTR(_ref['SenderId'])
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['MessageId']) != '' {
+		_MessageId = TOSTR(_ref['MessageId'])
+	}
+	else {
+		// メッセージ識別子が無い場合
+		ErrorResponse_Send(_sender, 'メッセージ識別子を認識できませんでした', _SenderId, '')
+		return
+	}
+	//----------------------------------------------------------------
+	// 有効にするかどうか（Enable を省略すると取り消しになる。1.x系と同じ）
+	if TOSTR(_ref['Enable']) != '1' {
+		// 無効にして保存する
+		if GETTYPE(SaveData_Reserved[_sender][_SenderId]) == 5 {
+			SaveData_Reserved[_sender][_SenderId] = UGM.HashRemove(SaveData_Reserved[_sender][_SenderId], _MessageId)
+		}
+
+		// 完了イベントを実行
+		CompleteResponse_Send(_sender, 'cancel', _SenderId, _MessageId)
+		return
+	}
+	//----------------------------------------------------------------
+	// ブロックされていたら受け付けない
+	//----------------------------------------------------------------
+	if TOINT(SaveData_Received[_sender][_SenderId]['block_flag']) == 1 {
+		ErrorResponse_Send(_sender, 'ブロックされています', _SenderId, _MessageId)
+		return
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['SenderName']) != '' {
+		_SenderName = TOSTR(_ref['SenderName'])
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['SenderIcon']) != '' {
+		_SenderIcon = TOSTR(_ref['SenderIcon'])
+		if _SenderIcon != 'default' {
+
+			if _ghostpath == '' {
+				// パスがわからない
+				ErrorResponse_Send(_sender, 'ゴーストのフォルダを認識できませんでした', '', '')
+				return
+			}
+
+			// ゴースト側の画像の絶対パス
+			_original_path = _ghostpath + 'ghost\master\' + _SenderIcon
+			_result = CopyImage(_original_path, _sender)
+			if _result == '' {
+				ErrorResponse_Send(_sender, 'SenderIconをコピーできませんでした', _SenderId, _MessageId)
+				return
+			}
+			else {
+				_SenderIcon = _result
+			}
+		}
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['SenderProfile']) != '' {
+		_SenderProfile = TOSTR(_ref['SenderProfile'])
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['Text']) != '' {
+		_Text = TOSTR(_ref['Text'])
+		_images = IARRAY
+		// 画像添付を探す
+		_found_count = RE_GREP(_Text, ':image:([^:]+?\.\w+):')
+		_founds = RE_GETSTR()
+		for _i = 0 ; _i < _found_count && _i < 99 ; _i++ {
+			void RE_SEARCH(_founds[_i], ':image:([^:]+?\.\w+):')
+			_image = RE_REPLACE(RE_GETSTR()[1], '^nozoom=', '')
+			if _image != '' {
+				_images ,= _image
+			}
+		}
+		// 画像添付があったらコピーするか判断していく
+		if ARRAYSIZE(_images) > 0 {
+			if _ghostpath == '' {
+				// パスがわからない
+				ErrorResponse_Send(_sender, 'ゴーストのフォルダを認識できませんでした', '', '')
+				return
+			}
+			foreach _images ; _image {
+				// ゴースト側の画像の絶対パス
+				_original_path = _ghostpath + 'ghost\master\' + _image
+				if CopyImage(_original_path, _sender) == '' {
+					ErrorResponse_Send(_sender, 'Textに添付された画像をコピーできませんでした', _SenderId, _MessageId)
+					return
+				}
+			}
+		}
+	}
+	//----------------------------------------------------------------
+	if ARRAYSIZE(_ref['EventReference']) > 0 {
+		_EventReference = _ref['EventReference']
+	}
+	//----------------------------------------------------------------
+	if TOSTR(_ref['RunCount']) != '' {
+		_RunCount = TOINT(_ref['RunCount'])
+	}
+	if TOINT(_ref['RunCount']) < 0 {
+		// 数値がおかしいので1回に直す
+		_RunCount = 1
+	}
+	//----------------------------------------------------------------
+	_late_text = TOSTR(_ref['Late'])
+	if _late_text != '' {
+		if RE_MATCH(_late_text, '\d+') {
+			// 1個の数値だった
+			_Late = IARRAY
+			_Late ,= TOINT(_late_text)
+		}
+		elseif RE_MATCH(_late_text, '\d+\-\d+') {
+			// 1つのハイフンで繋がれた2個の数値だった
+			_split = SPLIT(_late_text, '-')
+			_i0 = TOINT(_split[0])
+			_i1 = TOINT(_split[1])
+			_Late = IARRAY
+			if _i0 < _i1 {
+				// i0の方が小さい
+				_Late ,= _i0
+				_Late ,= _i1
+			}
+			elseif _i0 > _i1 {
+				// i1の方が小さい
+				_Late ,= _i1
+				_Late ,= _i0
+			}
+			else {
+				// i0==i1ならどちらか1つでよい
+				_Late ,= _i0
+			}
+		}
+	}
+	//----------------------------------------------------------------
+	if HASH_SIZE(_ref['Condition']) > 0 {
+		_Condition = _ref['Condition']
+	}
+	//----------------------------------------------------------------
+	// 予約をセーブデータに記録する
+	if GETTYPE(SaveData_Reserved[_sender]) != 5 {
+		// 同じsenderがセーブデータに存在しないので空のハッシュをセット
+		SaveData_Reserved[_sender] = IHASH()
+	}
+	if GETTYPE(SaveData_Reserved[_sender][_SenderId]) != 5 {
+		// 同じSenderIdがセーブデータに存在しないので空のハッシュをセット
+		SaveData_Reserved[_sender][_SenderId] = IHASH()
+	}
+
+	_reserved = IHASH()
+	_reserved['SenderName'] = _SenderName
+	_reserved['SenderIcon'] = _SenderIcon
+	_reserved['SenderProfile'] = _SenderProfile
+	_reserved['Text'] = _Text
+	_reserved['EventReference'] = _EventReference
+	_reserved['RunCount'] = _RunCount
+	_reserved['ExecutedCount'] = 0
+	_reserved['Late'] = _Late
+	_reserved['Condition'] = _Condition
+	// 受付時刻を添える（エポック秒）
+	_reserved['SentTime'] = GetEpochSec()
+	SaveData_Reserved[_sender][_SenderId][_MessageId] = _reserved
+	//----------------------------------------------------------------
+	// 完了イベントを実行
+	CompleteResponse_Send(_sender, 'send', _SenderId, _MessageId)
+}
+
+//----------------------------------------------------------------
+// 送信完了
+// 引数：　送信元のゴースト名, "send" か "cancel", 送信者識別子, メッセージ識別子
+//----------------------------------------------------------------
+CompleteResponse_Send
+{
+	SaveVar
+
+	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_SendComplete'
+	dictOptionalHeader['reference'] = UGM.ReferenceArray(_argv[1], _argv[2], _argv[3])
+	dictOptionalHeader['target'] = _argv[0]
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+}
+
+//----------------------------------------------------------------
+// 送信失敗
+// 引数：　送信元のゴースト名, エラーの文言, 送信者識別子, メッセージ識別子
+//----------------------------------------------------------------
+ErrorResponse_Send
+{
+	dictOptionalHeader['event'] = 'OnUkagakaGhostMessenger_SendFailure'
+	dictOptionalHeader['reference'] = UGM.ReferenceArray(_argv[1], _argv[2], _argv[3])
+	dictOptionalHeader['target'] = _argv[0]
+	dictOptionalHeader['marker'] = version()
+	dictOptionalHeader['script_option'] = 'nobreak'
+}
+
+//----------------------------------------------------------------
+// 応答の Reference の配列を作る（空文字列の要素も残す）
+// 引数：　Reference0, Reference1, ...
+//----------------------------------------------------------------
+UGM.ReferenceArray
+{
+	_a = IARRAY
+	for _i = 0 ; _i < _argc ; _i++ {
+		_a ,= TOSTR(_argv[_i])
+	}
+	_a
+}

@@ -1,0 +1,59 @@
+//================================================================
+// バグ修正用（1.x系の dict/bugfix.azr を移植）
+// SSPで動き始めたとき（OnSystemHostStart.UGM）に呼ぶ
+//================================================================
+
+BugFix_General
+{
+	BugFix_20250612_1
+}
+
+//----------------------------------------------------------------
+// 2025年6月の修正
+// 既存データを名指しで修正する
+// 対象：「UkagakaGhostMessengerナビゲーターうめちゃん」「Love Ra.bit」
+// ※1.0.5 までに実行済みなら bugfix_record に記録があるので、何もしない
+// ※1.x系はフォルダをコピーしてから元を消していたが、YAYAにはフォルダごとの
+//   コピーと削除が無いので、フォルダの名前を変える
+//----------------------------------------------------------------
+BugFix_20250612_1
+{
+	// 修正を実行した記録があれば何もしない
+	if HASH_EXIST('20250612_1', bugfix_record) {
+		return
+	}
+	//----------------------------------------------------------------
+	// 「Love Ra.bit」のデータがあるなら処理
+	_dir_old = 'localweb\html\res\image\Love_Ra.bit'
+	if UGM.Exists(_dir_old) {
+		// フォルダを移動
+		void FRENAME(_dir_old, 'localweb\html\res\image\' + GhostNameToFolderName('Love Ra.bit'))
+	}
+	// 予約を修正
+	if GETTYPE(SaveData_Reserved['Love_Ra.bit']) == 5 && HASH_SIZE(SaveData_Reserved['Love_Ra.bit']) > 0 {
+		SaveData_Reserved['Love Ra.bit'] = SaveData_Reserved['Love_Ra.bit']
+		SaveData_Reserved = UGM.HashRemove(SaveData_Reserved, 'Love_Ra.bit')
+	}
+	// 受信済みを修正
+	if GETTYPE(SaveData_Received['Love_Ra.bit']) == 5 && HASH_SIZE(SaveData_Received['Love_Ra.bit']) > 0 {
+		SaveData_Received['Love Ra.bit'] = SaveData_Received['Love_Ra.bit']
+		SaveData_Received = UGM.HashRemove(SaveData_Received, 'Love_Ra.bit')
+	}
+	// SaveData_Waitingを修正
+	_n = ARRAYSIZE(SaveData_Waiting)
+	for _i = 0 ; _i < _n ; _i++ {
+		if SaveData_Waiting[_i]['sender'] == 'Love_Ra.bit' {
+			SaveData_Waiting[_i]['sender'] = 'Love Ra.bit'
+		}
+	}
+	//----------------------------------------------------------------
+	// 「UkagakaGhostMessengerナビゲーターうめちゃん」のデータがあるなら処理
+	_dir_old = 'localweb\html\res\image\UkagakaGhostMessengerナビゲーターうめちゃん'
+	if UGM.Exists(_dir_old) {
+		// フォルダを移動する
+		void FRENAME(_dir_old, 'localweb\html\res\image\' + GhostNameToFolderName('UkagakaGhostMessengerナビゲーターうめちゃん'))
+	}
+	//----------------------------------------------------------------
+	// 修正を実行した記録を残す
+	bugfix_record['20250612_1'] = 1
+}
