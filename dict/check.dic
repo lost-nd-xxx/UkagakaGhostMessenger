@@ -582,8 +582,9 @@ CheckMessagePassiveCondition
 		if GETTYPE(UGM.FirstCondValue(_cond['Time_During'])) != 0 {
 			_a = _cond['Time_During']
 			_match = 0
-			// 1.x系と同じく、時と分を0埋めせずにつないだ数値と比べる（10:05 は 105）
-			_now = TOINT(TOSTR(_time['時']) + TOSTR(_time['分']))
+			// 現在時刻を「時×100＋分」の数値にして比べる（10:05 は 1005）
+			// ※1.0.5までは時と分を0埋めせずにつないでいたので、10:05 が 105 になっていた
+			_now = TOINT(_time['時']) * 100 + TOINT(_time['分'])
 			foreach _a ; _cond_time {
 				_start = TOINT(_cond_time[0])
 				_end = TOINT(_cond_time[1])
