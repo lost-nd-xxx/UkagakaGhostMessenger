@@ -324,7 +324,9 @@ div.kiritoriLine p {
   display: inline-block;
   margin-left: 30px;
   padding: 7px 10px;
-  max-width: 100%;
+  /* アイコン（64px）、左の余白（30px）、時刻の分を除いた幅まで。100% だと長い文で吹き出しだけ次の行に落ちていた */
+  max-width: calc(100% - 64px - 30px - 4em);
+  overflow-wrap: anywhere;
   font-size: 16px;
   background: var(--color-message-bubble);
   border-radius: 10px;
