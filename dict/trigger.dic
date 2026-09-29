@@ -11,11 +11,11 @@
 // 条件 Ghost_Triggered の値は「イベント識別子/トリガーを立ててきたゴースト名」
 // （ゴースト名は省略可）。1.x系は条件の値（入れ子の配列）を文字列として
 // : で分けていたが、ここでは先頭の行を仕様どおりに読む。
-// ※次の点は1.x系と同じにしている。修正は移植の後で行う
-//   - 送ってきたゴースト名を小文字の sender ヘッダから取っているので、常に空になる
-//     （ゴースト名を指定した Ghost_Triggered は一致しない）
-//   - 対象のゴースト名に TranslateSystemChar を通してから予約を引いている
-//   - 対象のゴースト名を省略すると、Ghost_Triggered を持たない予約も照合に回す
+// ゴースト名は加工せずに比べる。
+// ※1.0.5までは、送ってきたゴースト名を小文字の sender ヘッダから取っていたので常に空になり、
+//   ゴースト名を指定した Ghost_Triggered は一致しなかった。また、対象のゴースト名に
+//   TranslateSystemChar を通してから予約を引いていたので、記号を含む名前は見つからなかった
+// ※対象のゴースト名を省略すると、Ghost_Triggered を持たない予約も照合に回す（1.x系と同じ）
 //----------------------------------------------------------------
 OnUkagakaGhostMessenger_Trigger
 {
@@ -36,7 +36,7 @@ OnUkagakaGhostMessenger_Trigger
 	}
 
 	// イベントを送ってきたゴースト名
-	_sender = TranslateSystemChar(TOSTR(_res['sender']))
+	_sender = TOSTR(_res['Sender'])
 
 	// 該当するメッセージを抜き出す
 	_msg = IARRAY
@@ -44,8 +44,7 @@ OnUkagakaGhostMessenger_Trigger
 		_msg = ListUpAllMessageArray
 	}
 	else {
-		foreach _ghosts ; _g {
-			_ghost = TranslateSystemChar(_g)
+		foreach _ghosts ; _ghost {
 			if GETTYPE(SaveData_Reserved[_ghost]) != 5 {
 				continue
 			}
