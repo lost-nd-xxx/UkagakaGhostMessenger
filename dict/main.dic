@@ -29,6 +29,7 @@ OnSystemHostStart.UGM
 	// 1.x系の load / RestoreVar で行っていた、ファイルに書き出す処理
 	UGM.CreateConfigIfMissing
 	BugFix_General
+	UGM.MigrationNotice
 	UpdateWebJson
 	UGM.WriteAkariLog
 

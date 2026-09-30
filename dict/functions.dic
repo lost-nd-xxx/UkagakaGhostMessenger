@@ -98,8 +98,11 @@ SaveVar
 RestoreVar
 {
 	dictSaveData = FREADJSON('savedata.json')
+	// savedata.json を読めたか（移行の通知で使う）
+	UGM.SaveJsonLoaded = 1
 	if GETTYPE(dictSaveData) != 5 {
 		dictSaveData = IHASH()
+		UGM.SaveJsonLoaded = 0
 	}
 
 	if GETTYPE(dictSaveData['SaveData_Reserved']) == 5 {
@@ -120,6 +123,72 @@ RestoreVar
 	if oyasumi_flag == 1 {
 		oyasumi_flag = 0
 	}
+}
+
+//----------------------------------------------------------------
+// 1.x系からの移行の結果を、プラグイン自身からのメッセージ（システム通知）として知らせる
+// SSPで動き始めたとき（OnSystemHostStart.UGM）に、BugFix_General の後で呼ぶ
+// - 完了: 1.0.5 の告知を受け取った記録（notice_2_0_0）があり、まだ知らせていないとき
+// - 失敗: savedata.adb（1.x系のセーブデータ）があるのに savedata.json が無かったとき
+// どちらも一度だけ（bugfix_record に記録する）。2.0.0 から新しく入れたときは何もしない
+//----------------------------------------------------------------
+UGM.MigrationNotice
+{
+	if HASH_EXIST('notice_2_0_0', bugfix_record) && !HASH_EXIST('notice_migrated_2_0_0', bugfix_record) {
+		// 受信履歴の件数
+		_count = 0
+		foreach SaveData_Received ; _ghost {
+			foreach _ghost ; _chara {
+				foreach _chara['msgs'] ; _records {
+					_count += ARRAYSIZE(_records)
+				}
+			}
+		}
+		_text = 'UkagakaGhostMessenger 2.0.0への移行が完了しました。'
+		_text += ':nl:受信履歴（' + _count + '件）と予約を引き継ぎました。'
+		_text += ':nl:変更点は配布ページをご覧ください。'
+		_text += ':nl:配布ページ：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki'
+		UGM.ReserveSystemNotice('notice_migrated_2_0_0', _text)
+		bugfix_record['notice_migrated_2_0_0'] = 1
+	}
+	elseif UGM.SaveJsonLoaded == 0 && UGM.Exists('savedata.adb') && !HASH_EXIST('notice_migrate_failed_2_0_0', bugfix_record) {
+		_text = '以前のバージョンの受信履歴が見つかりましたが、引き継げませんでした。'
+		_text += ':nl:1.0.5をインストールして一度起動してから、2.0.0を入れ直すと引き継げます。'
+		_text += ':nl:配布ページ：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki'
+		UGM.ReserveSystemNotice('notice_migrate_failed_2_0_0', _text)
+		bugfix_record['notice_migrate_failed_2_0_0'] = 1
+	}
+}
+
+//----------------------------------------------------------------
+// プラグイン自身からのメッセージ（システム通知）を、条件なしの予約として作る
+// 予約は OnSecondChange の条件照合で受信処理に回る
+// 引数：　メッセージ識別子, 本文
+//----------------------------------------------------------------
+UGM.ReserveSystemNotice
+{
+	_sender = pluginname()
+	_SenderId = 'system'
+	if GETTYPE(SaveData_Reserved[_sender]) != 5 {
+		SaveData_Reserved[_sender] = IHASH()
+	}
+	if GETTYPE(SaveData_Reserved[_sender][_SenderId]) != 5 {
+		SaveData_Reserved[_sender][_SenderId] = IHASH()
+	}
+	_late = IARRAY
+	_late ,= 0
+	_r = IHASH()
+	_r['SenderName'] = 'システム通知'
+	_r['SenderIcon'] = 'default'
+	_r['SenderProfile'] = ''
+	_r['Text'] = _argv[1]
+	_r['EventReference'] = IARRAY
+	_r['RunCount'] = 1
+	_r['ExecutedCount'] = 0
+	_r['Late'] = _late
+	_r['Condition'] = IHASH()
+	_r['SentTime'] = GetEpochSec()
+	SaveData_Reserved[_sender][_SenderId][_argv[0]] = _r
 }
 
 //----------------------------------------------------------------
