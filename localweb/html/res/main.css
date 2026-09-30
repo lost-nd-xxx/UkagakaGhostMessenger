@@ -317,6 +317,8 @@ div.kiritoriLine p {
   margin: 0;
   font-size: smaller;
   place-self: end;
+  /* 吹き出しが横幅いっぱいのときも、時刻を折り返さない */
+  white-space: nowrap;
 }
 
 .messageBubble {
@@ -324,6 +326,8 @@ div.kiritoriLine p {
   display: inline-block;
   margin-left: 30px;
   padding: 7px 10px;
+  /* max-width に padding も含める（含めないと、時刻の分が padding だけ足りなくなる） */
+  box-sizing: border-box;
   /* アイコン（64px）、左の余白（30px）、時刻の分を除いた幅まで。100% だと長い文で吹き出しだけ次の行に落ちていた */
   max-width: calc(100% - 64px - 30px - 4em);
   overflow-wrap: anywhere;
