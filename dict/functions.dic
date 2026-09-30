@@ -16,7 +16,7 @@ pluginname
 version_num
 {
 	// バージョンを文字列で
-	'2.0.0'
+	'2.0.1'
 }
 
 version
@@ -139,7 +139,7 @@ UGM.MigrationNotice
 				}
 			}
 		}
-		_text = 'UkagakaGhostMessenger 2.0.0への移行が完了しました。'
+		_text = 'UkagakaGhostMessenger バージョン2系への移行が完了しました。'
 		_text += ':nl:受信履歴（' + _count + '件）と予約を引き継ぎました。'
 		_text += ':nl:変更点は配布ページをご覧ください。'
 		_text += ':nl:配布ページ：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki'
@@ -148,7 +148,7 @@ UGM.MigrationNotice
 	}
 	elseif UGM.SaveJsonLoaded == 0 && UGM.Exists('savedata.adb') && !HASH_EXIST('notice_migrate_failed_2_0_0', bugfix_record) {
 		_text = '以前のバージョンの受信履歴が見つかりましたが、引き継げませんでした。'
-		_text += ':nl:1.0.5をインストールして一度起動してから、2.0.0を入れ直すと引き継げます。'
+		_text += ':nl:1.0.5をインストールして一度起動してから、2.0.0以降を入れ直すと引き継げます。'
 		_text += ':nl:1.0.5の入手先：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/releases/tag/1.0.5'
 		UGM.ReserveSystemNotice('notice_migrate_failed_2_0_0', _text)
 		bugfix_record['notice_migrate_failed_2_0_0'] = 1
