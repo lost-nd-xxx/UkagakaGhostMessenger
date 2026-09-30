@@ -41,7 +41,6 @@ version
 // check_interval      条件照合の実行間隔（秒）
 // check_interval_count 条件照合の間隔カウンタ
 // batch_start_time    まとめ通知用のバッチ開始時刻（0=待機中ではない）
-// akari_log           セーブデータを読める形で出力するファイル名（1.x系の設定名のまま）
 // Waiting_Ringing / InstalledGhostNameList は下を参照
 //----------------------------------------------------------------
 UGM.InitGlobals
@@ -59,7 +58,6 @@ UGM.InitGlobals
 	check_interval = 1
 	check_interval_count = 0
 	batch_start_time = 0
-	akari_log = ''
 	// OnUkagakaGhostMessenger_Ringing の Reference の待ち（バイト値1区切りの文字列の配列）
 	Waiting_Ringing = IARRAY
 	// インストール済みのゴースト名（installedghostname で受け取る）
@@ -85,9 +83,6 @@ SaveVar
 
 	// web用jsonを出力する
 	UpdateWebJson
-
-	// セーブデータを読めるようにする
-	UGM.WriteAkariLog
 }
 
 //----------------------------------------------------------------
@@ -192,16 +187,6 @@ UGM.ReserveSystemNotice
 }
 
 //----------------------------------------------------------------
-// セーブデータを読める形で出力する（ugm_config.txt の akari_log）
-//----------------------------------------------------------------
-UGM.WriteAkariLog
-{
-	if PLUGINFW.Hosted == 1 && akari_log != '' {
-		void FWRITEJSON(akari_log, dictSaveData)
-	}
-}
-
-//----------------------------------------------------------------
 // ugm_config.txt の既定の内容
 //----------------------------------------------------------------
 UGM.DefaultConfigLines
@@ -212,9 +197,6 @@ UGM.DefaultConfigLines
 	_a ,= ''
 	_a ,= '//指定されたファイル名でugm_server.exeのログを出力'
 	_a ,= '//server_log,server_log.txt'
-	_a ,= ''
-	_a ,= '//セーブデータを読める形で出力'
-	_a ,= '//akari_log,akari_log.txt'
 	_a ,= ''
 	_a ,= '//条件照合の実行間隔を秒で指定（デフォルト1、最小1）'
 	_a ,= '//check_interval,1'
@@ -246,10 +228,6 @@ readConfig
 		if RE_MATCH(_line, 'localhost_number,\s*\d+\s*') {
 			void RE_SEARCH(_line, 'localhost_number,\s*(\d+)\s*')
 			localhost_number = TOINT(RE_GETSTR()[1])
-		}
-		elseif RE_MATCH(_line, 'akari_log,\s*\S+\s*') {
-			void RE_SEARCH(_line, 'akari_log,\s*(\S+)\s*')
-			akari_log = RE_GETSTR()[1]
 		}
 		elseif RE_MATCH(_line, 'check_interval,\s*\d+\s*') {
 			void RE_SEARCH(_line, 'check_interval,\s*(\d+)\s*')

@@ -31,7 +31,6 @@ OnSystemHostStart.UGM
 	BugFix_General
 	UGM.MigrationNotice
 	UpdateWebJson
-	UGM.WriteAkariLog
 
 	// ugm_server.exe を起動する
 	void FDEL('localweb\shutdown.signal')
