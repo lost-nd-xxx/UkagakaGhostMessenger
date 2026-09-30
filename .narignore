@@ -1,0 +1,35 @@
+# nar に含めないもの（.gitignore の書き方。.updateignore からも読み込む）
+# ※除外したフォルダの中のファイルは、否定パターン（!）で戻せない
+
+# git・開発キット
+/.git/
+/.gitignore
+/.gitattributes
+/.narignore
+/.updateignore
+/.claude/
+/CLAUDE.md
+/tools/
+/build/
+/dict/system/yaya_base/
+/localweb/__server_golang/
+
+# 作業用
+/__memo/
+/__akari_tester/
+/__workspace/
+
+# 利用者のデータ・設定（上書きしない）
+/savedata.json
+/savedata.adb
+/ugm_config.txt
+/profile/
+*.log
+/server_log.txt
+/akari_log.txt
+/akari_log.json
+/localweb/running.signal
+/localweb/shutdown.signal
+/localweb/html/res/data.json
+## 受信した画像（ゴーストごとのフォルダ）。image/ 直下の既定の画像は含める
+/localweb/html/res/image/*/

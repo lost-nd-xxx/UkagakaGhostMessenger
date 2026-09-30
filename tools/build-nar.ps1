@@ -8,7 +8,7 @@
     .narignore / .updateignore (and .narinclude) itself.
     The nar goes to build/<directory in install.txt>.nar (or -OutFile), and updates2.dau and updates.txt to the
     same folder. SSP does not put an output file inside the ghost folder into the archive or the update data,
-    and /build/ is excluded by tools/devkit.narignore. -UpdateOnly writes only the network update files.
+    and /build/ is excluded by .narignore. -UpdateOnly writes only the network update files.
     With -Builtin, or on GitHub Actions (GITHUB_ACTIONS=true), where SSP is not available, the nar is written
     by this script instead: in a git working copy, files come from "git ls-files --recurse-submodules", so
     untracked files are never shipped; otherwise the folder itself is used. Paths matched by .narignore

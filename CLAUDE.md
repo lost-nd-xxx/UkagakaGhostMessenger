@@ -25,7 +25,8 @@ konnoyayame（YAYA ゴーストのテンプレート）の開発キットを、�
 - 辞書（`dict/**/*.dic`、`yaya.txt`、`system_config.txt`）を編集すると、hook が check-dic を自動で実行する。
 - tamac は yaya.dll の `load` / `unload` を本当に実行する。load / unload に外部プログラムの起動やファイルの書き込みを置かないこと（SSP から最初のリクエストが来てから行う）。
 - `tools/*.ps1` は ASCII だけで書き、Windows PowerShell 5.1 で動くようにする。
-- 配布物からの除外は `developer_options.txt` で行っている。SSP で作る `build-nar.ps1`（既定）はこれを読むが、`-ListOnly` と `-Builtin` は `.narignore` しか読まないので、一覧は実際の nar と一致しない。
+- 配布物からの除外は `.narignore`（.gitignore の書き方）で行い、`.updateignore` はそれを `include:` で読み込む。除外したフォルダの中のファイルは `!` で戻せないので、受信画像は `/localweb/html/res/image/*/` のようにフォルダだけを除外している。
+- `build-nar.ps1 -ListOnly` は git で管理しているファイルだけを数えるので、利用者のデータ（savedata.json など）は一覧に出ない。実際の nar は SSP が作業フォルダから作るので、除外の漏れは nar の中身で確かめる。
 
 ## YAYA 600系で辞書を書くときの注意（移植で確かめたこと）
 

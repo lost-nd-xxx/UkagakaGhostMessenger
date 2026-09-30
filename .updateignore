@@ -1,0 +1,2 @@
+# ネットワーク更新に含めないもの（nar と同じ）
+include:.narignore
