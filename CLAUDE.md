@@ -7,6 +7,17 @@ UkagakaGhostMessenger（UGM）は SSP 用の PLUGIN（PLUGIN/2.0）。2.x（`rel
 - `release`: 2.x の開発・配布ブランチ。descript.txt の `homeurl` がこのブランチの raw ファイルを直接読むので、**push した内容はすぐに利用者のネットワーク更新に出る**。push は頼まれたときだけ、updates2.dau / updates.txt と中身がそろっているのを確かめてから行う。
 - `main`: 1.x（akari 版）。1.0.4 の利用者が参照しているので、1.0.5（中継版）以外の変更は入れない。
 
+## 配布の手順（2.0.0 / 2.0.1 で行ったもの）
+
+1. `dict/functions.dic` の `version_num` と readme の「更新履歴」（公開日を含む）を更新してコミットする。
+2. コミット済みの中身だけでビルドするため、スクラッチパッドに git worktree を作る（`git worktree add --detach <dir> release`）。`D:\ssp\__dev_plugin` の下に作ると、SSP がプラグインとして読み込んでしまう。開発フォルダには試験用のデータなど git 管理外のものが混じっているので、開発フォルダからはビルドしない。
+3. worktree で `tools/build-nar.ps1 -UpdateOnly` を実行し、できた updates2.dau / updates.txt を開発フォルダにコピーしてコミットする。前の updates.txt と比べ、MD5 が変わったファイルが意図したものだけか確かめる（date は取り出し直しで変わる）。
+4. worktree をそのコミットに進めて（`git -C <dir> checkout --detach release`）、`build-nar.ps1` で nar を作り直す（nar に新しい updates.txt / updates2.dau を入れるため）。
+5. nar の中身と updates.txt の MD5 が、コミット済みの中身（worktree のファイル）とすべて一致するか確かめる。nar は 96 ファイル前後（配布物＋更新ファイル2つ）で、git 管理外のファイルや利用者のデータが入っていないこと。
+6. push は頼まれたときだけ。push 後に raw.githubusercontent.com の updates2.dau / updates.txt がコミットと一致するか確かめる。
+7. GitHub Releases はユーザーが作る。タグ名は版そのもの（`2.0.1` など。`1.0.5` のタグは readme と移行失敗通知の URL が前提）。添付名は必ず `UkagakaGhostMessenger.nar` にし、2.x の最新を Latest にする（Wiki Home とうめちゃんのインストールメニューが `releases/latest/download/UkagakaGhostMessenger.nar` を使う）。
+8. Wiki は git リポジトリ（`https://github.com/lost-nd-xxx/UkagakaGhostMessenger.wiki.git`）を `__workspace/` に取り直してから文案を作り、反映はユーザーが行う。
+
 ## 開発用スクリプト（tools/）
 
 konnoyayame（YAYA ゴーストのテンプレート）の開発キットを、プラグイン用に改修したもの。`<ps>` は `powershell -NoProfile -ExecutionPolicy Bypass -File` の略。
