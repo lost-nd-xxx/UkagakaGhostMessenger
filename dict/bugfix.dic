@@ -7,6 +7,44 @@ BugFix_General
 {
 	BugFix_20250612_1
 	BugFix_20260930_ImagePath
+	BugFix_20260930_RemoveOldFiles
+}
+
+//----------------------------------------------------------------
+// 2026年9月の修正（2.0.0）
+// 1.x系（akari版）に上書きでインストールしたときに残る、使わなくなったファイルを消す
+// ※delete.txt はネットワーク更新でしか処理されないので、ここで消す
+// ※利用者のデータ（savedata.adb、akari_log.txt など）は消さない
+//----------------------------------------------------------------
+BugFix_20260930_RemoveOldFiles
+{
+	// 修正を実行した記録があれば何もしない
+	if HASH_EXIST('20260930_RemoveOldFiles', bugfix_record) {
+		return
+	}
+	_files = IARRAY
+	_files ,= 'akari.dll'
+	_files ,= 'main.azr'
+	_files ,= 'dict\ayasaori.aym'
+	_files ,= 'dict\builtins.aym'
+	_files ,= 'dict\bugfix.azr'
+	_files ,= 'dict\check.azr'
+	_files ,= 'dict\event.azr'
+	_files ,= 'dict\fromweb.azr'
+	_files ,= 'dict\functions.azr'
+	_files ,= 'dict\reqnres.azr'
+	_files ,= 'dict\send.azr'
+	_files ,= 'dict\textexpand.azr'
+	_files ,= 'dict\trigger.azr'
+	_files ,= 'license_text\akari.txt'
+	_files ,= 'license_text\YAYA_as_SAORI.txt'
+	foreach _files ; _f {
+		if UGM.Exists(_f) {
+			void FDEL(_f)
+		}
+	}
+	// 修正を実行した記録を残す
+	bugfix_record['20260930_RemoveOldFiles'] = 1
 }
 
 //----------------------------------------------------------------
