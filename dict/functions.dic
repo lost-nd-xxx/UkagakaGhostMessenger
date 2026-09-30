@@ -149,7 +149,7 @@ UGM.MigrationNotice
 	elseif UGM.SaveJsonLoaded == 0 && UGM.Exists('savedata.adb') && !HASH_EXIST('notice_migrate_failed_2_0_0', bugfix_record) {
 		_text = '以前のバージョンの受信履歴が見つかりましたが、引き継げませんでした。'
 		_text += ':nl:1.0.5をインストールして一度起動してから、2.0.0を入れ直すと引き継げます。'
-		_text += ':nl:配布ページ：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/wiki'
+		_text += ':nl:1.0.5の入手先：https://github.com/lost-nd-xxx/UkagakaGhostMessenger/releases/tag/1.0.5'
 		UGM.ReserveSystemNotice('notice_migrate_failed_2_0_0', _text)
 		bugfix_record['notice_migrate_failed_2_0_0'] = 1
 	}
