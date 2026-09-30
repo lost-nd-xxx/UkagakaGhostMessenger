@@ -18,6 +18,8 @@ UkagakaGhostMessenger（UGM）は SSP 用の PLUGIN（PLUGIN/2.0）。2.x（`rel
 7. GitHub Releases はユーザーが作る。タグ名は版そのもの（`2.0.1` など。`1.0.5` のタグは readme と移行失敗通知の URL が前提）。添付名は必ず `UkagakaGhostMessenger.nar` にし、2.x の最新を Latest にする（Wiki Home とうめちゃんのインストールメニューが `releases/latest/download/UkagakaGhostMessenger.nar` を使う）。
 8. Wiki は git リポジトリ（`https://github.com/lost-nd-xxx/UkagakaGhostMessenger.wiki.git`）を `__workspace/` に取り直してから文案を作り、反映はユーザーが行う。
 
+- readme など説明だけの変更は、版を上げずにネットワーク更新だけで出してよい（ユーザー決定。SSP は版ではなくファイルごとの MD5 で更新する）。手順 2〜3 で更新ファイルを作り直してコミットし、手順 6 で push する。GitHub Releases の nar は差し替えない。更新履歴にも書かない。
+
 ## 開発用スクリプト（tools/）
 
 konnoyayame（YAYA ゴーストのテンプレート）の開発キットを、プラグイン用に改修したもの。`<ps>` は `powershell -NoProfile -ExecutionPolicy Bypass -File` の略。
